@@ -1,5 +1,4 @@
 
-
 ;; simple lisp interpreter in lisp
 
 ;; repl
@@ -76,7 +75,10 @@
 (define m-last? (lambda (exp k1 k2) (if (null? (cdr exp)) (k1 #t) (k2 #f))))
 
 
-			((equal? (first exp) 'begin) (m-eval-begin exp env k #:dummy))
+(define m-eval-quote
+    (lambda (exp env k)
+      (k (second exp))))
+
 
 ;; strips begin from expression
 ;; provides a dummy return value
@@ -84,6 +86,7 @@
 (define m-eval-begin (lambda (exp env k)
 		       (m-eval-begin-loop (cdr exp) env k #:dummy)))
 
+;; feed last value through until no more values to evaluate
 (define m-eval-begin-loop (lambda (exp env k v)
 			    (m-null? exp
 				     (lambda (k2) (k v))
@@ -97,6 +100,38 @@
 										      k
 										      k4)))))))))
 
+
+(define m-reverse-helper
+    (lambda (xs k ys)
+      (cond
+	((null? xs) (k ys))
+	(else (m-reverse-helper (cdr xs) k (cons (car xs) ys))))))
+
+
+(define m-reverse
+    (lambda (xs k)
+      (m-reverse-helper xs k '())))
+		      
+
+
+(define m-eval-list (lambda (exp env k)
+		       (m-eval-list-loop (cdr exp) env k '())))
+
+;; feed last value through until no more values to evaluate
+;; we need to reverse them also at the end 
+(define m-eval-list-loop (lambda (exp env k v)
+			   (m-null? exp
+				    (lambda (k2) (m-reverse v k))
+				    (lambda (k1)
+				      (m-eval (car exp) env (lambda (a)
+							      (m-eval-list-loop (cdr exp)
+										env
+										k
+										(cons a v))))))))
+
+
+
+
 ;; cons is a primitive machine level operation
 (define m-eval-cons (lambda (exp env k)
 		      (m-eval (second exp) env (lambda (a)
@@ -104,11 +139,12 @@
 									   (k (cons a b))))))))
 
 
-;; cons is a primitive machine level operation
+;; car is a primitive machine level operation
 (define m-eval-car (lambda (exp env k)
 		     (m-eval (second exp) env (lambda (a)
 						(k (car a))))))
 
+;; cdr 
 (define m-eval-cdr (lambda (exp env k)
 		      (m-eval (second exp) env (lambda (a)
 						 (k (cdr a))))))
@@ -118,18 +154,30 @@
 (define m-square (lambda (n1 k) (k (* n1 n1))))
 
 
+;; catch
+;; throw
+(define m-eval-catch (lambda (exp env k) #f ))
+
+;; (throw 'label something )
+;;            evaluate the something
+;;             then pass that result to handler set up by the catch
+;;                                 if there is one , if not cry loudly.
+(define m-eval-throw (lambda (exp env k) #f))
+
+
 ;;
 (define m-eval-pair (lambda (exp env k)
 		      (cond
 			((equal? (first exp) '+) (m-eval-add exp env k))
 			((equal? (first exp) 'print) (m-eval-print exp env k))
 			((equal? (first exp) 'newline) (m-eval-newline exp env k))
-			((equal? (first exp) 'begin) (m-eval-begin exp env k #:dummy))
+			((equal? (first exp) 'begin) (m-eval-begin exp env k))			
 			((equal? (first exp) 'cons) (m-eval-cons exp env k))
 			((equal? (first exp) 'car) (m-eval-car exp env k))
-			((equal? (first exp) 'cdr) (m-eval-cdr exp env k))			
+			((equal? (first exp) 'cdr) (m-eval-cdr exp env k))
+			((equal? (first exp) 'quote) (m-eval-quote exp env k)) 
+			((equal? (first exp) 'list) (m-eval-list exp env k))			
 			(else (k exp)))))
-
 
 
 
