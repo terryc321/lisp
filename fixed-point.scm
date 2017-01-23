@@ -18,4 +18,13 @@
   (+ (* 1.5 x) (* -0.25 x x x)))
 
 
+(fixed-point 1.0)
+
+(define r2 (fixed-point 3.0))
+
+
+
+
+
+
 

@@ -1,0 +1,18 @@
+
+
+guile-2.0
+emacs
+"GNU Emacs 24.5.1 (i686-pc-linux-gnu, GTK+ Version 3.18.9)
+ of 2016-04-25 on lgw01-56, modified by Debian"
+
+package-install geiser
+package-install paredit
+
+ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
+
+fixed-point
+repeatedly apply function until we reach same value
+
+
+ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
+
