@@ -5,14 +5,43 @@
 ;; read eval print loop
 
 ;; assume (read) is machine level primitive
-
 (define first (lambda (xs) (car xs)))
 (define second (lambda (xs) (car (cdr xs))))
 (define third (lambda (xs) (car (cdr (cdr xs)))))
 
 
-;; environemnt
-(define m-env '((+ +)(- -)(* *)))
+
+
+(define m-flat-lookup
+  (lambda (env key)
+    (cond
+     ((null? env) '())
+     (else
+      (let ((kv (car env)))
+	(if (equal? (car kv) key)
+	    kv
+	    (m-flat-lookup (cdr env) key)))))))
+
+
+
+
+(define m-lookup
+  (lambda (env key)
+    (cond
+     ((null? env) '())
+     (else
+      (let ((kv (m-flat-lookup (car env) key)))
+	(if (equal? kv '())	    
+	    (m-lookup (cdr env) key)
+	    kv))))))
+  
+
+(define m-set-environment
+  (lambda (env key val)
+    (let ((kv (m-lookup env key)))
+      (if (equal? kv '())
+	  #f
+	  (set-car! (cdr kv) val)))))
 
 
 (define m-prompt (lambda (k)
@@ -24,16 +53,68 @@
 
 
 ;; evaluate an expression
+;; reader has to build
+;;
+;; quoted lists
+;;
+;; numbers
+;; vectors
+;; booleans
+;; chars
+;; strings
+;;
+;; if its a pair evaluate the operator
+;; 
 (define m-eval (lambda (exp env k)
 		 (cond
-		   ((equal? exp 'bye) 'bye-bye)
+		   ((equal? exp 'bye) 'bye-bye) ;; bye -- exits repl
 		   ((number? exp) (k exp))
 		   ((string? exp) (k exp))
 		   ((vector? exp) (k exp))
 		   ((boolean? exp) (k exp))
 		   ((char? exp) (k exp))
-		   ((pair? exp) (m-eval-pair exp env k))
-		   (else (k exp)))))
+		   ((symbol? exp)
+		    (let ((kv (m-lookup env exp)))
+		      (if (pair? kv)
+			  (k (second kv))
+			  (m-error exp env k (list "symbol not found :" exp " not found in env" env)))))
+		   ((pair? exp)
+		    (cond
+		     ((symbol? (car exp))
+		      ;(display "aha !! eval found given symbol as operator : ")
+		      ;(display (car exp))
+					;(newline)
+		      (let ((symbol (car exp)))
+			(let ((fobj (m-lookup env symbol)))
+			  (begin
+					;(display "fop = ") (display fop) (newline)
+			    (if (closure? (second fobj))
+				((second fobj) exp env k)
+				(m-error exp env k
+					 (list "err 89 symbol:" exp " in env: " env)))))))
+		      (else (m-error exp env k
+				     (list "err 91 ")))))
+		   (else (m-error exp env k (list "err 92 :" exp " in env:" env))))))
+
+
+
+
+
+
+
+
+
+
+
+
+(define m-error (lambda (exp env k obj)
+		  (display "Error handler:")
+		  (display obj)
+		  (newline)
+		  (display "Error exp:")
+		  (display exp)
+		  (newline)
+		  (m-repl #f)))
 
 
 (define m-handler (lambda (k)
@@ -58,6 +139,14 @@
 		     (m-eval (second exp) env (lambda (a)
 						(m-eval (third exp) env (lambda (b)
 									  (m-add a b k)))))))
+
+
+;; (set! a 5)
+(define m-eval-set! (lambda (exp env k)
+		      (m-eval (third exp) env (lambda (a)
+						(m-set-environment env (second exp) a)
+						(k a)))))
+
 
 
 (define m-eval-print (lambda (exp env k)
@@ -128,10 +217,6 @@
 										env
 										k
 										(cons a v))))))))
-
-
-
-
 ;; cons is a primitive machine level operation
 (define m-eval-cons (lambda (exp env k)
 		      (m-eval (second exp) env (lambda (a)
@@ -165,20 +250,6 @@
 (define m-eval-throw (lambda (exp env k) #f))
 
 
-;;
-(define m-eval-pair (lambda (exp env k)
-		      (cond
-			((equal? (first exp) '+) (m-eval-add exp env k))
-			((equal? (first exp) 'print) (m-eval-print exp env k))
-			((equal? (first exp) 'newline) (m-eval-newline exp env k))
-			((equal? (first exp) 'begin) (m-eval-begin exp env k))			
-			((equal? (first exp) 'cons) (m-eval-cons exp env k))
-			((equal? (first exp) 'car) (m-eval-car exp env k))
-			((equal? (first exp) 'cdr) (m-eval-cdr exp env k))
-			((equal? (first exp) 'quote) (m-eval-quote exp env k)) 
-			((equal? (first exp) 'list) (m-eval-list exp env k))			
-			(else (k exp)))))
-
 
 
 ;; show an expression
@@ -188,14 +259,43 @@
 		  (newline)
 		  (k exp)))
 
+;; the environment
+(define m-environment (list
+		       (list
+			(list 'a 5)
+			(list 'b 6)
+			(list 'c 7)
+			(list 'foo 1)
+			(list 'bar 2)
+			(list 'baz 3)
+			(list '+ m-eval-add)
+			(list 'print m-eval-print)
+			(list 'newline m-eval-newline)
+			(list 'begin m-eval-begin)
+			(list 'cons m-eval-cons)
+			(list 'car m-eval-car)
+			(list 'cdr m-eval-cdr)
+			(list 'quote m-eval-quote)
+			(list 'set! m-eval-set!)
+			(list 'list m-eval-list))))
+
+
+
+
+
+
 ;; repl
 ;; make a looping repl , pass it to itself , genius
 (define m-repl
     (lambda (cont)
       (m-prompt (lambda (k)
 		  (m-read (lambda (input)
-			    (m-eval input m-env (lambda (result)
-						  (m-print result (lambda (zzz) (m-repl m-repl)))))))))))
+			    (m-eval input m-environment (lambda (result)
+							  (m-print result m-repl)))))))))
+
+
+
+
 
 
 
