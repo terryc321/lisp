@@ -9,9 +9,6 @@
 (define second (lambda (xs) (car (cdr xs))))
 (define third (lambda (xs) (car (cdr (cdr xs)))))
 
-
-
-
 (define m-flat-lookup
   (lambda (env key)
     (cond
@@ -21,9 +18,6 @@
 	(if (equal? (car kv) key)
 	    kv
 	    (m-flat-lookup (cdr env) key)))))))
-
-
-
 
 (define m-lookup
   (lambda (env key)
@@ -50,6 +44,7 @@
 
 ;; read expression
 (define m-read (lambda (k) (k (read))))
+
 
 
 ;; evaluate an expression
@@ -95,16 +90,6 @@
 		      (else (m-error exp env k
 				     (list "err 91 ")))))
 		   (else (m-error exp env k (list "err 92 :" exp " in env:" env))))))
-
-
-
-
-
-
-
-
-
-
 
 
 (define m-error (lambda (exp env k obj)
@@ -173,7 +158,7 @@
 ;; provides a dummy return value
 ;; (begin) -> dummy
 (define m-eval-begin (lambda (exp env k)
-		       (m-eval-begin-loop (cdr exp) env k #:dummy)))
+		       (m-eval-begin-loop (cdr exp) env k #f)))
 
 ;; feed last value through until no more values to evaluate
 (define m-eval-begin-loop (lambda (exp env k v)
