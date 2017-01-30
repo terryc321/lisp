@@ -1,0 +1,207 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN"
+        "http://www.w3.org/TR/REC-html40/loose.dtd">
+<html><head><meta http-equiv = "Content-Type" content = "text/html; charset = ISO-8859-1"><meta name = "Generator" content = "LAML"><meta name = "description" lang = "en-us" content = "xxx"><link href = "stylesheets/stylesheet.css" rel = "stylesheet" title = "stylesheet" type = "text/css"><title>Delayed evaluation and infinite lists in Scheme</title><script src = "javascript/lenonavigate.js" type = "text/javascript"></script></head><body onload = "lenoNavigate('eval-order_themes-reduction-section.html', 'languages_themes-intro-sec.html', 'theme-index.html', '', '', '', '')" bgcolor = "#ffffff" text = "#000000" link = "#000000" vlink = "#000000" class = "leno-theme"><a name = "theme_top"></a><table border = "0" cellpadding = "0" cellspacing = "0" width = "100%"><tr><td width = "33%" align = "left" valign = "top"><a href = "theme-index.html"><img src = "./images/nav-up.gif" title = "Theme index -- Keyboard shortcut: 'u'" alt = "Theme index -- Keyboard shortcut: 'u'" border = "0"></a>&nbsp;&nbsp;<a href = "eval-order_themes-reduction-section.html"><img src = "./images/nav-left.gif" title = "Previous theme in this lecture -- Keyboard shortcut: 'p'" alt = "Previous theme in this lecture -- Keyboard shortcut: 'p'" border = "0"></a>&nbsp;&nbsp;<a href = "languages_themes-intro-sec.html"><img src = "./images/nav-right.gif" title = "Next slide in this lecture -- Keyboard shortcut: 'n'" alt = "Next slide in this lecture -- Keyboard shortcut: 'n'" border = "0"></a></td><td width = "34%" align = "center" valign = "top"></td><td width = "33%" align = "right" valign = "top"><font size = "4" color = "#919191"><b>The Order of Evaluation</b></font></td></tr></table><font size = "3"><a name = "eval-order_delay-stream-section_section-title_1"></a><font size = "6" color = "#000000">21.&nbsp;&nbsp;Delayed evaluation and infinite lists in Scheme</font><p><p>As noticed in <a href = "eval-order_themes-intr-section.html#eval-order_intr-section_section-title_1">Chapter 19</a> and <a href = "eval-order_themes-reduction-section.html#eval-order_reduction-section_section-title_1">Chapter 20</a> the evaluation strategy in Scheme is the one called <em>applicative order</em>, cf. <a href = "eval-order_themes-reduction-section.html#eval-order_normal-applicative_title_1">Section 20.6</a>.</p><p>In contrast to normal-order reduction and lazy evaluation - as described in <a href = "eval-order_themes-reduction-section.html#eval-order_normal-applicative_title_1">Section 20.6</a> and <a href = "eval-order_themes-reduction-section.html#eval-order_lazy-eval_title_1">Section 20.11</a> - we can think of Scheme as <em>eager</em> 
+       in the evaluation of the function parameters.</p><p>In this chapter we will see how to make use of a new evaluation idea in terms of explicitly
+       delaying the evaluation of certain expressions. This is the topic of <a href = "eval-order_themes-delay-stream-section.html#eval-order_delay-force_title_1">Section 21.1</a> and <a href = "eval-order_themes-delay-stream-section.html#eval-order_delay-ex_title_1">Section 21.2</a>.</p><p><p><div  style = "margin-left: 10px;"> <table border = "0"><tr><td width = "350" valign = "top">21.1&nbsp;<a href = "#eval-order_delay-force_title_1">Delayed evaluation in Scheme</a></td><td width = "350" valign = "top">21.4&nbsp;<a href = "#eval-order_stream-ex_title_1">Example streams</a></td></tr><tr><td width = "350" valign = "top">21.2&nbsp;<a href = "#eval-order_delay-ex_title_1">Examples of delayed evaluation</a></td><td width = "350" valign = "top">21.5&nbsp;<a href = "#eval-order_sieve-ex_title_1">Stream example: The sieve of Eratosthenes</a></td></tr><tr><td width = "350" valign = "top">21.3&nbsp;<a href = "#eval-order_streams_title_1">Infinite lists in Scheme: Streams</a></td><td width = "350" valign = "top">21.6&nbsp;<a href = "#eval-order_sieve-ex-more_title_1">Applications of The sieve of Eratosthenes</a></td></tr></table></div>&nbsp;<p><a name = "eval-order_delay-force_title_1"></a><font size = "5" color = "#000000">21.1.&nbsp;&nbsp;Delayed evaluation in Scheme</font><br><font size = "1"><a href = "theme-index.html"><font color = "#808080">Contents</font></a>&nbsp;&nbsp;&nbsp;<a href = "#theme_top"><font color = "#808080">Up</font></a>&nbsp;<a href = "eval-order_themes-reduction-section.html#eval-order_lazy-eval_title_1"><font color = "#808080">Previous</font></a>&nbsp;<a href = "eval-order_themes-delay-stream-section.html#eval-order_delay-ex_title_1"><font color = "#808080">Next</font></a>&nbsp;&nbsp;&nbsp;<a href = "eval-order-slide-delay-force.html"><font color = "#808080">Slide</font></a>&nbsp;&nbsp;&nbsp;&nbsp;<a href = "note-index.html"><font color = "#808080">Subject index</font></a>&nbsp;<a href = "eval-order-source-programs.html"><font color = "#808080">Program index</font></a>&nbsp;<a href = "eval-order-exercise-index.html"><font color = "#808080">Exercise index</font></a>&nbsp;<br></font><p><p>The starting point of our discussion is now clear.</p><p><p><center><table border = "0"><tr><td width = "30" valign = "top"></td><td width = "*" valign = "top"><div class = "leno-theme-point"> Scheme does not support normal-order reduction nor lazy evaluation<p>Scheme has an explicit primitive which delays an evaluation</div></td><td width = "30" valign = "top"></td></tr></table></center><p><p>The <kbd>delay</kbd> and <kbd>force</kbd> primitives are described in <a href = "eval-order_themes-delay-stream-section.html#eval-order_delay-force_language-syntax_syn1">Syntax 21.1</a> and <a href = "eval-order_themes-delay-stream-section.html#eval-order_delay-force_language-syntax_syn2">Syntax 21.2</a>. The <kbd>delay</kbd> primitive returns a so-called <em>promise</em>, which can be redeemed by the <kbd>force</kbd> primitive.
+       Thus, the composition of <kbd>delay</kbd> and <kbd>force</kbd> carry out a normal evaluation step.</p><p><a name = "eval-order_delay-force_language-syntax_syn1"></a><center><table><tr><td width = "*" bgcolor = "#ffffff"><center><table border = "0"><tr><td width = "*" valign = "bottom" bgcolor = "#f3e232"><div align = "left"><pre><font size = "2">
+(delay <em>expr</em>) => <em>promise</em></font></pre></div></td></tr></table></center></td></tr> <tr><td width = "*" bgcolor = "#ffffff" align = "center"><table><tr><td width = "165"> <td width = "*"><font size = "2">Syntax 21.1&nbsp;&nbsp;&nbsp;&nbsp;<em></em></font></td> <td width = "165"></tr></table></td></tr></table></center><p><p><a name = "eval-order_delay-force_language-syntax_syn2"></a><center><table><tr><td width = "*" bgcolor = "#ffffff"><center><table border = "0"><tr><td width = "*" valign = "bottom" bgcolor = "#f3e232"><div align = "left"><pre><font size = "2">
+(force <em>promise</em>) => <em>value</em></font></pre></div></td></tr></table></center></td></tr> <tr><td width = "*" bgcolor = "#ffffff" align = "center"><table><tr><td width = "165"> <td width = "*"><font size = "2">Syntax 21.2&nbsp;&nbsp;&nbsp;&nbsp;<em></em></font></td> <td width = "165"></tr></table></td></tr></table></center><p><p><p>In <a href = "eval-order_themes-delay-stream-section.html#eval-order_delay-force_source-program_sp1">Program 21.1</a> we show simple implementations of <kbd>delay</kbd> and <kbd>force</kbd>. In <a href = "eval-order_themes-delay-stream-section.html#eval-order_delay-force_source-program_sp2">Program 21.2</a> we show possible implementations of <kbd>delay</kbd> by means of Scheme macros.</p><p><a name = "eval-order_delay-force_source-program_sp1"></a><center><table><tr><td width = "15" bgcolor = "#e6e6e6" valign = "top"><div align = "left"><pre  style = "font-size: 80%;color: #969696;">1
+2
+3
+</pre></div></td> <td width = "*" bgcolor = "#e1e1ff" valign = "top"><div align = "left"><pre  style = "font-size: 80%;">(delay expr) ~ (lambda() expr)
+
+(define (force promise) (promise))</pre></div></td></tr> <tr><td width = "15"> <td width = "*" bgcolor = "#ffffff" align = "center"><table><tr><td width = "150"> <td width = "*"><font size = "2">Program 21.1&nbsp;&nbsp;&nbsp;&nbsp;<em><span>A principled implementation of  <kbd>delay</kbd>  and  <kbd>force</kbd>  in Scheme.</span></em></font></td> <td width = "150"></tr></table></td></tr></table></center><p><p>The thing to notice is the semantic idea behind the implementation of <kbd>delay</kbd>. 
+       The expression <kbd>(delay expr)</kbd> is equivalent to the expression <kbd>(lambda () expr)</kbd>. The first expression is supposed to replace the other expression at program source level. The value of the lambda expression is a closure, 
+       cf. <a href = "fu-intr-1_themes-function-section.html#fu-intr-1_closures_title_1">Section 8.11</a>,
+       which captures free names in its context together with the syntactic form of <kbd>expr</kbd>. 
+       As it appears from the definition of the function <kbd>force</kbd> in <a href = "eval-order_themes-delay-stream-section.html#eval-order_delay-force_source-program_sp1">Program 21.1</a> the promise returned by the <kbd>delay</kbd> form is redeemed by calling the parameter less function object.
+       It is easy to see that this carries out the evaluation of <kbd>expr</kbd>.</p><p><p>Be sure to observe that <kbd>force</kbd> can be implemented by a function, whereas <kbd>delay</kbd> cannot.
+       The reason is, of course, that we cannot allow a functional implementation of <kbd>delay</kbd> to evaluate the parameter of <kbd>delay</kbd>. 
+       The whole point of <kbd>delay</kbd> is to avoid such evaluation. This rules out an implementation of <kbd>delay</kbd> as a function.
+       The <kbd>force</kbd> primitive, on the other hand, can be implemented by a function, because it works on the value of a lambda expression.</p><p>Please notice that other implementations of <kbd>delay</kbd> and <kbd>force</kbd> can easily be imagined. 
+       The Scheme Report describes language implementations of <kbd>delay</kbd> and <kbd>force</kbd>, which may use other means than
+       described above to obtain the same semantic effect, cf. <a href = "#ref-delay-primitive">[delay-primitive]</a> and <a href = "#ref-force-primitive">[force-primitive]</a>.</p><p><a name = "eval-order_delay-force_source-program_sp2"></a><center><table><tr><td width = "15" bgcolor = "#e6e6e6" valign = "top"><div align = "left"><pre  style = "font-size: 80%;color: #969696;">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+</pre></div></td> <td width = "*" bgcolor = "#e1e1ff" valign = "top"><div align = "left"><pre  style = "font-size: 80%;">; R5RS syntactic abstraction:
+(define-syntax my-delay 
+  (syntax-rules ()
+    ((delay expr)
+     (lambda ()
+        expr))))
+
+; MzScheme syntactic abstraction:
+(define-macro my-delay
+  (lambda (expr)
+    `(lambda () ,expr)))</pre></div></td></tr> <tr><td width = "15"> <td width = "*" bgcolor = "#ffffff" align = "center"><table><tr><td width = "165"> <td width = "*"><font size = "2">Program 21.2&nbsp;&nbsp;&nbsp;&nbsp;<em><span>Real implementations of delay.</span></em></font></td> <td width = "165"></tr></table></td></tr></table></center><p><p><p>&nbsp;<p><a name = "eval-order_delay-ex_title_1"></a><font size = "5" color = "#000000">21.2.&nbsp;&nbsp;Examples of delayed evaluation</font><br><font size = "1"><a href = "theme-index.html"><font color = "#808080">Contents</font></a>&nbsp;&nbsp;&nbsp;<a href = "#theme_top"><font color = "#808080">Up</font></a>&nbsp;<a href = "eval-order_themes-delay-stream-section.html#eval-order_delay-force_title_1"><font color = "#808080">Previous</font></a>&nbsp;<a href = "eval-order_themes-delay-stream-section.html#eval-order_streams_title_1"><font color = "#808080">Next</font></a>&nbsp;&nbsp;&nbsp;<a href = "eval-order-slide-delay-ex.html"><font color = "#808080">Slide</font></a>&nbsp;&nbsp;&nbsp;&nbsp;<a href = "note-index.html"><font color = "#808080">Subject index</font></a>&nbsp;<a href = "eval-order-source-programs.html"><font color = "#808080">Program index</font></a>&nbsp;<a href = "eval-order-exercise-index.html"><font color = "#808080">Exercise index</font></a>&nbsp;<br></font><p><p>Let us look at a few very simple examples of using <kbd>delay</kbd> and <kbd>force</kbd>. In the first line of the table below we delay the expression <kbd>(+ 5 6)</kbd>. The value is a promise
+       that enables us to evaluate the sum when necessary, i.e, when we choose to force it.
+       The next line shows that we cannot force a non-promise value. The last line shows
+       an immediate forcing of the promise, which we bind to the name <kbd>delayed</kbd> in the <kbd>let</kbd> construct.</p><p><p><p><a name = "eval-order_delay-ex_tabular_tab1"></a><center><table border = "1"><tr><td width = "400" align = "left" bgcolor = "#ffffc1"><font size = "3"><font color = "#ff0000"><b>Expression</b></font><p></font></td> <td width = "400" align = "left" bgcolor = "#ffffc1"><font size = "3"><font color = "#ff0000"><b>Value</b></font><p></font></td></tr> <tr><td width = "400" align = "left" bgcolor = "#ffffc1"><font size = "3"><pre>(delay (+ 5 6))</pre></font></td> <td width = "400" align = "left" bgcolor = "#ffffc1"><font size = "3"><pre>#&lt;promise&gt;</pre></font></td></tr> <tr><td width = "400" align = "left" bgcolor = "#ffffc1"><font size = "3"><pre>(force 11)</pre></font></td> <td width = "400" align = "left" bgcolor = "#ffffc1"><font size = "3"><em>error</em></font></td></tr> <tr><td width = "400" align = "left" bgcolor = "#ffffc1"><font size = "3"><pre>(let ((delayed (delay (+ 5 6))))
+  (force delayed))</pre></font></td> <td width = "400" align = "left" bgcolor = "#ffffc1"><font size = "3"><pre>11</pre></font></td></tr></table><table border = "0"><tr><td width = "400" valign = "bottom" bgcolor = "#ffffff"><font size = "2">Table 21.1&nbsp;&nbsp;&nbsp;&nbsp;<em>Examples of use of delay and force.</em></font></td></tr></table><p></center><p><p>&nbsp;<p><a name = "eval-order_streams_title_1"></a><font size = "5" color = "#000000">21.3.&nbsp;&nbsp;Infinite lists in Scheme: Streams</font><br><font size = "1"><a href = "theme-index.html"><font color = "#808080">Contents</font></a>&nbsp;&nbsp;&nbsp;<a href = "#theme_top"><font color = "#808080">Up</font></a>&nbsp;<a href = "eval-order_themes-delay-stream-section.html#eval-order_delay-ex_title_1"><font color = "#808080">Previous</font></a>&nbsp;<a href = "eval-order_themes-delay-stream-section.html#eval-order_stream-ex_title_1"><font color = "#808080">Next</font></a>&nbsp;&nbsp;&nbsp;<a href = "eval-order-slide-streams.html"><font color = "#808080">Slide</font></a>&nbsp;&nbsp;&nbsp;&nbsp;<a href = "note-index.html"><font color = "#808080">Subject index</font></a>&nbsp;<a href = "eval-order-source-programs.html"><font color = "#808080">Program index</font></a>&nbsp;<a href = "eval-order-exercise-index.html"><font color = "#808080">Exercise index</font></a>&nbsp;<br></font><p><p>We are now done with the toy examples.
+       It is time to use delayed evaluation in Scheme to something of real value. In this material we focus
+       on <em>streams</em>. A stream is an infinite list. The inspiration to our coverage of streams comes directly
+       from the book <em>Structure and Interpretation of Computer Programs</em> [<a href = "#ref-abelson98">Abelson98</a>].</p><p>The crucial observation is the following.</p><p><p><center><table border = "0"><tr><td width = "30" valign = "top"></td><td width = "*" valign = "top"><div class = "leno-theme-point"> We can work with lists of infinite length by delaying the evaluation of every list tail using <kbd>delay</kbd><p>As an invariant, every list tail will be delayed</div></td><td width = "30" valign = "top"></td></tr></table></center><p><p>Every tail of a list is a promise. The promise covers an evaluation which gives a new cons cell, in which
+       the tail contains another promise.</p><p><p>It is simple to define a vocabulary of stream functions. There is an obvious relationship between list functions (see <a href = "fu-intr-1_themes-list-section.html#fu-intr-1_proper-lists_title_1">Section 6.1</a>) and the stream functions shown below in <a href = "eval-order_themes-delay-stream-section.html#eval-order_streams_source-program_sp1">Program 21.3</a>.</p><p><a name = "eval-order_streams_source-program_sp1"></a><center><table><tr><td width = "15" bgcolor = "#e6e6e6" valign = "top"><div align = "left"><pre  style = "font-size: 80%;color: #969696;">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+</pre></div></td> <td width = "*" bgcolor = "#e1e1ff" valign = "top"><div align = "left"><pre  style = "font-size: 80%;">(cons-stream a b)   ~   (cons a (delay b))
+
+(define head car)
+
+(define (tail stream) (force (cdr stream)))
+
+
+(define empty-stream? null?)
+
+(define the-empty-stream '())</pre></div></td></tr> <tr><td width = "15"> <td width = "*" bgcolor = "#ffffff" align = "center"><table><tr><td width = "165"> <td width = "*"><font size = "2">Program 21.3&nbsp;&nbsp;&nbsp;&nbsp;<em><span>Stream primitives.</span></em></font></td> <td width = "165"></tr></table></td></tr></table></center><p><p>In that same way as we defined <kbd>delay</kbd> as a macro in <a href = "eval-order_themes-delay-stream-section.html#eval-order_delay-force_source-program_sp2">Program 21.2</a> , we also need to define <kbd>cons-stream</kbd> as a macro. The reason is that we are not allowed to evaluate the second parameter;
+       The second parameter of <kbd>cons-cell</kbd> is going to be delayed, and as such it must be passed unevaluated to <kbd>cons-stream</kbd>.</p><p><a name = "eval-order_streams_source-program_sp2"></a><center><table><tr><td width = "15" bgcolor = "#e6e6e6" valign = "top"><div align = "left"><pre  style = "font-size: 80%;color: #969696;">1
+2
+3
+4
+</pre></div></td> <td width = "*" bgcolor = "#e1e1ff" valign = "top"><div align = "left"><pre  style = "font-size: 80%;">(define-syntax cons-stream
+  (syntax-rules ()
+    ((cons-stream x y)
+     (cons x (delay y)))))</pre></div></td></tr> <tr><td width = "15"> <td width = "*" bgcolor = "#ffffff" align = "center"><table><tr><td width = "150"> <td width = "*"><font size = "2">Program 21.4&nbsp;&nbsp;&nbsp;&nbsp;<em><span>An implementation of <kbd>cons-stream</kbd> in R5RS Scheme.</span></em></font></td> <td width = "150"></tr></table></td></tr></table></center><p><p><p>In the following sections we will study a number of interesting examples of streams from the numerical domain.</p><p>&nbsp;<p><a name = "eval-order_stream-ex_title_1"></a><font size = "5" color = "#000000">21.4.&nbsp;&nbsp;Example streams</font><br><font size = "1"><a href = "theme-index.html"><font color = "#808080">Contents</font></a>&nbsp;&nbsp;&nbsp;<a href = "#theme_top"><font color = "#808080">Up</font></a>&nbsp;<a href = "eval-order_themes-delay-stream-section.html#eval-order_streams_title_1"><font color = "#808080">Previous</font></a>&nbsp;<a href = "eval-order_themes-delay-stream-section.html#eval-order_sieve-ex_title_1"><font color = "#808080">Next</font></a>&nbsp;&nbsp;&nbsp;<a href = "eval-order-slide-stream-ex.html"><font color = "#808080">Slide</font></a>&nbsp;&nbsp;&nbsp;&nbsp;<a href = "note-index.html"><font color = "#808080">Subject index</font></a>&nbsp;<a href = "eval-order-source-programs.html"><font color = "#808080">Program index</font></a>&nbsp;<a href = "eval-order-exercise-index.html"><font color = "#808080">Exercise index</font></a>&nbsp;<br></font><p><p><p>In the first example line in <a href = "eval-order_themes-delay-stream-section.html#eval-order_stream-ex_tabular_tab1">Table 21.2</a> we define a stream of ones. In other words, the name <kbd>ones</kbd> is bound to an infinite list of ones: <kbd>(1 1 1 ...)</kbd>.</p><p>Please notice the very direct use of recursion in the definition of ones. We are used to a conditional such as <kbd>cond</kbd> or <kbd>if</kbd> 
+       when we deal with recursion, in order to identify a basis case which stops the recursive evaluation process. We do not have such a construction here. 
+       The reason is that we never reach any basis (or terminating case) of the reduction. Due to the use of delayed evaluation we never
+       attempt to expand the entire list. Instead, there is a promise in the end of the list which can deliver more elements if needed.
+</p><p>In the second row of the example we use the function <kbd>stream-section</kbd> to extract a certain prefix of the list (determined by the first parameter
+       of <kbd>stream-section</kbd>). The function <kbd>stream-section</kbd> is defined in <a href = "eval-order_themes-delay-stream-section.html#eval-order_stream-ex_source-program_sp1">Program 21.5</a> together with another useful stream function called <kbd>add-streams</kbd> which adds elements of two numeric streams together.</p><p>In the third row we define a stream of all natural numbers, using the function <kbd>integers-starting-from</kbd> .</p><p>The fourth row shows an alternative definition of <kbd>nat-nums</kbd>. We use <kbd>add-streams</kbd> on <kbd>nat-nums</kbd> and <kbd>ones</kbd> to produce <kbd>nat-nums</kbd>. 
+       Please notice the recursion which is involved.</p><p>In the bottom row of the table we define the Fibonacci numbers, in a way similar to the definition of <kbd>nat-nums</kbd> just above. 
+        <kbd>fibs</kbd> is defined by adding <kbd>fibs</kbd> to its own tail. This works out because we provide enough staring numbers <kbd>(0 1)</kbd> to get the process started.</p><p><a name = "eval-order_stream-ex_tabular_tab1"></a><center><table border = "1"><tr><td width = "400" align = "left" bgcolor = "#ffffc1"><font size = "3"><font color = "#ff0000"><b>Expression</b></font><p></font></td> <td width = "400" align = "left" bgcolor = "#ffffc1"><font size = "3"><font color = "#ff0000"><b>Value</b></font><p></font></td></tr> <tr><td width = "400" align = "left" bgcolor = "#ffffc1"><font size = "3"><pre>(define ones (cons-stream 1 ones))</pre></font></td> <td width = "400" align = "left" bgcolor = "#ffffc1"><font size = "3"><pre>(1 . #&lt;promise&gt;)</pre></font></td></tr> <tr><td width = "400" align = "left" bgcolor = "#ffffc1"><font size = "3"><pre>(stream-section 7 ones)</pre></font></td> <td width = "400" align = "left" bgcolor = "#ffffc1"><font size = "3"><pre>(1 1 1 1 1 1 1)</pre></font></td></tr> <tr><td width = "400" align = "left" bgcolor = "#ffffc1"><font size = "3"><pre>(define (integers-starting-from n)
+ (cons-stream n 
+  (integers-starting-from (+ n 1))))
+
+(define nat-nums
+  (integers-starting-from 1))
+
+(stream-section 10 nat-nums)</pre></font></td> <td width = "400" align = "left" bgcolor = "#ffffc1"><font size = "3"><pre>(1 2 3 4 5 6 7 8 9 10)</pre></font></td></tr> <tr><td width = "400" align = "left" bgcolor = "#ffffc1"><font size = "3"><pre>(define nat-nums 
+ (cons-stream 1 
+  (add-streams ones nat-nums)))
+
+(stream-section 10 nat-nums)</pre></font></td> <td width = "400" align = "left" bgcolor = "#ffffc1"><font size = "3"><pre>(1 2 3 4 5 6 7 8 9 10)</pre></font></td></tr> <tr><td width = "400" align = "left" bgcolor = "#ffffc1"><font size = "3"><pre>(define fibs
+  (cons-stream 0
+    (cons-stream 1
+      (add-streams (tail fibs) fibs))))
+
+(stream-section 15 fibs)</pre></font></td> <td width = "400" align = "left" bgcolor = "#ffffc1"><font size = "3"><pre>(0 1 1 2 3 5 8 13 21 34 55 89 144 
+ 233 377)</pre></font></td></tr></table><table border = "0"><tr><td width = "400" valign = "bottom" bgcolor = "#ffffff"><font size = "2">Table 21.2&nbsp;&nbsp;&nbsp;&nbsp;<em>Examples of streams. <kbd>ones</kbd> is an infinite streams of the element 1. <kbd>stream-section</kbd> is a function that returns a finite section of a potentially infinite stream.
+                  <kbd>nat-nums</kbd> is stream of all the natural numbers, made by use of the recursive function <kbd>integers-starting-from</kbd>. The fourth row shows an alternative
+                 definition of <kbd>nat-nums</kbd>. Finally, <kbd>fibs</kbd> is the infinite stream of Fibonacci numbers.</em></font></td></tr></table><p></center><p><p>As mentioned above, the functions <kbd>stream-section</kbd> and <kbd>add-streams</kbd> in <a href = "eval-order_themes-delay-stream-section.html#eval-order_stream-ex_source-program_sp1">Program 21.5</a> are used in <a href = "eval-order_themes-delay-stream-section.html#eval-order_stream-ex_tabular_tab1">Table 21.2</a>.</p><p>In the web version of the material (slide and annotated slide view) there is
+       an additional program with all the necessary definitions which allow you to play with streams
+       in MzScheme or DrScheme.</p><p><a name = "eval-order_stream-ex_source-program_sp1"></a><center><table><tr><td width = "15" bgcolor = "#e6e6e6" valign = "top"><div align = "left"><pre  style = "font-size: 80%;color: #969696;">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+</pre></div></td> <td width = "*" bgcolor = "#e1e1ff" valign = "top"><div align = "left"><pre  style = "font-size: 80%;">(define (stream-section n stream)
+  (cond ((= n 0) '())
+        (else 
+          (cons 
+            (head stream)
+            (stream-section 
+             (- n 1)
+             (tail stream))))))
+
+(define (add-streams s1 s2)
+ (let ((h1 (head s1))
+       (h2 (head s2)))
+   (cons-stream 
+     (+ h1 h2)
+     (add-streams (tail s1) (tail s2)))))</pre></div></td></tr> <tr><td width = "15"> <td width = "*" bgcolor = "#ffffff" align = "center"><table><tr><td width = "150"> <td width = "*"><font size = "2">Program 21.5&nbsp;&nbsp;&nbsp;&nbsp;<em><span>The functions <kbd>stream-section</kbd> and <kbd>add-streams</kbd>.</span></em></font></td> <td width = "150"></tr></table></td></tr></table></center><p><p>&nbsp;<p><a name = "eval-order_sieve-ex_title_1"></a><font size = "5" color = "#000000">21.5.&nbsp;&nbsp;Stream example: The sieve of Eratosthenes</font><br><font size = "1"><a href = "theme-index.html"><font color = "#808080">Contents</font></a>&nbsp;&nbsp;&nbsp;<a href = "#theme_top"><font color = "#808080">Up</font></a>&nbsp;<a href = "eval-order_themes-delay-stream-section.html#eval-order_stream-ex_title_1"><font color = "#808080">Previous</font></a>&nbsp;<a href = "eval-order_themes-delay-stream-section.html#eval-order_sieve-ex-more_title_1"><font color = "#808080">Next</font></a>&nbsp;&nbsp;&nbsp;<a href = "eval-order-slide-sieve-ex.html"><font color = "#808080">Slide</font></a>&nbsp;&nbsp;&nbsp;&nbsp;<a href = "note-index.html"><font color = "#808080">Subject index</font></a>&nbsp;<a href = "eval-order-source-programs.html"><font color = "#808080">Program index</font></a>&nbsp;<a href = "eval-order-exercise-index.html"><font color = "#808080">Exercise index</font></a>&nbsp;<br></font><p><p>Still with direct inspiration from the book <em>Structure and Interpretation of Computer Programs</em> [<a href = "#ref-abelson98">Abelson98</a>] we will look at a slightly more complicated example, namely generation of the stream of prime numbers. This is 
+       an infinite list, because the set of prime numbers is not finite.
+</p><p>The algorithmic idea behind the generation of prime numbers, see <a href = "eval-order_themes-delay-stream-section.html#eval-order_sieve-ex_source-program_sp1">Program 21.6</a> was originally conceived by Eratosthenes (a Greek mathematician, astronomer, and geographer who devised a map of the world
+        and estimated the circumference of the earth and the distance to the moon and the sun - according to the American Heritage Dictionary of the English Language).
+</p><p>The input of the function <kbd>sieve</kbd> in <a href = "eval-order_themes-delay-stream-section.html#eval-order_sieve-ex_source-program_sp1">Program 21.6</a> is the natural numbers starting from 2. See also the example in <a href = "eval-order_themes-delay-stream-section.html#eval-order_sieve-ex-more_tabular_tab1">Table 21.3</a>. The first element in the input is taken to be a prime number. Let us say the first such number is p.
+        No number p*n, where n is a natural number greater than one, can then be a prime number.  <a href = "eval-order_themes-delay-stream-section.html#eval-order_sieve-ex_source-program_sp1">Program 21.6</a> sets up a sieve which disregards such numbers.</p><p>Recursively, the first number which comes out of the actual chain of sieves is a prime number, and it is used set up a new filter. 
+      This is due to the simple fact that the <kbd>sieve</kbd> function calls itself.</p><p><p><center><table border = "0"><tr><td width = "30" valign = "top"></td><td width = "*" valign = "top"><div class = "leno-theme-point"> The Sieve of Eratosthenes is a more sophisticated example of the use of streams</div></td><td width = "30" valign = "top"></td></tr></table></center><p><a name = "eval-order_sieve-ex_source-program_sp1"></a><center><table><tr><td width = "15" bgcolor = "#e6e6e6" valign = "top"><div align = "left"><pre  style = "font-size: 80%;color: #969696;">1
+2
+3
+4
+5
+6
+7
+</pre></div></td> <td width = "*" bgcolor = "#e1e1ff" valign = "top"><div align = "left"><pre  style = "font-size: 80%;">(define (sieve stream)
+   (cons-stream
+     (head stream)
+     (sieve 
+       (filter-stream
+         (lambda (x) (not (divisible? x (head stream))))
+         (tail stream)))))</pre></div></td></tr> <tr><td width = "15"> <td width = "*" bgcolor = "#ffffff" align = "center"><table><tr><td width = "165"> <td width = "*"><font size = "2">Program 21.6&nbsp;&nbsp;&nbsp;&nbsp;<em><span>The  <kbd>sieve</kbd>  stream function.</span></em></font></td> <td width = "165"></tr></table></td></tr></table></center><p><p><a href = "eval-order_themes-delay-stream-section.html#eval-order_sieve-ex_source-program_sp1">Program 21.6</a> uses the functions <kbd>cons-stream</kbd>, <kbd>head</kbd> and <kbd>tail</kbd> from <a href = "eval-order_themes-delay-stream-section.html#eval-order_streams_source-program_sp1">Program 21.3</a>. The functions <kbd>filter-stream</kbd> and <kbd>divisible?</kbd> are defined in <a href = "eval-order_themes-delay-stream-section.html#eval-order_sieve-ex-more_source-program_sp1">Program 21.7</a>.</p><p><p>Figure <a href = "eval-order_themes-delay-stream-section.html#eval-order_sieve-ex_image_im1">Figure 21.1</a> shows a number of sieves, and it sketches the way the numbers <kbd>(2 3 4 ...)</kbd> are sieved.
+       Notice that an infinite numbers of sieves are set up - on demand - when we in the end
+       requests prime numbers.</p><p><a name = "eval-order_sieve-ex_image_im1"></a><center><img alt = "" src = "./graphics/small/sieve.gif" border = "0"> <table border = "0"><tr><td width = "400" valign = "bottom" bgcolor = "#ffffff"><font size = "2">Figure 21.1&nbsp;&nbsp;&nbsp;&nbsp;<em>An illustration of the generation of prime numbers in The Sieve of Eratosthenes</em></font></td></tr></table></center><p><p><p>&nbsp;<p><a name = "eval-order_sieve-ex-more_title_1"></a><font size = "5" color = "#000000">21.6.&nbsp;&nbsp;Applications of The sieve of Eratosthenes</font><br><font size = "1"><a href = "theme-index.html"><font color = "#808080">Contents</font></a>&nbsp;&nbsp;&nbsp;<a href = "#theme_top"><font color = "#808080">Up</font></a>&nbsp;<a href = "eval-order_themes-delay-stream-section.html#eval-order_sieve-ex_title_1"><font color = "#808080">Previous</font></a>&nbsp;<a href = "languages_themes-intro-sec.html#languages_lingabstr_title_1"><font color = "#808080">Next</font></a>&nbsp;&nbsp;&nbsp;<a href = "eval-order-slide-sieve-ex-more.html"><font color = "#808080">Slide</font></a>&nbsp;&nbsp;&nbsp;&nbsp;<a href = "note-index.html"><font color = "#808080">Subject index</font></a>&nbsp;<a href = "eval-order-source-programs.html"><font color = "#808080">Program index</font></a>&nbsp;<a href = "eval-order-exercise-index.html"><font color = "#808080">Exercise index</font></a>&nbsp;<br></font><p><p>In this section we show an example of prime number generation with the sieve function from <a href = "eval-order_themes-delay-stream-section.html#eval-order_sieve-ex_source-program_sp1">Program 21.6</a>.</p><p>Notice that the prime numbers are really generated on demand. In the call <kbd>(stream-section 25 primes)</kbd> 
+       we are requesting 25 prime numbers. This triggers generation of sufficient natural numbers via
+        <kbd>(integers-starting-from 2)</kbd>, and it triggers the set up of sufficient sieves to produce the result.</p><p>We see that the evaluations are done <em>on demand</em>.</p><p><p><center><table border = "0"><tr><td width = "30" valign = "top"></td><td width = "*" valign = "top"><div class = "leno-theme-point"> The sieve process produces the stream of all prime numbers</div></td><td width = "30" valign = "top"></td></tr></table></center><p><p><a name = "eval-order_sieve-ex-more_tabular_tab1"></a><center><table border = "1"><tr><td width = "400" align = "left" bgcolor = "#ffffc1"><font size = "3"><font color = "#ff0000"><b>Expression</b></font><p></font></td> <td width = "400" align = "left" bgcolor = "#ffffc1"><font size = "3"><font color = "#ff0000"><b>Value</b></font><p></font></td></tr> <tr><td width = "400" align = "left" bgcolor = "#ffffc1"><font size = "3"><pre>(define primes 
+  (sieve 
+    (integers-starting-from 2)))
+
+(stream-section 25 primes)</pre></font></td> <td width = "400" align = "left" bgcolor = "#ffffc1"><font size = "3"><pre>(2 3 5 7 11 13 17 19 23 29 31 37 41 
+ 43 47 53 59 61 67 71 73 79 83 89 97)</pre></font></td></tr></table><table border = "0"><tr><td width = "400" valign = "bottom" bgcolor = "#ffffff"><font size = "2">Table 21.3&nbsp;&nbsp;&nbsp;&nbsp;<em>The first 25 prime numbers made by sieving a sufficiently long prefix of the integers starting from 2.</em></font></td></tr></table><p></center><p><p><p>You can use the definitions in <a href = "eval-order_themes-delay-stream-section.html#eval-order_sieve-ex-more_source-program_sp1">Program 21.7</a> to play with the <kbd>sieve</kbd> function. You should first load the
+       stream stuff discussed in <a href = "eval-order_themes-delay-stream-section.html#eval-order_stream-ex_title_1">Section 21.4</a>. More specifically, you should load the definitions on the last program clause in the slide view of <a href = "eval-order_themes-delay-stream-section.html#eval-order_stream-ex_title_1">Section 21.4</a>. Then load the definitions in <a href = "eval-order_themes-delay-stream-section.html#eval-order_sieve-ex-more_source-program_sp1">Program 21.7</a>.</p><p><a name = "eval-order_sieve-ex-more_source-program_sp1"></a><center><table><tr><td width = "15" bgcolor = "#e6e6e6" valign = "top"><div align = "left"><pre  style = "font-size: 80%;color: #969696;">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+</pre></div></td> <td width = "*" bgcolor = "#e1e1ff" valign = "top"><div align = "left"><pre  style = "font-size: 80%;">(define (sieve stream)
+   (cons-stream
+     (head stream)
+     (sieve 
+       (filter-stream
+         (lambda (x) (not (divisible? x (head stream))))
+         (tail stream)))))
+
+(define (divisible? x y)
+  (= (remainder x y) 0))
+
+(define (filter-stream p lst)
+  (cond ((empty-stream? lst) the-empty-stream)
+        ((p (head lst)) (cons-stream (head lst) (filter-stream p (tail lst))))
+        (else (filter-stream p (tail lst)))))
+
+(define (integers-starting-from n)
+ (cons-stream n 
+  (integers-starting-from (+ n 1))))
+
+(define primes (sieve (integers-starting-from 2)))</pre></div></td></tr> <tr><td width = "15"> <td width = "*" bgcolor = "#ffffff" align = "center"><table><tr><td width = "150"> <td width = "*"><font size = "2">Program 21.7&nbsp;&nbsp;&nbsp;&nbsp;<em><span>All the functions necessary to use the Sieve of Eratosthenes.</span></em></font></td> <td width = "150"></tr></table></td></tr></table></center><p><p>&nbsp;<p><font size = "5" color = "#000000">21.7.&nbsp;&nbsp;References</font><br><table border = "0"><tr><td width = "130" valign = "top">[<a name = "ref-abelson98"></a>Abelson98]</td><td width = "*" valign = "top">Richard Kelsey, William Clinger and Jonathan Rees, <a href = "http://www.schemers.org/Documents/Standards/R5RS/r5rs.pdf">"Revised^5 Report on the Algorithmic Language Scheme"</a>, <em>Higher-Order and Symbolic Computation</em>, Vol. 11, No. 1, August 1998, pp. 7--105. </td></tr><tr><td width = "130" valign = "top">[<a name = "ref-delay-primitive"></a>Delay-primitive]</td><td width = "*" valign = "top"><a href = "http://www.cs.auc.dk/~normark/prog3-03/external-material/r5rs/r5rs-html/r5rs_36.html#SEC38">R5RS: delay</a><br><font size = "2">http://www.cs.auc.dk/~normark/prog3-03/external-material/r5rs/r5rs-html/r5rs_36.html#SEC38</font></td></tr><tr><td width = "130" valign = "top">[<a name = "ref-force-primitive"></a>Force-primitive]</td><td width = "*" valign = "top"><a href = "http://www.cs.auc.dk/~normark/prog3-03/external-material/r5rs/r5rs-html/r5rs_63.html#SEC65">R5RS: force</a><br><font size = "2">http://www.cs.auc.dk/~normark/prog3-03/external-material/r5rs/r5rs-html/r5rs_63.html#SEC65</font></td></tr></table></font><div><table border = "0" cellpadding = "0" cellspacing = "0" width = "100%"><tr><td width = "33%" align = "left" valign = "top"><font size = "2" color = "#ff0000">Generated: Friday January 3, 2014, 09:34:16<br></font></td><td width = "34%" align = "center" valign = "top"></td><td width = "33%" align = "right" valign = "top"><a href = "theme-index.html"><img src = "./images/nav-up.gif" title = "Theme index -- Keyboard shortcut: 'u'" alt = "Theme index -- Keyboard shortcut: 'u'" border = "0"></a>&nbsp;&nbsp;<a href = "eval-order_themes-reduction-section.html"><img src = "./images/nav-left.gif" title = "Previous theme in this lecture -- Keyboard shortcut: 'p'" alt = "Previous theme in this lecture -- Keyboard shortcut: 'p'" border = "0"></a>&nbsp;&nbsp;<a href = "languages_themes-intro-sec.html"><img src = "./images/nav-right.gif" title = "Next slide in this lecture -- Keyboard shortcut: 'n'" alt = "Next slide in this lecture -- Keyboard shortcut: 'n'" border = "0"></a></td></tr></table></div>&nbsp;<p>&nbsp;<p>&nbsp;<p>&nbsp;<p>&nbsp;<p>&nbsp;<p>&nbsp;<p>&nbsp;<p>&nbsp;<p>&nbsp;<p>&nbsp;<p>&nbsp;<p>&nbsp;<p>&nbsp;<p>&nbsp;<p>&nbsp;<p>&nbsp;<p>&nbsp;<p>&nbsp;<p>&nbsp;<p>&nbsp;<p>&nbsp;<p>&nbsp;<p>&nbsp;<p>&nbsp;<p>&nbsp;<p>&nbsp;<p>&nbsp;<p></body></html><!-- Generated from a LAML source file. Version 39.0 (May 28, 2013, full). LAML is designed and implemented by Kurt Nørmark, normark@cs.aau.dk. -->
+<!-- LAML source file: y:/Kurt/Files/courses/prog3/prog3-03/sources/notes/eval-order_themes.laml; Scheme system: mzscheme-200; Scheme library directory: y:/Kurt/Files/scheme/lib/; Style Scheme file: y:/Kurt/Files/scheme/styles/lecture-notes/lecture-notes.scm; -->
