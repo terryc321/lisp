@@ -1,5 +1,6 @@
 ;; black system
 
+;; 
 ;; some infinite stream stuff for the lazy meta continuation stack
 ;; ------------------------------------------------------------------------------
 ;; delay and force
