@@ -9,8 +9,7 @@
 ;; assume not nested let otherwise we need an expression walker
 ;;
 
-
-"LOADED let.scm -- nothing defined yet tho. "
+;;"LOADED let.scm -- nothing defined yet tho. "
 
 (let ((a 1)
       (b 2)
