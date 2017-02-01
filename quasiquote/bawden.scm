@@ -1,6 +1,7 @@
 ;;
 ;; quasi quote implementation
 ;;
+
 ;; http://repository.readscheme.org/ftp/papers/pepm99/bawden.pdf
 ;;
 ;; Appendix A : Expansion Algorithm
@@ -40,6 +41,7 @@
 ;; implementation some optimization would need to be done.  Care must be taken not
 ;; to perform any optimizations that alter the behaviour of nested splicing.
 ;;
+
 (define (qq-expand x)
   (cond ((tag-comma? x)
 	 (tag-data x))
