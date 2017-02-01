@@ -1,5 +1,62 @@
 
 
+
+lisp
+ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
+
+debug program
+high priority want to know how and when the program got to this point
+forth i dont think has an environment
+backus fp uses streams and again rejected the environment
+
+core.scm	:	core syntax of scheme and required primitives
+quote
+if
+lambda
+set
+
+gensym	; some way generate unique symbols
+
+derived.scm	:	derived syntax in terms of core
+let		; evaluate all expressions then form environment extended then evaluate body
+let*		; evaluate let expressions one by one extending environment as each is evaluated
+letrec		; 
+
+environment	:
+problematic printing environment because likely it is circular in places.
+
+
+cps-conversion
+convert expression into continuation passing style
+bugs -
+excess lambdas
+does not handle derived syntax
+
+macros
+choose expand macros at run-time slow , or at compile time , or on first pass.
+
+when macro
+(when condition ....)
+
+compiler
+
+quoted expressions
+if access to memory model of machine can lay out complex quoted expressions beforehand
+so running the program is already built with these things laid out in memory
+
+ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
+
+
+
+
+
+
+
+
+
+
+
+
 guile-2.0
 emacs
 "GNU Emacs 24.5.1 (i686-pc-linux-gnu, GTK+ Version 3.18.9)

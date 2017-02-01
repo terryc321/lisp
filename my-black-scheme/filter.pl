@@ -1,12 +1,16 @@
 #!/bin/bash
 
-cp -v black.scm black2.scm
+cp -v black.scm filter.dat
 
-rm -f black2.out
+rm -f filter2.dat
 
-perl -pe 's/[^[:ascii:]]//g;' black2.scm > black2.out
+perl -pe 's/[^[:ascii:]]//g;' filter.dat > filter2.dat
 
-diff black2.scm black2.out
+diff filter.dat filter2.dat
+
+
+
+
 
 
 

@@ -1,4 +1,54 @@
 ;; black system
+
+;; 
+;; some infinite stream stuff for the lazy meta continuation stack
+;; ------------------------------------------------------------------------------
+;; delay and force
+; R5RS syntactic abstraction:
+(define-syntax delay 
+  (syntax-rules ()
+    ((delay expr)
+     (lambda ()
+        expr))))
+
+(define (force promise) (promise))
+
+(define head car)
+(define (tail stream) (force (cdr stream)))
+(define empty-stream? null?)
+(define the-empty-stream '())
+
+(define-syntax cons-stream
+  (syntax-rules ()
+    ((cons-stream x y)
+     (cons x (delay y)))))
+;; ------------------------------------------------------------------------------
+
+(define (primitive-write arg)
+  (if (and (pair? arg)
+	   (eq? (car arg) lambda-tag))
+      (let ((lambda-params        (car (cdr arg)))
+	    (lambda-body     (car (cdr (cdr arg))))
+	    (lambda-env (car (cdr (cdr (cdr arg))))))
+	(write (cons 'lambda (cons lambda-params lambda-body))))
+      (write arg)))
+
+
+
+(define (init-cont env level turn cont)
+  (cont (lambda (answer)
+	  (write level) (write '-) (write turn) (display ": ")
+	  (primitive-write answer) (newline)
+	  (write level) (write '-) (write (+ turn 1)) (display "> ")
+	  (base-eval (read) env
+		     (lambda (ans) (init-cont env level (+ turn 1)
+					      (lambda (cont) (cont ans))))))))
+(define (run env level answer)
+  (init-cont env level 0 (lambda (cont) (cont answer))))
+
+
+
+
 ;; all of section 5 excluding secion 5.1 including appendix 
 
 
@@ -169,21 +219,6 @@
 	(and (pair? arg)
 	     (eq? (car arg) lambda-tag)))))
 
-(define (primitive-write arg)
-  (if (and (pair? arg)
-	   (eq? (car arg) lambda-tag))
-      (let ((lambda-params        (car (cdr arg)))
-	    (lambda-body     (car (cdr (cdr arg))))
-	    (lambda-env (car (cdr (cdr (cdr arg))))))
-	(write (cons 'lambda (cons lambda-params lambda-body))))
-      (write arg)))
-
-(define primitive-procedures
-  (list car cdr cons list pair? null? not eq? eqv? equal? set-car! set-cdr!
-	append newline read primitive-write + - * / = > < quotient remainder
-	number? symbol? boolean? string? memq length assq primitive-procedure?
-	map scheme-apply
-	make-pairs extend get set-value! define-value copy get-global-env))
 
 
 
@@ -283,6 +318,56 @@
 (define (run env level answer)
   (meta-apply 'init-cont env level 0
 	       (lambda (cont) (meta-apply cont answer))))
+
+(define primitive-procedures #f)
+
+(define init-env (list (list
+			(cons 'car        car)        (cons 'cdr              cdr)
+			(cons 'cons       cons)       (cons 'list             list)
+			(cons 'pair?      pair?)      (cons 'null?            null?)
+			(cons 'not        not)        (cons 'eq?              eq?)
+			(cons 'eqv?       eqv?)       (cons 'equal?           equal?)
+			(cons 'set-car!   set-car!)   (cons 'set-cdr!         set-cdr!)
+			(cons 'append     append)     (cons 'newline          newline)
+			(cons 'read       read)
+			(cons 'write            primitive-write)
+			(cons '+ +)       (cons '- -) (cons '* *)             (cons '/ /)
+			(cons '= =)       (cons '> >) (cons '< <)
+			(cons 'quotient   quotient)   (cons 'remainder        remainder)
+			(cons 'number?    number?)    (cons 'symbol?          symbol?)
+			(cons 'boolean?   boolean?)   (cons 'string?          string?)
+			(cons 'memq       memq)       (cons 'length           length)
+			(cons 'assq       assq)
+			(cons 'procedure?       primitive-procedure?)
+			(cons 'map        map)        (cons 'scheme-apply     scheme-apply)
+			(cons 'empty-env  empty-env)  (cons 'make-pairs       make-pairs)
+			(cons 'extend     extend)     (cons 'set-value!       set-value!)
+			(cons 'get        get)        (cons 'define-value     define-value)
+			(cons 'copy       copy)       (cons 'get-global-env   get-global-env)
+			(cons 'base-eval  base-eval)  (cons 'eval-var         eval-var)
+			(cons 'eval-quote eval-quote) (cons 'eval-if          eval-if)
+			(cons 'lambda-tag lambda-tag) (cons 'eval-lambda      eval-lambda)
+			(cons 'eval-begin eval-begin) (cons 'eval-begin-body  eval-begin-body)
+			(cons 'eval-set!  eval-set!)  (cons 'eval-EM          eval-EM)
+			(cons 'eval-exit  eval-exit)  (cons 'eval-application eval-application)
+			(cons 'eval-list  eval-list)  (cons 'base-apply       base-apply)
+			(cons 'my-error   my-error)   (cons 'eval-map         eval-map)
+			(cons 'init-env   0)
+					; to be filled later
+			(cons 'init-cont  init-cont)  (cons 'run            run)
+			(cons 'old-env    old-env)    (cons 'old-cont       old-cont)
+			(cons 'primitive-procedures   primitive-procedures)
+			)))
+
+(define-value 'init-env (copy init-env) init-env)
+
+(set! primitive-procedures
+  (list car cdr cons list pair? null? not eq? eqv? equal? set-car! set-cdr!
+	append newline read primitive-write + - * / = > < quotient remainder
+	number? symbol? boolean? string? memq length assq primitive-procedure?
+	map scheme-apply
+	make-pairs extend get set-value! define-value copy get-global-env))
+
 
 
 
