@@ -15,6 +15,7 @@
 
 
 
+
 (define-syntax when
   (syntax-rules ()
     ((when condition body ...)
@@ -110,66 +111,11 @@
 
 ;;---------------------------------------------------------------------------------------------
 ;; object
-(define make-comma (lambda constructs
-		     (let ((line 0)			   
-			   (col 0)
-			   (constructor-args (args->assoc constructs)))
-		       
-		       (when *debug-args->assoc*
-			 (display "alist => ")
-			 (display constructor-args)
-			 (newline))
-		       
-		       (if (assoc 'line constructor-args)
-			   (set! line (car (cdr (assoc 'line constructor-args))))
-			   #f)
-		       (if (assoc 'col constructor-args)
-			   (set! col (car (cdr (assoc 'col constructor-args))))
-			   #f)		       
-		       (lambda usage
-			 (cond
-			  ((null? usage) #f)
-			  ((eq? (car usage) 'type) 'comma)
-			  ((eq? (car usage) 'line) line)
-			  ((eq? (car usage) 'col) col)
-			  ((eq? (car usage) 'loc) (cons line col))
-			  ((eq? (car usage) 'string) ",")
-			  (else (list (list 'constructor-args constructor-args)
-				      (list 'usage usage))))))))
-
-
-(define make-comma-atsign (lambda constructs
-		     (let ((line 0)			   
-			   (col 0)
-			   (constructor-args (args->assoc constructs)))
-		       
-		       (when *debug-args->assoc*
-			 (display "alist => ")
-			 (display constructor-args)
-			 (newline))
-		       
-		       (if (assoc 'line constructor-args)
-			   (set! line (car (cdr (assoc 'line constructor-args))))
-			   #f)
-		       (if (assoc 'col constructor-args)
-			   (set! col (car (cdr (assoc 'col constructor-args))))
-			   #f)		       
-		       (lambda usage
-			 (cond
-			  ((null? usage) #f)
-			  ((eq? (car usage) 'type) 'comma-atsign)
-			  ((eq? (car usage) 'line) line)
-			  ((eq? (car usage) 'col) col)
-			  ((eq? (car usage) 'loc) (cons line col))
-			  ((eq? (car usage) 'string) ",@")
-			  (else (list (list 'constructor-args constructor-args)
-				      (list 'usage usage))))))))
-
-
-(define make-quote
+(define make-comma
   (lambda constructs
     (let ((line 0)			   
 	  (col 0)
+	  (box #f)
 	  (constructor-args (args->assoc constructs)))
       
       (when *debug-args->assoc*
@@ -182,13 +128,89 @@
 	  #f)
       (if (assoc 'col constructor-args)
 	  (set! col (car (cdr (assoc 'col constructor-args))))
+	  #f)
+      (if (assoc 'box constructor-args)
+	  (set! box (car (cdr (assoc 'box constructor-args))))
+	  #f)		             
+      (lambda usage
+	(cond
+	 ((null? usage) #f)
+	 ((eq? (car usage) 'type) 'comma)
+	 ((eq? (car usage) 'line) line)
+	 ((eq? (car usage) 'col) col)
+	 ((eq? (car usage) 'box) box)	 
+	 ((eq? (car usage) 'loc) (cons line col))
+	 ((eq? (car usage) 'string) ",")
+	 (else (list (list 'constructor-args constructor-args)
+		     (list 'usage usage))))))))
+
+
+(define make-comma-atsign
+  (lambda constructs
+    (let ((line 0)			   
+	  (col 0)
+	  (box #f)
+	  (constructor-args (args->assoc constructs)))
+      
+      (when *debug-args->assoc*
+	(display "alist => ")
+	(display constructor-args)
+	(newline))
+      
+      (if (assoc 'line constructor-args)
+	  (set! line (car (cdr (assoc 'line constructor-args))))
+	  #f)
+      (if (assoc 'col constructor-args)
+	  (set! col (car (cdr (assoc 'col constructor-args))))
+	  #f)
+      (if (assoc 'box constructor-args)
+	  (set! box (car (cdr (assoc 'box constructor-args))))
 	  #f)		       
+
+      (lambda usage
+	(cond
+	 ((null? usage) #f)
+	 ((eq? (car usage) 'type) 'comma-atsign)
+	 ((eq? (car usage) 'line) line)
+	 ((eq? (car usage) 'col) col)
+	 ((eq? (car usage) 'box) box)	 
+	 ((eq? (car usage) 'loc) (cons line col))
+	 ((eq? (car usage) 'string) ",@")
+	 (else (list (list 'constructor-args constructor-args)
+		     (list 'usage usage))))))))
+
+
+(define make-quote
+  (lambda constructs
+    (let ((line 0)			   
+	  (col 0)
+	  (box #f)
+	  (constructor-args (args->assoc constructs)))
+      
+      (when *debug-args->assoc*
+	(display "alist => ")
+	(display constructor-args)
+	(newline))
+      
+      (if (assoc 'line constructor-args)
+	  (set! line (car (cdr (assoc 'line constructor-args))))
+	  #f)
+      (if (assoc 'col constructor-args)
+	  (set! col (car (cdr (assoc 'col constructor-args))))
+	  #f)
+      
+      (if (assoc 'box constructor-args)
+	  (set! box (car (cdr (assoc 'box constructor-args))))
+	  #f)
+
+      
       (lambda usage
 	(cond
 	 ((null? usage) #f)
 	 ((eq? (car usage) 'type) 'quote)
 	 ((eq? (car usage) 'line) line)
 	 ((eq? (car usage) 'col) col)
+	 ((eq? (car usage) 'box) box)	 
 	 ((eq? (car usage) 'loc) (cons line col))
 	 ((eq? (car usage) 'string) ",")
 	 (else (list (list 'constructor-args constructor-args)
@@ -200,6 +222,7 @@
   (lambda constructs
     (let ((line 0)			   
 	  (col 0)
+	  (box #f)
 	  (constructor-args (args->assoc constructs)))
       
       (when *debug-args->assoc*
@@ -213,12 +236,16 @@
       (if (assoc 'col constructor-args)
 	  (set! col (car (cdr (assoc 'col constructor-args))))
 	  #f)		       
+      (if (assoc 'box constructor-args)
+	  (set! box (car (cdr (assoc 'box constructor-args))))
+	  #f)
       (lambda usage
 	(cond
 	 ((null? usage) #f)
 	 ((eq? (car usage) 'type) 'backquote)
 	 ((eq? (car usage) 'line) line)
 	 ((eq? (car usage) 'col) col)
+	 ((eq? (car usage) 'box) box)	 
 	 ((eq? (car usage) 'loc) (cons line col))
 	 ((eq? (car usage) 'string) "`")
 	 (else (list (list 'constructor-args constructor-args)
@@ -288,7 +315,6 @@
 
 
 
-
 (define make-word
   (lambda constructs
     (let ((line 0)			   
@@ -321,6 +347,78 @@
 	 ((eq? (car usage) 'word) word)
 	 (else (list (list 'constructor-args constructor-args)
 		     (list 'usage usage))))))))
+
+
+
+(define make-empty-list
+  (lambda constructs
+    (let ((line 0)			   
+	  (col 0)
+	  (constructor-args (args->assoc constructs)))
+      
+      (when *debug-args->assoc*
+	(display "alist => ")
+	(display constructor-args)
+	(newline))
+      
+      (when (assoc 'line constructor-args)
+	(set! line (car (cdr (assoc 'line constructor-args)))))
+      
+      (when (assoc 'col constructor-args)
+	(set! col (car (cdr (assoc 'col constructor-args)))))
+      
+      (lambda usage
+	(cond
+	 ((null? usage) #f)
+	 ((eq? (car usage) 'type) 'the-empty-list)
+	 ((eq? (car usage) 'line) line)
+	 ((eq? (car usage) 'col) col)
+	 ((eq? (car usage) 'loc) (cons line col))
+	 ((eq? (car usage) 'string) "()")
+	 (else (list (list 'constructor-args constructor-args)
+		     (list 'usage usage))))))))
+
+
+
+
+(define make-cons-pair
+  (lambda constructs
+    (let ((line 0)			   
+	  (col 0)
+	  (hd #f)
+	  (tl #f)
+	  (constructor-args (args->assoc constructs)))
+      
+      (when *debug-args->assoc*
+	(display "alist => ")
+	(display constructor-args)
+	(newline))
+      
+      (when (assoc 'line constructor-args)
+	(set! line (car (cdr (assoc 'line constructor-args)))))
+      
+      (when (assoc 'col constructor-args)
+	(set! col (car (cdr (assoc 'col constructor-args)))))
+
+      (when (assoc 'hd constructor-args)
+	(set! hd (car (cdr (assoc 'hd constructor-args)))))
+      
+      (when (assoc 'tl constructor-args)
+	(set! tl (car (cdr (assoc 'tl constructor-args)))))
+            
+      (lambda usage
+	(cond
+	 ((null? usage) #f)
+	 ((eq? (car usage) 'type) 'cons-pair)
+	 ((eq? (car usage) 'hd) hd)
+	 ((eq? (car usage) 'tl) tl)
+	 ((eq? (car usage) 'line) line)
+	 ((eq? (car usage) 'col) col)
+	 ((eq? (car usage) 'loc) (cons line col))
+	 ((eq? (car usage) 'string) "()")
+	 (else (list (list 'constructor-args constructor-args)
+		     (list 'usage usage))))))))
+
 
 
 
@@ -423,6 +521,8 @@
 (define parse-stack '())
 (define parse-tokens '())
 
+
+
 ;;-------------------------------------------------------------------------------------
 ;; since parse stack only has objects that work with our interface
 (define (open-parens? obj)   (eq? (obj 'type) 'open-parens))
@@ -431,6 +531,10 @@
 (define (comma? obj)   (eq? (obj 'type) 'comma))
 (define (comma-atsign? obj)   (eq? (obj 'type) 'comma-atsign))
 (define (backquote? obj)   (eq? (obj 'type) 'backquote))
+(define (cons-pair? obj)   (eq? (obj 'type) 'cons-pair))
+(define (empty-list? obj)   (eq? (obj 'type) 'the-empty-list))
+
+
 
 ;;-------------------------------------------------------------------------------------
 
@@ -446,6 +550,13 @@
     (newline)    
     (set! parse-stack (cons (car parse-tokens) parse-stack))
     (set! parse-tokens (cdr parse-tokens)))))
+
+
+(define (objectify-list xs)
+  (cond
+   ((null? xs) (make-empty-list))
+   (else (make-cons-pair 'hd (car xs) 'tl (objectify-list (cdr xs))))))
+
 
 
 (define (parse-list-loop xs)
@@ -470,7 +581,7 @@
       (let ((val (car parse-stack)))
 	(set! parse-stack (cdr parse-stack))
 	(set! parse-tokens (cdr parse-tokens))
-	(set! parse-stack (cons (cons 'list (reverse (cons val xs))) parse-stack)))))
+	(set! parse-stack (cons (objectify-list (reverse (cons val xs))) parse-stack)))))
    
   (else ;; more items to process
     (display "Xparse-list-loop : more items to process .")
@@ -487,9 +598,11 @@
    ((null? parse-tokens)
     (display "parse-list : no tokens ?? - done")
     (newline))
+   
    ((close-parens? (car parse-tokens)) ;; end of list
     (display "Xparse-list : close parens ... just returning")
     (newline))
+   
    (else
     (cond
      ((and (not (null? parse-tokens))
@@ -498,13 +611,15 @@
 	   (close-parens? (car (cdr parse-tokens))))
       (display "parse-list : found () generating THE-EMPTY-LIST.")
       (newline)      
-      (set! parse-stack (cons (cons 'empty-list 'nil)  parse-stack))
+      (set! parse-stack (cons (make-empty-list)  parse-stack))
       (set! parse-tokens (cdr (cdr parse-tokens))))      
      (else
       (display "parse-list : calling parse-list-loop.")
       (newline)
       (set! parse-tokens (cdr parse-tokens))
       (parse-list-loop '()))))))
+
+
 
 
 
@@ -528,7 +643,7 @@
     (newline)
     (set! parse-tokens (cdr parse-tokens))
     (parse-recur)
-    (let ((val (list 'quote (car parse-stack))))
+    (let ((val (make-quote 'box (car parse-stack))))
       (set! parse-stack (cdr parse-stack))
       (set! parse-stack (cons val parse-stack))))
 
@@ -537,7 +652,7 @@
     (newline)
     (set! parse-tokens (cdr parse-tokens))
     (parse-recur)
-    (let ((val (list 'backquote (car parse-stack))))
+    (let ((val (make-backquote 'box (car parse-stack))))
       (set! parse-stack (cdr parse-stack))
       (set! parse-stack (cons val parse-stack))))
 
@@ -546,16 +661,16 @@
     (newline)
     (set! parse-tokens (cdr parse-tokens))
     (parse-recur)
-    (let ((val (list 'comma (car parse-stack))))
+    (let ((val (make-comma 'box (car parse-stack))))
       (set! parse-stack (cdr parse-stack))
       (set! parse-stack (cons val parse-stack))))
    
-   ((comma-at? (car parse-tokens))
+   ((comma-atsign? (car parse-tokens))
     (display "parse: found comma-at")
     (newline)
     (set! parse-tokens (cdr parse-tokens))
     (parse-recur)
-    (let ((val (list 'comma-at (car parse-stack))))
+    (let ((val (make-comma-atsign 'box (car parse-stack))))
       (set! parse-stack (cdr parse-stack))
       (set! parse-stack (cons val parse-stack))))
    
@@ -563,7 +678,6 @@
     (display "parse: calling default parse-atom")
     (newline)
     (parse-atom))))
-
 
 
 
@@ -578,68 +692,63 @@
 ;; guaranteed to be acyclic because we dont handle #1# ... notation yet.
 ;; cyclic lists need attentio tho.
   
-(define (print-parse xs)
-  (if
-   (null? xs)
-   (begin
-     "()")
-   (begin
-     (let ((obj (car xs)))
-       (cond
-	((eq? (obj 'type) 'list)
-	 (print-list xs))
-	((eq? (obj 'type) 'word)
-	 (print-word xs))
-	((eq? (obj 'type) 'comma)
-	 (print-comma xs))
-	((eq? (obj 'type) 'comma-at)
-	 (print-comma-at xs))
-	((eq? (obj 'type) 'backquote)
-	 (print-backquote xs))
-	((eq? (obj 'type) 'quote)
-	 (print-quote xs))
-	(else
-	 (error "dont know how to print this : " xs)))))))
-
-
-(define (print-word xs)
-  (display (cdr xs)))
-
-(define (print-list xs)
-  (display "(")
-  (print-list-helper (cdr xs)))
-
-(define (print-list-helper xs)
+(define (print-parse obj)
   (cond
-   ((null? xs) #f)
-   (else (print-parse (car xs))
-	 (if (null? (cdr xs))
+   ((eq? (obj 'type) 'the-empty-list)    (print-empty-list obj))
+   ((eq? (obj 'type) 'cons-pair)         (print-cons-pair obj))
+   ((eq? (obj 'type) 'word)              (print-word obj))   
+   ((eq? (obj 'type) 'comma)             (print-comma obj))   
+   ((eq? (obj 'type) 'comma-atsign)      (print-comma-atsign obj))
+   ((eq? (obj 'type) 'backquote)         (print-backquote obj))
+   ((eq? (obj 'type) 'quote)             (print-quote obj))
+   (else
+    (error "print-parse : error - how print this ?? : " obj))))
+
+(define (print-empty-list obj)
+  (display "()"))
+
+(define (print-word obj)
+  (display (obj 'word)))
+
+;;------------------------------------------------------------------------------------
+;; print cons pairs 
+(define (print-cons-pair obj)
+  (display "(")
+  (print-cons-pair-helper obj))
+
+(define (print-cons-pair-helper obj)
+  (cond
+   ;; reached end of list
+   ((empty-list? obj) #f)
+   ;; print the head of the list
+   (else (print-parse (obj 'hd))
+	 (if (empty-list? (obj 'tl))
 	     (begin (display ")"))
 	     (begin (display " ")
-		    (print-list-helper (cdr xs)))))))
+		    (print-cons-pair-helper (obj 'tl)))))))
 
-
-(define (print-comma xs)
+;;------------------------------------------------------------------------------------
+(define (print-comma obj)
   (display "(comma ")
-  (print-parse (car (cdr xs)))
+  (print-parse (obj 'box))
   (display ")"))
 
 
-(define (print-comma-at xs)
-  (display "(comma-at ")
-  (print-parse (car (cdr xs)))
+(define (print-comma-atsign obj)
+  (display "(comma-atsign ")
+  (print-parse (obj 'box))
   (display ")"))
 
 
-(define (print-quote xs)
+(define (print-quote obj)
   (display "(quote ")
-  (print-parse (car (cdr xs)))
+  (print-parse (obj 'box))
   (display ")"))
 
 
-(define (print-backquote xs)
+(define (print-backquote obj)
   (display "(backquote ")
-  (print-parse (car (cdr xs)))
+  (print-parse (obj 'box))
   (display ")"))
 
 
@@ -648,21 +757,14 @@
 ;;
 
 ;;
-;; tagged 
+;; because using poor mans closure objects
+;; we can just message pass to object itself
 ;;
-(define (tag-backquote? x) (and (pair? x) (or (eq? (car x) 'backquote)
-					      (eq? (car x) 'quasiquote))))
-					      
-(define (tag-comma? x) (and (pair? x)
-			    (or (eq? (car x) 'comma)
-				(eq? (car x) 'unquote))))
-			    
-(define (tag-comma-atsign? x) (and (pair? x)
-				   (or (eq? (car x) 'comma-atsign)
-				       (eq? (car x) 'unquote-splicing))))
-
-(define (tag-data x) (and (pair? x) (car (cdr x))))
-
+(define tag-backquote?  backquote?)					      
+(define tag-comma?  comma?)  
+(define tag-comma-atsign?  comma-atsign?)
+;; retrieve the boxed object from within backquote , comma and comma-atsign s
+(define (tag-data obj) (obj 'box))
 
 ;;
 ;; bawden expansion algorithm
@@ -675,12 +777,16 @@
 	 (error "illegal"))
 	((tag-backquote? x)
 	 (qq-expand
-	  (qq-expand (tag-data x))))
-	((pair? x)
-	 `(append
-	   ,(qq-expand-list (car x))
-	   ,(qq-expand (cdr x))))
-	(else `',x)))
+	  (qq-expand (tag-data x))))	
+	((cons-pair? x)	 
+	 (make-backquote 'box
+			 (make-cons-pair 'hd (make-word 'word "append")
+					 'tl (make-cons-pair 'hd (make-comma 'box (qq-expand-list (x 'hd)))
+							     'tl (make-cons-pair 'hd (make-comma 'box (qq-expand (x 'tl)))
+										 'tl (make-empty-list))))))
+	(else (make-backquote 'box
+			      (make-quote 'box
+					  (make-comma 'box x))))))
 
 
 (define (qq-expand-list x)
@@ -691,12 +797,15 @@
 	((tag-backquote? x)
 	 (qq-expand-list
 	  (qq-expand (tag-data x))))
-	((pair? x)
+	((cons-pair? x)
 	 `(list
 	   (append
-	    ,(qq-expand-list (car x))
-	    ,(qq-expand (cdr x)))))
-	(else `'(,x))))
+	    ,(qq-expand-list (x 'hd))
+	    ,(qq-expand (x 'tl)))))
+	(else (make-backquote 'box
+			      (make-quote 'box
+					  (make-cons-pair 'hd (make-comma 'box x)
+							  'tl (make-empty-list)))))))
 
 
 ;;
@@ -713,7 +822,8 @@
    (else x)))
 
 
-  
+
+
   
 	      
 
