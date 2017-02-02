@@ -369,14 +369,15 @@
       
       (lambda usage
 	(cond
-	 ((null? usage) #f)
-	 ((eq? (car usage) 'type) 'the-empty-list)
-	 ((eq? (car usage) 'line) line)
-	 ((eq? (car usage) 'col) col)
-	 ((eq? (car usage) 'loc) (cons line col))
-	 ((eq? (car usage) 'string) "()")
-	 (else (list (list 'constructor-args constructor-args)
-		     (list 'usage usage))))))))
+	 ((pair? usage)
+	  (cond
+	   ((eq? (car usage) 'type) 'the-empty-list)
+	   ((eq? (car usage) 'line) line)
+	   ((eq? (car usage) 'col) col)
+	   ((eq? (car usage) 'loc) (cons line col))
+	   ((eq? (car usage) 'string) "()")
+	   (else (error "make-empty-list") usage)))
+	 (else (error "make-empty-list") usage))))))
 
 
 
@@ -752,6 +753,24 @@
   (display ")"))
 
 
+;; --------------------------------------------------------------------------------------
+;; de- objectify the parse tree , so treat it as lisp s expressions
+;;
+
+(define (convert-parse obj)
+  (cond
+   ((eq? (obj 'type) 'the-empty-list)    '())
+   ((eq? (obj 'type) 'cons-pair)         (cons (convert-parse (obj 'hd))
+					       (convert-parse (obj 'tl))))
+   ((eq? (obj 'type) 'word)              (make-symbol (obj 'word)))
+   ((eq? (obj 'type) 'comma)             (list 'comma (convert-parse (obj 'box))))
+   ((eq? (obj 'type) 'comma-atsign)      (list 'comma-atsign (convert-parse (obj 'box))))
+   ((eq? (obj 'type) 'backquote)         (list 'backquote (convert-parse (obj 'box))))
+   ((eq? (obj 'type) 'quote)             (list 'quote (convert-parse (obj 'box))))
+   (else
+    (error "convert-parse error !!! - how convert this ?? : " obj))))
+
+;;----------------------------------------------------------------------------------------
 ;;
 ;; (print-parse (parse (tokenise "(1 `(,2) 3)")))   
 ;;
@@ -760,61 +779,37 @@
 ;; because using poor mans closure objects
 ;; we can just message pass to object itself
 ;;
-(define tag-backquote?  backquote?)					      
-(define tag-comma?  comma?)  
-(define tag-comma-atsign?  comma-atsign?)
+(define (tag-backquote? x)
+  (and (pair? x)
+       (pair? (cdr x))
+       (eq? (car x) 'backquote)))
+
+(define (tag-comma? x)
+    (and (pair? x)
+       (pair? (cdr x))
+       (eq? (car x) 'comma)))
+
+(define tag-comma-atsign?
+  (and (pair? x)
+       (pair? (cdr x))
+       (eq? (car x) 'comma-atsign)))
+  
 ;; retrieve the boxed object from within backquote , comma and comma-atsign s
-(define (tag-data obj) (obj 'box))
+;; 2nd item of list
+(define (tag-data x) (car (cdr x)))
 
 ;;
 ;; bawden expansion algorithm
 ;;
 
-(define (qq-expand x)
-  (cond ((tag-comma? x)
-	 (tag-data x))
-	((tag-comma-atsign? x)
-	 (error "illegal"))
-	((tag-backquote? x)
-	 (qq-expand
-	  (qq-expand (tag-data x))))	
-	((cons-pair? x)	 
-	 (make-backquote 'box
-			 (make-cons-pair 'hd (make-word 'word "append")
-					 'tl (make-cons-pair 'hd (make-comma 'box (qq-expand-list (x 'hd)))
-							     'tl (make-cons-pair 'hd (make-comma 'box (qq-expand (x 'tl)))
-										 'tl (make-empty-list))))))
-	(else (make-backquote 'box
-			      (make-quote 'box
-					  (make-comma 'box x))))))
-
-
-(define (qq-expand-list x)
-  (cond ((tag-comma? x)
-	 `(list ,(tag-data x)))
-	((tag-comma-atsign? x)
-	 (tag-data x))
-	((tag-backquote? x)
-	 (qq-expand-list
-	  (qq-expand (tag-data x))))
-	((cons-pair? x)
-	 `(list
-	   (append
-	    ,(qq-expand-list (x 'hd))
-	    ,(qq-expand (x 'tl)))))
-	(else (make-backquote 'box
-			      (make-quote 'box
-					  (make-cons-pair 'hd (make-comma 'box x)
-							  'tl (make-empty-list)))))))
-
-
 ;;
 ;; recursively explore structure.
 ;;
 
-;;
-;; find quasiquotation or backquote , expand its contents
-;;
+
+
+;; to expand a given quasi-quotation , strip off leading backquote
+;; pass it to qq-expand for processing
 (define (qq x)
   (cond
    ((tag-backquote? x)
