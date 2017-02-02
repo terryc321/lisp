@@ -1,5 +1,5 @@
 
-;;
+
 ;;
 ;; simple textual tokeniser
 ;;
@@ -13,15 +13,10 @@
 ;; comma-atsign [,@]
 ;;
 
-
-
-
 (define-syntax when
   (syntax-rules ()
     ((when condition body ...)
      (if condition (begin body ...) #f))))
-
-
 
 
 ;; (string-length "asdfmko")
@@ -757,18 +752,20 @@
 ;; de- objectify the parse tree , so treat it as lisp s expressions
 ;;
 
+;; snarf reader to convert numbers to numbers , symbols to symbols.
 (define (convert-parse obj)
   (cond
    ((eq? (obj 'type) 'the-empty-list)    '())
    ((eq? (obj 'type) 'cons-pair)         (cons (convert-parse (obj 'hd))
 					       (convert-parse (obj 'tl))))
-   ((eq? (obj 'type) 'word)              (make-symbol (obj 'word)))
+   ((eq? (obj 'type) 'word)    (with-input-from-string (obj 'word) read))
    ((eq? (obj 'type) 'comma)             (list 'comma (convert-parse (obj 'box))))
    ((eq? (obj 'type) 'comma-atsign)      (list 'comma-atsign (convert-parse (obj 'box))))
    ((eq? (obj 'type) 'backquote)         (list 'backquote (convert-parse (obj 'box))))
    ((eq? (obj 'type) 'quote)             (list 'quote (convert-parse (obj 'box))))
    (else
     (error "convert-parse error !!! - how convert this ?? : " obj))))
+
 
 ;;----------------------------------------------------------------------------------------
 ;;
@@ -785,27 +782,57 @@
        (eq? (car x) 'backquote)))
 
 (define (tag-comma? x)
-    (and (pair? x)
+  (and (pair? x)
        (pair? (cdr x))
        (eq? (car x) 'comma)))
 
-(define tag-comma-atsign?
+(define (tag-comma-atsign? x)
   (and (pair? x)
        (pair? (cdr x))
        (eq? (car x) 'comma-atsign)))
-  
+
+
 ;; retrieve the boxed object from within backquote , comma and comma-atsign s
 ;; 2nd item of list
-(define (tag-data x) (car (cdr x)))
+(define (tag-data x)
+  (car (cdr x)))
 
 ;;
 ;; bawden expansion algorithm
 ;;
 
+(define (qq-expand x)
+  (cond ((tag-comma? x)
+	 (tag-data x))
+	((tag-comma-atsign? x)
+	 (error "illegal"))
+	((tag-backquote? x)
+	 (qq-expand
+	  (qq-expand (tag-data x))))
+	((pair? x)
+	 `(append
+	   ,(qq-expand-list (car x))
+	   ,(qq-expand (cdr x))))
+	(else `',x)))
+
+(define (qq-expand-list x)
+  (cond ((tag-comma? x)
+	 `(list ,(tag-data x)))
+	((tag-comma-atsign? x)
+	 (tag-data x))
+	((tag-backquote? x)
+	 (qq-expand-list
+	  (qq-expand (tag-data x))))
+	((pair? x)
+	 `(list
+	   (append
+	    ,(qq-expand-list (car x))
+	    ,(qq-expand (cdr x)))))
+	(else `'(,x))))
+
 ;;
 ;; recursively explore structure.
 ;;
-
 
 
 ;; to expand a given quasi-quotation , strip off leading backquote
@@ -815,6 +842,12 @@
    ((tag-backquote? x)
     (qq-expand (tag-data x)))
    (else x)))
+
+
+;;
+(define f1 (eval (qq (convert-parse (parse (tokenise "`(1 (2 3) (4 (5)) 6)")))) (the-environment)))
+
+
 
 
 
