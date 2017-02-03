@@ -3,12 +3,11 @@
 ;;  mit-scheme specific version of black.scheme
 ;;
 
-(define scheme-apply apply)
-
+;;(define scheme-apply apply)
 ;
 ; Environment
 ;
-(load "env.scm")
+;;(load "env.scm")
 
 ;;
 ;; Eval functions

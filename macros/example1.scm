@@ -4,8 +4,6 @@
 ;;(require scheme/mpair)
 
 ;; drracket macro stepper but own ideas about cons and concerns of optimizations
-;; 
-
 (define-syntax push
   (syntax-rules ()
     ((push item place)
