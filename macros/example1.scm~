@@ -1,0 +1,23 @@
+#lang racket
+
+(define-syntax push
+  (syntax-rules ()
+               ((push item place)
+                (set! place (cons item place)))))
+
+(define example1 (let* ((cons (lambda (name)
+               (case name
+                 ((phil) '("three card monte"))
+                 ((dick) '("secret plan to end the war"
+                           "agnew"
+                           "not a crook"))
+                 ((jimmy) '("why not the best"))
+                 ((ron) '("abolish the draft"
+                          "balance the budget"))
+                 (else '()))))
+       (scams (cons 'phil)))
+  (push (Car (cons 'jimmy)) scams)
+  (push (cadr (cons 'ron)) scams)
+  scams))
+
+  
