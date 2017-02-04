@@ -1,8 +1,27 @@
 
-
-
 lisp
 ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
+
+subject		:	algorithm		*	implemented ?
+*******************************************************************************
+quasiquote
+bawden algorithm to expand quasiquote
+can be included as part of macro system
+naive defmacro expansion algorithm implements usual culprits
+let let* letrec cond when unless
+	
+kohlbecker
+try achieve hygenic macros by renaming
+
+macro stepper
+want to be able to step through macro expansion process one step at a time
+
+tokeniser
+keep track of source line column offset locations of tokens in file stream , repl whatever.
+
+parser
+generate s expression of stream of tokens
+if it is not possible invoke fail continuation
 
 debug program
 high priority want to know how and when the program got to this point
