@@ -1,0 +1,159 @@
+;;; Aesthetics for X-windows edwin
+((ref-command set-foreground-color) "green")
+((ref-command set-background-color) "black")
+((ref-command set-mouse-color) "yellow")
+((ref-command set-cursor-color) "red")
+
+((ref-command set-font) "10x20")
+
+((ref-command set-frame-size) 85 40)
+((ref-command set-frame-position) 0 0)
+
+;;; Sussman specific perferences
+(set-variable! enable-recursive-minibuffers true)
+
+(set-variable! version-control true)
+
+(set-variable! kept-new-versions 3)
+
+(set-variable! buffer-menu-kill-on-quit true)
+
+(set! x-screen-ignore-focus-button? #t)
+
+(add-event-receiver! (ref-variable text-mode-hook) turn-on-auto-fill)
+
+(modify-syntax-entry! text-mode:syntax-table #\" "\"")
+
+(define-key 'fundamental (make-special-key 'F2 2) 'compare-windows)
+(define-key 'inferior-repl '(#\C-c #\spc) 
+  'comint-replace-by-expanded-filename)
+
+(define-key 'scheme #\m-q 'comment-fill-paragraph)
+
+(define-command comment-fill-paragraph
+  "Fill the current comment as a paragraph.
+Works only if point is inside a line containing only a comment."
+  ()
+  (lambda ()
+    (if (not (ref-variable comment-locator-hook))
+	(editor-error "No comment syntax defined"))
+    (let ((start (line-start (current-point) 0)))
+      (let ((com ((ref-variable comment-locator-hook) start)))
+	(if (not (and com (line-start? (horizontal-space-start (car com)))))
+	    (editor-error "Not on a comment line"))
+	(with-variable-value!
+	    (ref-variable-object paragraph-ignore-fill-prefix)
+	    false
+	  (lambda ()
+	    (with-variable-value! (ref-variable-object fill-prefix)
+				  (extract-string start (cdr com))
+	      (lambda ()
+		((ref-command fill-paragraph) (current-point) false)))))))))
+
+(define-key 'scheme #\c-m-j 'indent-lisp-body)
+(define-command indent-lisp-body
+  "Indent the current line as if it were the body of a definition,
+regardless of the normal indentation for the keyword."
+  "p"
+  (lambda (argument)
+    (with-variable-value!
+     (ref-variable-object lisp-indent-hook)
+     (lambda (state indent-point normal-indent)
+       indent-point normal-indent ;ignore
+       (+ (ref-variable lisp-body-indent)
+	  (mark-column (parse-state-containing-sexp state))))
+     (lambda ()
+       ((ref-command indent-for-tab-command) argument)))))
+
+
+(string-table-put! scheme-mode:indent-methods "rule" 1)
+(string-table-put! scheme-mode:indent-methods "let-cells" 1)
+(string-table-put! scheme-mode:indent-methods "let&" 1)
+
+(define-key 'inferior-repl '(#\C-c #\C-y) '(inferior-repl . #\M-p))
+
+(define-command new-scheme-environment
+  "Run an inferior read-eval-print loop (REPL), with I/O through
+buffer *scheme*.  If buffer exists, just select it; otherwise create
+it and start REPL.  NEW-SCHEME makes a new USER-INITIAL-ENVIRONMENT
+evaluation environment, discarding the old one."
+  ()
+  (lambda ()
+    (select-buffer
+     (or (find-buffer initial-buffer-name)
+	 (let ((current-buffer (current-buffer)))
+	   (let ((environment
+		  (in-package system-global-environment (make-environment))))
+	     (set! user-initial-environment environment)
+	     (let ((buffer (create-buffer initial-buffer-name)))
+	       (start-inferior-repl! buffer
+				     environment
+				     (evaluation-syntax-table current-buffer
+							      environment)
+				     false)
+	       buffer)))))))
+
+(set! load-debugging-info-on-demand? #t)
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;    Firefox-like font resizing    ;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define fonts
+  (list->vector
+   (list "5x7" "5x8" "6x9" "6x10" "6x12" "6x13" "7x13" "7x14" "8x13"
+	 "8x16" "9x15" "10x20" "12x24")))
+
+(define-variable default-font-index
+  "default font size" 11)
+
+(define-variable current-font-index
+  "current font size" (ref-variable default-font-index))
+
+(define (reset-frame-size)
+  (let ((screen (selected-screen)))
+    ((ref-command set-frame-size) (screen-x-size screen)
+     (screen-y-size screen))))
+  
+(define ((shift-font-size! n))
+  (let ((new-font-index  (+ (ref-variable current-font-index) n)))
+    (if (< -1 new-font-index (vector-length fonts))
+	(begin
+	  (set-variable! current-font-index new-font-index)
+	  ((ref-command set-font) 
+	   (vector-ref fonts (ref-variable current-font-index)))
+	  (reset-frame-size)))))
+  
+(define-command increment-font
+  "Increase text size."
+  () (shift-font-size! 1))
+
+(define-command decrement-font
+  "Decrease text size."
+  () (shift-font-size! -1))
+
+(define-command reset-font
+  "Reset font size. see default-font-index variable."
+  () 
+  (lambda () 
+    ((shift-font-size! 
+      (- (ref-variable default-font-index)
+	 (ref-variable current-font-index))))))
+
+(define-key 'fundamental #\c-+ 'increment-font)
+(define-key 'fundamental #\c-- 'decrement-font)
+(define-key 'fundamental #\c-= 'reset-font)
+
+((ref-command reset-font))
+
+
+
+
+
+
+
+
+
+
+
