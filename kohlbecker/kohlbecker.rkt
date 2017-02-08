@@ -1,7 +1,37 @@
 #lang racket
 
+;;---------------------------------------------------------------------
+;; record-case
+(require (planet dvanhorn/record-case:1:1/record-case))
+
+
 ;; gensym in racket ?
 ;; property lists on symbols ?? put
+
+(define *symbol-properties* (make-hash))
+
+(define (get item property)
+  (let ((sh (hash-ref *symbol-properties* item #f)))
+    (if sh
+	(begin  (hash-ref sh property #f))
+	(begin #f))))
+
+(define (put item property value)
+  (let ((sh (hash-ref *symbol-properties* item #f)))
+    (if sh
+	(begin		; its here
+	  (hash-set! sh property value)
+	  )
+	(begin ; its not
+	  (let ((sh (make-hash)))
+	    (hash-set! *symbol-properties* item sh)
+	    (hash-set! sh property value))))))
+
+
+(define generate-symbol (lambda (a b c) (gensym (format "~a~a~a" a b c))))
+
+;;---------------------------------------------------------------------
+
 
 
 
@@ -53,7 +83,7 @@
      ((atomic-non-var? t) t)
      ((quote? t) t)
      ((lambda? t)
-      (let ((v (gensym (U (var t)) ":" "new")))
+      (let ((v (generate-symbol (U (var t)) ":" "new")))
 	`(LAMBDA ,v
 		 ,(A ((*/* v (var t))
 		      (body t))))))
@@ -78,7 +108,7 @@
 	(let ((info (assq v seen)))
 	  (if info
 	      (cdr info)
-	      (let ((new (gensym v ":" n)))
+	      (let ((new (generate-symbol v ":" n)))
 		(put new 'original-name v)
 		(set! seen
 		  (cons
@@ -169,25 +199,27 @@
 (define fun car)
 (define arg cadr)
 
-(put 'LAMBDA 'coretok 'true)
-(put 'QUOTE 'coretok 'true)
-(put 'LET 'mactok 'true)
-(put 'IF 'mactok 'true)
-(put 'OR 'mactok 'true)
-(put 'NAIVE-OR 'mactok 'true)
-(put 'FAKE 'mactok 'true)
-(put 'CASE 'mactok 'true)
+(put 'LAMBDA 'coretok #t)
+(put 'QUOTE 'coretok #t)
+(put 'LET 'mactok #t)
+(put 'IF 'mactok #t)
+(put 'OR 'mactok #t)
+(put 'NAIVE-OR 'mactok #t)
+(put 'FAKE 'mactok #t)
+(put 'CASE 'mactok #t)
 
 (define macro?
   (lambda (n)
     (record-case n
-		 (LET (var val body) true)
-		 (IF (a b c) true)
-		 (OR (a b) true)
-		 (NAIVE-OR (a b) true)
-		 (FAKE (x) true)
-		 (CASE (a b) true)
-		 (else false))))
+		 [LET (var val body) #t]
+		 [IF (a b c) #t]
+		 [OR (a b) #t]
+		 [NAIVE-OR (a b) #t]
+		 [FAKE (x) #t]
+		 [CASE (a b) #t]
+		 [else #f])))
+
+
 
 (define ST
   (lambda (m)
