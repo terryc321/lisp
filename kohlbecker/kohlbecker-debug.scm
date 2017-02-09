@@ -9,11 +9,21 @@
 ;;    can they be simulated using external hash table
 ;;
 
+(use-modules (ice-9 pretty-print))
+(define pp pretty-print)
 (define debug (lambda args (format #t "db: ~a ~%" args)))
 (define put set-symbol-property!)
 (define get symbol-property)
 ;; i dont think it means gensym , really string->symbol
-(define gensym3 (lambda (a b c) (string->symbol (format #f "~a~a~a" a b c))))
+;; make-symbol
+;;(define gensym3 (lambda (a b c) (make-symbol (format #f "~a~a~a" a b c))))
+;; gensym in guile says it may be unique , whereas make symbol ensures its unique.
+(define gensym3 (lambda (a b c)
+		  (let ((str (format #f "~a~a~a" a b c)))
+		    (let ((sym (make-symbol str)))
+		    (put sym 'pretty str)
+		    sym))))
+
 (define add1 1+)
 
 ;; * step 1 *
@@ -91,11 +101,12 @@
 	  (((E ((T (theta t)) (S j))) theta)
 	   (add1 j)))
 	 ((lambda? t)
-	  '(LAMBDA ,(var t)
+	  `(LAMBDA ,(var t)
 		   ,(((E (body t)) theta) j)))
 	 ((app? t)
 	  `(,(((E (fun t)) theta) j)
 	    ,(((E (arg t)) theta) j))))))))
+
 
 
 
@@ -215,8 +226,9 @@
 	(coretok? x))))
 
 
+
 (define var? symbol?)
-(define const? number?)
+(define const? (lambda (v) (or (number? v) (boolean? v))))
 (define var cadr)
 (define body caddr)
 (define fun car)
@@ -232,60 +244,105 @@
 (put 'CASE 'mactok #t)
 
 (define macro?
-  (lambda (n) (if (memq n '(LET IF OR NAIVE-OR FAKE CASE))
+  (lambda (n) (if (and (pair? n)
+		  (memq (car n) '(LET IF OR NAIVE-OR FAKE CASE)))
 		   #t
 		   #f)))
+
 
 
 (define ST
   (lambda (m)
     (cond
+     ;; LET in terms of LAMBDA 
      ((eq? (car m) 'LET)
-      (apply
-       (lambda (i e b) `((LAMBDA ,i ,b) ,e))
-       (cdr m)))
+      (let ((i (car (cdr m)))
+	    (e (car (cdr (cdr m))))
+	    (b (car (cdr (cdr (cdr m))))))
+	`((LAMBDA ,i ,b) ,e)))
+     ;; IF in terms of dont really know 
      ((eq? (car m) 'IF)
-      (apply
-       (lambda (a b c) `(((ef ,a) ,b) ,c))
-       (cdr m)))
+      (let ((a (car (cdr m)))
+	    (b (car (cdr (cdr m))))
+	    (c (car (cdr (cdr (cdr m))))))
+	`(((ef ,a) ,b) ,c)))
+     ;; OR in terms of LET and IF
      ((eq? (car m) 'OR)
-      (apply
-       (lambda (a b) `(LET v ,a (IF v v ,b)))
-       (cdr m)))
+      (let ((a (car (cdr m)))
+	    (b (car (cdr (cdr m)))))
+	`(LET v ,a (IF v v ,b))))
+     ;; NAIVE-OR
      ((eq? (car m) 'NAIVE-OR)
-      (apply
-       (lambda (a b)
-	 (let ((v (S-naught 'v)))
-	   `(LET ,v ,a (IF ,v ,v ,b))))
-       (cdr m)))
+      (let ((a (car (cdr m)))
+	    (b (car (cdr (cdr m)))))
+	(let ((v (S-naught 'v)))
+	  `(LET ,v ,a (IF ,v ,v ,b)))))
+     ;; FAKE
      ((eq? (car m) 'FAKE)
-      (apply
-       (lambda (x) `(QUOTE ,x))
-       (cdr m)))
+      (let ((x (car (cdr m))))
+	`(QUOTE ,x)))
+     ;; CASE -- do we wish to say #f here ??
      ((eq? (car m) 'CASE)
-      (apply
-       (lambda (exp pair)
-	 `(LET v ,exp
-	       (IF ((eq? v) (QUOTE ,(car pair)))
-		   ,(cadr pair)
-		   #f)))
-       (cdr m)))
+      (let ((exp (car (cdr m)))
+	    (pr (car (cdr (cdr m)))))      
+	`(LET v ,exp
+	      (IF ((eq? v) (QUOTE ,(car pr)))
+		  ,(cadr pr)
+		  #f))))
      (else (error "syntax table: no match" m)))))
 
 
 
-;;((Ehyg '(LET x (OR a v) (NAIVE-OR x v))) ST)
+(define (ppp expr)
+  (cond
+   ((pair? expr) (map ppp expr))
+   ((and (symbol? expr)
+	 (get expr 'pretty))
+    (get expr 'pretty))
+   (else expr)))
+
+
+
+
+
+
+    
+
+
+
 ;;((Ehyg '(LAMBDA a (CASE (FAKE a) (QUOTE a)))) ST)
 
-(let ((s '(LET x (OR a v) (NAIVE-OR x v))))
-  ((T s) S-naught))
+;; (let ((s '(LET x (OR a v) (NAIVE-OR x v))))
+;;   ((T s) S-naught))
 
 
-(let ((s '(LET x (OR a v) (NAIVE-OR x v)))
-      (theta ST))
-  (((E ((T s) S-naught))
-    theta)
-   1))
+;; (let ((s '(LET x (OR a v) (NAIVE-OR x v)))
+;;       (theta ST))
+;;   (((E ((T s) S-naught))
+;;     theta)
+;;    1))
+
+
+
+;;((Ehyg '(LAMBDA x (LAMBDA x ((f x) x)))) ST)
+;;((Ehyg '(LET x (OR a v) (NAIVE-OR x v))) ST)
+
+(define demo0 (ppp
+	       ((Ehyg '(LAMBDA x (LAMBDA x ((f x) x)))) ST)))
+
+
+;; prettify un-interned symbols
+(define demo1 (ppp
+	       ((Ehyg '(LET x (OR a v) (NAIVE-OR x v))) ST)))
+
+(define demo2 (ppp
+	       ((Ehyg '(LAMBDA a (CASE (FAKE a) (QUOTE a)))) ST)))
+
+
+
+
+
+
 
 
 
