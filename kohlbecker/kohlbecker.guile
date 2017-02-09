@@ -1,13 +1,44 @@
 
+(use-modules (ice-9 debug))
+(use-modules (ice-9 format))
+(use-modules (system vm trace))
+
+;; record-case macro
+(load "recscm.scm")
+
+;; gensym in racket ?
+;; property lists on symbols ?? put
+
+(define *symbol-properties* (make-hash-table))
+
+(define (get item property)
+  (let ((sh (hash-ref *symbol-properties* item #f)))
+    (if sh
+	(begin  (hash-ref sh property #f))
+	(begin #f))))
+
+(define (put item property value)
+  (let ((sh (hash-ref *symbol-properties* item #f)))
+    (if sh
+	(begin		; its here
+	  (hash-set! sh property value)
+	  )
+	(begin ; its not
+	  (let ((sh (make-hash-table)))
+	    (hash-set! *symbol-properties* item sh)
+	    (hash-set! sh property value))))))
+
+
+;; guile format takes a port also
+(define generate-symbol (lambda (a b c) (gensym (format #f "~a~a~a" a b c))))
+
+;;---------------------------------------------------------------------
+
+
+
+
 ;; http://web.cs.ucdavis.edu/~devanbu/teaching/260/kohlbecker.pdf
 ;; kohlbecker hygiene algorithm
-
-;; record-case macro --- no implementations provide this yet.
-;;    can rewrite record case macro ??
-;;
-;; symbol property lists -- no implementations provide this yet.
-;;    can they be simulated using external hash table
-;;
 
 (define add1 (lambda (x) (+ x 1)))
 
@@ -16,7 +47,8 @@
 (define Ehyg
   (lambda (s)
     (lambda (theta)
-      (U (A (((E ((T s) S-naught)) theta) 1))))))
+      (U
+       (A (((E ((T s) S-naught)) theta) 1))))))
 
 
 (define T
@@ -26,6 +58,7 @@
        ((atomic-non-var? t) t)
        ((var? t) (tau t))
        (else (map (lambda (t) ((T t) tau)) t))))))
+
 
 
 (define E
@@ -55,7 +88,7 @@
      ((atomic-non-var? t) t)
      ((quote? t) t)
      ((lambda? t)
-      (let ((v (gensym (U (var t)) ":" "new")))
+      (let ((v (generate-symbol (U (var t)) ":" "new")))
 	`(LAMBDA ,v
 		 ,(A ((*/* v (var t))
 		      (body t))))))
@@ -73,6 +106,7 @@
       (get t 'original-name))
      (else (map U t)))))
 
+
 (define S
   (lambda (n)
     (let ((seen '()))
@@ -80,7 +114,7 @@
 	(let ((info (assq v seen)))
 	  (if info
 	      (cdr info)
-	      (let ((new (gensym v ":" n)))
+	      (let ((new (generate-symbol v ":" n)))
 		(put new 'original-name v)
 		(set! seen
 		  (cons
@@ -171,6 +205,7 @@
 (define fun car)
 (define arg cadr)
 
+;; case sensitive
 (put 'LAMBDA 'coretok #t)
 (put 'QUOTE 'coretok #t)
 (put 'LET 'mactok #t)
@@ -191,6 +226,8 @@
 		 (CASE (a b) #t)
 		 (else #f))))
 
+
+
 (define ST
   (lambda (m)
     (record-case m
@@ -210,9 +247,46 @@
 
 
 
-((Ehyg '(LET x (OR a v) (NAIVE-OR x v))) ST)
+;;(trace get)
+;;(trace put)
 
-((Ehyg '(LAMBDA a (CASE (FAKE a) (QUOTE a)))) ST)
+
+
+;; (define (get item property)
+;; (define (put item property value)
+
+;; (define generate-symbol (lambda (a b c) (gensym (format #f "~a~a~a" a b c))))
+;; (define add1 (lambda (x) (+ x 1)))
+;; (define Ehyg
+;; (define T
+;; (define E
+;; (define A
+;; (define U
+;; (define S
+;; (define S-naught (S 0))
+;; (define */*
+;; (define stamped?
+;; (define mactok?
+;; (define coretok?
+;; (define quote?
+;; (define lambda?
+;; (define app?
+;; (define atomic-non-var?
+;; (define atomic-not-stamped?
+;; (define var? symbol?)
+;; (define const? number?)
+;; (define var cadr)
+;; (define body caddr)
+;; (define fun car)
+;; (define arg cadr)
+;; (define macro?
+;; (define ST
+
+
+
+;; ((Ehyg '(LET x (OR a v) (NAIVE-OR x v))) ST)
+
+;; ((Ehyg '(lambda a (CASE (FAKE a) (QUOTE a)))) ST)
 
 
 
