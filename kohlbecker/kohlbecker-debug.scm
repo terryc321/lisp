@@ -1,58 +1,63 @@
-#lang racket
-
-;;---------------------------------------------------------------------
-;; record-case
-(require (planet dvanhorn/record-case:1:1/record-case))
-
-
-;; gensym in racket ?
-;; property lists on symbols ?? put
-
-(define *symbol-properties* (make-hash))
-
-(define (get item property)
-  (let ((sh (hash-ref *symbol-properties* item #f)))
-    (if sh
-	(begin  (hash-ref sh property #f))
-	(begin #f))))
-
-(define (put item property value)
-  (let ((sh (hash-ref *symbol-properties* item #f)))
-    (if sh
-	(begin		; its here
-	  (hash-set! sh property value)
-	  )
-	(begin ; its not
-	  (let ((sh (make-hash)))
-	    (hash-set! *symbol-properties* item sh)
-	    (hash-set! sh property value))))))
-
-
-(define generate-symbol (lambda (a b c) (gensym (format "~a~a~a" a b c))))
-
-;;---------------------------------------------------------------------
-
-
-
 
 ;; http://web.cs.ucdavis.edu/~devanbu/teaching/260/kohlbecker.pdf
 ;; kohlbecker hygiene algorithm
+
+;; record-case macro --- no implementations provide this yet.
+;;    can rewrite record case macro ??
+;;
+;; symbol property lists -- no implementations provide this yet.
+;;    can they be simulated using external hash table
+;;
+
+(define debug (lambda args (format #t "db: ~a ~%" args)))
+(define put set-symbol-property!)
+(define get symbol-property)
+(define gensym3 (lambda (a b c) (gensym (format #f "~a~a~a" a b c))))
+(define add1 1+)
+
+;; step 1 process stree with function T
+;; stamp all leaves with function tau
+;;  initially tau = S 0 or (S 0)
+;; result is a time stamped syntax tree.
 
 
 ;; from page 160
 (define Ehyg
   (lambda (s)
+    (debug (format #f "Ehyg given s = ~A" s))
     (lambda (theta)
-      (U (A (((E ((T s) S-naught)) theta) 1))))))
+      (debug (format #f "Ehyg(s=~a) given theta = ~a" s theta))      
+      (U (A (((E
+	       ((T s) S-naught))
+	      theta)
+	     1))))))
+
+
 
 
 (define T
   (lambda (t)
+    (debug (format #f "T given t = ~a" t))
     (lambda (tau)
+      (debug (format #f "T(t=~a) given tau = ~A" t tau))
       (cond
-       ((atomic-non-var? t) t)
-       ((var? t) (tau t))
-       (else (map (lambda (t) ((T t) tau)) t))))))
+       ((atomic-non-var? t)
+	(debug (format #f "T ~a : atomic-non-var? = #t" t))
+	t)
+       ((var? t)
+	(debug (format #f "T ~a : var? = #t" t))
+	(let ((temp (tau t)))
+	  (debug (format #f "T tau(t=~a) = " t temp))	
+	  temp))
+       (else
+	(debug (format #f "T ~a : not atomic-non-var , not var? , so.. map over (t = ~a)" t t))
+	(let ((temp
+	       (map
+		(lambda (v) ((T v) tau))
+		t)))
+	  (debug (format #f "T map over t (t=~a) = " t temp))
+	  temp))))))
+
 
 
 
@@ -83,7 +88,7 @@
      ((atomic-non-var? t) t)
      ((quote? t) t)
      ((lambda? t)
-      (let ((v (generate-symbol (U (var t)) ":" "new")))
+      (let ((v (gensym3 (U (var t)) ":" "new")))
 	`(LAMBDA ,v
 		 ,(A ((*/* v (var t))
 		      (body t))))))
@@ -108,7 +113,7 @@
 	(let ((info (assq v seen)))
 	  (if info
 	      (cdr info)
-	      (let ((new (generate-symbol v ":" n)))
+	      (let ((new (gensym3 v ":" n)))
 		(put new 'original-name v)
 		(set! seen
 		  (cons
@@ -209,40 +214,55 @@
 (put 'CASE 'mactok #t)
 
 (define macro?
-  (lambda (n)
-    (record-case n
-		 [LET (var val body) #t]
-		 [IF (a b c) #t]
-		 [OR (a b) #t]
-		 [NAIVE-OR (a b) #t]
-		 [FAKE (x) #t]
-		 [CASE (a b) #t]
-		 [else #f])))
-
+  (lambda (n) (if (memq n '(LET IF OR NAIVE-OR FAKE CASE))
+		   #t
+		   #f)))
 
 
 (define ST
   (lambda (m)
-    (record-case m
-		 (LET (i e b) `((LAMBDA ,i ,b) ,e))
-		 (IF (a b c) `(((ef ,a) ,b) ,c))
-		 (OR (a b) `(LET v ,a (IF v v ,b)))
-		 (NAIVE-OR (a b)
-			   (let ((v (S-naught 'v)))
-			     `(LET ,v ,a (IF ,v ,v ,b))))
-		 (FAKE (x) `(QUOTE ,x))
-		 (CASE (exp pair)
-		       `(LET v ,exp
-			     (IF ((eq? v) (QUOTE ,(car pair)))
-				 ,(cadr pair)
-				 false)))
-		 (else (error "syntax table: no match" m)))))
+    (cond
+     ((eq? (car m) 'LET)
+      (apply
+       (lambda (i e b) `((LAMBDA ,i ,b) ,e))
+       (cdr m)))
+     ((eq? (car m) 'IF)
+      (apply
+       (lambda (a b c) `(((ef ,a) ,b) ,c))
+       (cdr m)))
+     ((eq? (car m) 'OR)
+      (apply
+       (lambda (a b) `(LET v ,a (IF v v ,b)))
+       (cdr m)))
+     ((eq? (car m) 'NAIVE-OR)
+      (apply
+       (lambda (a b)
+	 (let ((v (S-naught 'v)))
+	   `(LET ,v ,a (IF ,v ,v ,b))))
+       (cdr m)))
+     ((eq? (car m) 'FAKE)
+      (apply
+       (lambda (x) `(QUOTE ,x))
+       (cdr m)))
+     ((eq? (car m) 'CASE)
+      (apply
+       (lambda (exp pair)
+	 `(LET v ,exp
+	       (IF ((eq? v) (QUOTE ,(car pair)))
+		   ,(cadr pair)
+		   #f)))
+       (cdr m)))
+     (else (error "syntax table: no match" m)))))
 
 
 
-((Ehyg '(LET x (OR a v) (NAIVE-OR x v))) ST)
+;;((Ehyg '(LET x (OR a v) (NAIVE-OR x v))) ST)
+;;((Ehyg '(LAMBDA a (CASE (FAKE a) (QUOTE a)))) ST)
 
-((Ehyg '(LAMBDA a (CASE (FAKE a) (QUOTE a)))) ST)
+(let ((s '(LET x (OR a v) (NAIVE-OR x v))))
+  ((T s) S-naught))
+
+
 
 
 

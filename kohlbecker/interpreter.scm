@@ -1,7 +1,7 @@
 ;
 ; Eval functions
 ;
-(define (base-eval exp env cont)
+(define (trace-eval exp env cont)
   (cond ((number? exp)		 (cont exp))
 	((boolean? exp)		 (cont exp))
 	((string? exp)		 (cont exp))
@@ -9,33 +9,37 @@
 	((eq? (car exp) 'quote)  (eval-quote exp env cont))
 	((eq? (car exp) 'if)	 (eval-if exp env cont))
 	((eq? (car exp) 'cond)	 (eval-cond (cdr exp) env cont))
+	
+	((eq? (car exp) 'when)	 (eval-my-when (car (cdr exp)) (cdr (cdr exp)) env cont))
+	((eq? (car exp) 'unless) (eval-my-unless (car (cdr exp)) (cdr (cdr exp)) env cont))
+	
+	((eq? (car exp) 'record-case)	 (eval-record-case (car (cdr exp)) (cdr (cdr exp)) env cont))	
 	((eq? (car exp) 'define) (eval-define exp env cont))
 	((eq? (car exp) 'set!)	 (eval-set! exp env cont))
-	((eq? (car exp) 'lambda) (eval-lambda exp env cont))
+	((eq? (car exp) 'lambda)      (eval-lambda exp env cont))
 	((eq? (car exp) 'begin)  (eval-begin (cdr exp) env cont))
-	((eq? (car exp) 'let)	 (eval-let
-				   (car (cdr exp)) (cdr (cdr exp)) env cont))
-	((eq? (car exp) 'let*)	 (eval-let*
-				   (car (cdr exp)) (cdr (cdr exp)) env cont))
-	((eq? (car exp) 'letrec) (eval-letrec
-				   (car (cdr exp)) (cdr (cdr exp)) env cont))
-	((eq? (car exp) 'EM)	 (eval-EM exp env cont))
-	((eq? (car exp) 'exec-at-metalevel)
-				 (eval-EM exp env cont))
-	((eq? (car exp) 'primitive-EM)
-				 (eval-primitive-EM exp env cont))
-	((eq? (car exp) 'exit)	 (eval-exit exp env cont))
+	((eq? (car exp) 'let)	 (eval-let  (car (cdr exp)) (cdr (cdr exp)) env cont))
+	((eq? (car exp) 'let*)	 (eval-let* (car (cdr exp)) (cdr (cdr exp)) env cont))
+	((eq? (car exp) 'letrec) (eval-letrec (car (cdr exp)) (cdr (cdr exp)) env cont))
+	;((eq? (car exp) 'EM)	 (eval-EM exp env cont))
+	;((eq? (car exp) 'exec-at-metalevel) (eval-EM exp env cont))
+	;((eq? (car exp) 'primitive-EM) (eval-primitive-EM exp env cont))
+	;((eq? (car exp) 'exit)	 (eval-exit exp env cont))
 	((eq? (car exp) 'load)	 (eval-load exp env cont))
 	((eq? (car exp) 'and)	 (eval-and (cdr exp) env cont))
 	((eq? (car exp) 'or)	 (eval-or (cdr exp) env cont))
-	((eq? (car exp) 'delay)	 (eval-delay exp env cont))
-	((eq? (car exp) 'cons-stream)
-				 (eval-cons-stream exp env cont))
+	;((eq? (car exp) 'delay)	 (eval-delay exp env cont))
+	;((eq? (car exp) 'cons-stream) (eval-cons-stream exp env cont))
 	(else (eval-application exp env cont))))
 
-(define (eval-application exp env cont)
-  (eval-list exp env
-	      (lambda (l) (base-apply (car l) (cdr l) env cont))))
+
+
+;; redefine base-eval to be a tracing evaluator
+(define (base-eval exp env cont)
+  (trace-eval exp env cont))
+
+
+
 
 (define (eval-var exp env cont)
   (let ((pair (get exp env)))
@@ -56,6 +60,26 @@
 		      (else
 		       (base-eval (car else-part) env cont)))))))
 
+
+;; if test is false , then continue with some made up value
+;; otherwise execute body of form
+(define (eval-my-when test body env cont)
+  (base-eval test env (lambda (v)
+			(if v
+			    (eval-begin body env cont)
+			    (cont '())))))
+
+
+;; if test is true , then continue with some made up value
+;; otherwise execute body of form
+(define (eval-my-unless test body env cont)
+  (base-eval test env (lambda (v)
+			(if v
+			    (cont '())
+			    (eval-begin body env cont)))))
+
+
+
 (define (eval-cond clauses env cont)
   (cond ((null? clauses) (cont '()))
 	((eq? (car (car clauses)) 'else)
@@ -69,7 +93,61 @@
 			   (eval-begin (cdr (car clauses))
 				       env cont)
 			   (eval-cond (cdr clauses)
-				       env cont)))))))
+				      env cont)))))))
+
+
+;;  (record-case m
+;;    (LET ...)
+;;    (LIST ...)
+;;    (REC ...)
+;;    ..)
+;; do i want to evaluate m ?
+(define (eval-record-case expr clauses env cont)
+  ;;(format #t "rc:[expr] ~a ~%" expr)
+  ;;(format #t "rc:[clauses] ~a ~%" clauses)
+  (base-eval expr env (lambda (value)
+			(eval-record-case-clauses value clauses env cont))))
+
+
+(define (eval-record-case-clauses value clauses env cont)
+  ;;(format #t "rcc:[clauses] ~a ~%" clauses)  
+  (cond ((null? clauses) (cont '()))
+	;; default else clause
+	((eq? (car (car clauses)) 'else)
+	 (eval-begin (cdr (car clauses)) env cont))
+	;; matched  head of list
+	;; (LIST ....)  = car clauses
+	;; LIST = caar clauses
+	;; (LIST ARGS
+	;; ARGS  = cadr clauses
+	;;
+	;; ARGS should match CDR VALUE
+	;;
+	;; (LIST ARGS ...BODY ...)
+	;; cddr = body
+	;; ((lambda ARGS BODY
+	;; 
+	((eq? (car (car clauses)) (car value))
+	 ;;(format #t "* rc matched *~%")
+	 (let ((clause (car clauses)))
+	   ;;(format #t "rc clause = ~a ~%" clause)	   
+	   (let ((args (car (cdr clause)))
+		 (body (cdr (cdr clause))))
+	     (let ((expr `((lambda ,args ,@body) ,@(cdr value))))
+	       ;;(format #t "* rc matched *~%")	       
+	       ;;(format #t "rc[value]: ~a ~%" value)
+	       ;;(format #t "rc[expr]:: ~a ~%" expr)
+	       (base-eval
+		expr
+		env
+		cont)))))
+	 ;; try other clauses
+	 (else
+	  (eval-record-case-clauses value (cdr clauses) env cont))))
+
+
+
+
 (define (eval-define exp env cont)
   (if (pair? (car (cdr exp)))
       (let ((var (car (car (cdr exp))))
@@ -87,6 +165,7 @@
 		      (define-value var data env)
 		      (cont var))))))
 
+
 (define (eval-set! exp env cont)
   (let ((var (car (cdr exp)))
 	(body (car (cdr (cdr exp)))))
@@ -99,11 +178,14 @@
 			(my-error
 				    (list 'eval-set!: 'unbound 'variable var)
 				    env cont)))))))
+
 (define lambda-tag (cons 'lambda 'tag))
 (define (eval-lambda exp env cont)
   (let ((lambda-body (cdr (cdr exp)))
 	(lambda-params (car (cdr exp))))
     (cont (list lambda-tag lambda-params lambda-body env))))
+
+
 (define (eval-begin body env cont)
   (define (eval-begin-local body)
     (if (null? (cdr body))
@@ -113,6 +195,7 @@
   (if (null? body)
       (my-error '(eval-begin: null body) env cont)
       (eval-begin-local body)))
+
 
 (define (eval-let pairs body env cont)
   (let ((params (map car pairs))
@@ -131,6 +214,7 @@
 			      (extend env (list (car (car pairs))) (list arg))
 			      cont)))))
 
+
 (define (eval-letrec pairs body env cont)
   (define (set-value-list! params operand env)
     (if (null? params)
@@ -144,6 +228,23 @@
 		  (lambda (operand)
 		    (set-value-list! params operand letrec-env)
 		    (eval-begin body letrec-env cont))))))
+
+
+(define (eval-application exp env cont)
+  (eval-list exp env
+	     ;;(lambda (l) (base-apply (car l) (cdr l) env cont))
+	     (lambda (l) (base-apply (car l)
+				(cdr l)
+				env 
+				(lambda (v) ;; new continuation traces applications
+				  (cond
+				   ((and (pair? exp) (eq? (car exp) 'factorial))
+				    (format #t "ev: ~a => ~a ~%" `(,(car exp) ,@(cdr l)) v)
+				    (cont v))
+				   (else (cont v))))))))
+
+
+
 
 (define (eval-EM exp env cont)
   (cont (primitive-EM (car (cdr exp)))))
@@ -228,6 +329,7 @@
 		      (lambda (value) (load-local))))))
   (load-local))
 
+
 (define (eval-and body env cont)
   (cond ((null? body) (cont #t))
 	((null? (cdr body))
@@ -238,6 +340,8 @@
 		       (if result
 			   (eval-and (cdr body) env cont)
 			   (cont result)))))))
+
+
 (define (eval-or body env cont)
   (if (null? body)
       (cont #f)
@@ -246,15 +350,20 @@
 		    (if result
 			(cont result)
 			(eval-or (cdr body) env cont))))))
+
 (define delay-tag (cons 'delay 'tag))
+
 (define (eval-delay exp env cont)
   (let ((delay-body (car (cdr exp))))
     (cont (list delay-tag delay-body env))))
+
 (define (eval-cons-stream exp env cont)
   (let ((car-part (car (cdr exp)))
 	(cdr-part (car (cdr (cdr exp)))))
     (base-eval (list 'cons car-part (list 'delay cdr-part))
 			   env cont)))
+
+
 
 ;
 ; Primitives
@@ -265,11 +374,15 @@
       (base-apply fun (list (car lst)) env
 		  (lambda (x) (eval-map fun (cdr lst) env
 		  (lambda (y) (cont (cons x y))))))))
+
+
 (define (primitive-procedure? . operand)
   (let ((arg (car operand)))
     (or (procedure? arg)
 	(and (pair? arg)
 	     (eq? (car arg) lambda-tag)))))
+
+
 (define (filter arg)
   (if (pair? arg)
       (cond ((eq? (car arg) lambda-tag)
@@ -283,12 +396,17 @@
 	     (cons (filter (car arg))
 		   (filter (cdr arg)))))
       arg))
+
+
 (define (primitive-display . args)
   (display (filter (car args))))
+
 (define (primitive-write . args)
   (write (filter (car args))))
+
 (define (primitive-pp . args)
   (pp (filter (car args))))
+
 (define (primitive-print lst depth length)
   (define (print-sub lst d l top?)
     (cond ((pair? lst)
@@ -308,9 +426,11 @@
 				(display ")")))))))
 	  (else (display lst))))
   (print-sub lst depth length #t))
-;
-; Initial Continuation
-;
+
+
+;;
+;; Initial Continuation
+;;
 (define (init-cont env level turn cont)
   (cont
     (lambda (answer)
@@ -323,35 +443,85 @@
 		    (init-cont env level (+ turn 1)
 				(lambda (cont) (cont ans))))))))
 
+
 (define (run env level answer)
   (init-cont env level 0
-	      (lambda (cont) (cont answer))))
-;
-; Environment
-;
-;(load "env.scm")
-;
-; Primitive Procedures
-;
+	     (lambda (cont) (cont answer))))
+
+;;
+;; Some primitive procedures to augment kohlbecker.scm paper
+;;
+(define (gensym3 a b c)  
+  (make-symbol (format #f "~a~a~a" a b c string-append a b c)))
+
+;; 
+;; record case - like a 
+;; 
+
+
+;;
+;; Environment
+;;
+;;(load "env.scm")
+;;
+;; Primitive Procedures
+;;
 (define primitive-procedures
-  (list car cdr cons list pair? null? eq? eqv? equal? not set-car! set-cdr!
+  (list car cdr cons
+	caar
+	cadr
+	cdar
+	cddr
+	caaar
+	caadr
+	cadar
+	cdaar
+	caddr
+	cdadr
+	cddar
+	cdddr
+	1+
+	symbol-property ;; symbol property lists
+	set-symbol-property!
+	gensym3
+	list pair? null? eq? eqv? equal? not set-car! set-cdr!
 	append
 	primitive-write primitive-pp primitive-display newline read
 	primitive-print primitive-procedure?
 	+ - * / = < > quotient remainder number?
+	integer?
 	boolean? string? symbol? assq member length force
 	open-input-file close-input-port eof-object?
 	map scheme-apply
 	make-pairs extend can-receive? get set-value! define-value
 	search copy
-))
+	))
+
 ;
 ; Initial Environment
 ;
 (define init-env (list (list
+  (cons 'integer?  integer?)			
   (cons 'car			car)
   (cons 'cdr			cdr)
   (cons 'cons			cons)
+  (cons 'get symbol-property)
+  (cons 'put set-symbol-property!)
+  (cons 'add1  1+)
+  (cons '1+ 1+)
+  (cons 'gensym  gensym3)
+  (cons 'cadr cadr)
+  (cons 'cddr cddr)
+  (cons 'caar caar)
+  (cons 'cdar cdar)
+  (cons 'caaar caaar)
+  (cons 'caadr caadr)
+  (cons 'cadar cadar)
+  (cons 'cdaar cdaar)
+  (cons 'caddr caddr)
+  (cons 'cdadr cdadr)
+  (cons 'cddar cddar)
+  (cons 'cdddr cdddr)	
   (cons 'list			list)
   (cons 'pair?			pair?)
   (cons 'null?			null?)

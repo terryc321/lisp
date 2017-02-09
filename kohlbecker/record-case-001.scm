@@ -1,6 +1,4 @@
 
-;;; load recscm.scm
-
 (define calc
      (lambda (x)
        (if (integer? x)

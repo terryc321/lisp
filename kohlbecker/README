@@ -1,4 +1,8 @@
 
 
+(load "setup-sys.scm")
+(run init-env 0 'ok)
+
+
 interpreter.scm		:	used a debugger for kohlbecker
 

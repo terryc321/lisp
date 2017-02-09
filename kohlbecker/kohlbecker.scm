@@ -9,8 +9,6 @@
 ;;    can they be simulated using external hash table
 ;;
 
-(define add1 (lambda (x) (+ x 1)))
-
 
 ;; from page 160
 (define Ehyg
