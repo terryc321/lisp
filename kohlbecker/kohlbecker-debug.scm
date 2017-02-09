@@ -12,15 +12,29 @@
 (define debug (lambda args (format #t "db: ~a ~%" args)))
 (define put set-symbol-property!)
 (define get symbol-property)
-(define gensym3 (lambda (a b c) (gensym (format #f "~a~a~a" a b c))))
+;; i dont think it means gensym , really string->symbol
+(define gensym3 (lambda (a b c) (string->symbol (format #f "~a~a~a" a b c))))
 (define add1 1+)
 
-;; step 1 process stree with function T
+;; * step 1 *
+;; process stree with function T
 ;; stamp all leaves with function tau
 ;;  initially tau = S 0 or (S 0)
 ;; result is a time stamped syntax tree.
+;; s is original s expression
+;; ((T s) S-naught)
+;; time stamp s expression with S-0
+
+;; * step 2 *
+;; tsstree = time stamped s tree
+;; function E traverses through tsstree when finds something to expand
+;; it does the transcription
+;; but also applies ((T _) (S j))  where j is clock value
+;; afterwards the clock value increases and expansion continues
+;;
 
 
+;; theta :  syntax table 
 ;; from page 160
 (define Ehyg
   (lambda (s)
@@ -47,7 +61,7 @@
        ((var? t)
 	(debug (format #f "T ~a : var? = #t" t))
 	(let ((temp (tau t)))
-	  (debug (format #f "T tau(t=~a) = " t temp))	
+	  (debug (format #f "T tau(t=~a) = ~a" t temp))	
 	  temp))
        (else
 	(debug (format #f "T ~a : not atomic-non-var , not var? , so.. map over (t = ~a)" t t))
@@ -55,12 +69,16 @@
 	       (map
 		(lambda (v) ((T v) tau))
 		t)))
-	  (debug (format #f "T map over t (t=~a) = " t temp))
+	  (debug (format #f "T map over t (t=~a) = ~a" t temp))
 	  temp))))))
 
 
 
 
+;; E is macro expander , macro expand
+;; t     : time stamped s expression
+;; theta : syntax table
+;; j     : clock value
 (define E
   (lambda (t)
     (lambda (theta)
@@ -261,6 +279,13 @@
 
 (let ((s '(LET x (OR a v) (NAIVE-OR x v))))
   ((T s) S-naught))
+
+
+(let ((s '(LET x (OR a v) (NAIVE-OR x v)))
+      (theta ST))
+  (((E ((T s) S-naught))
+    theta)
+   1))
 
 
 
