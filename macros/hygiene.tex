@@ -12,6 +12,8 @@
 
 \section{All about Macros}
 
+Macro exist until macro expansion phase , then there are no more macros only function primitives.
+
 \subsection{the BAD-OR macro}
 
 Let us define a two argument BAD-OR macro in terms of LET and IF
@@ -21,6 +23,7 @@ Let us define a two argument BAD-OR macro in terms of LET and IF
 \end{verbatim}
 
 Now let us put the macro to work in an environment where TMP is bound
+
 
 \begin{verbatim}
 (let ((tmp 5)) 

@@ -1,0 +1,85 @@
+
+;; (EM (load "instr.blk"))
+;; (load "../fibonacci.scm")
+;; (timing (fibonacci 5))
+;; 
+
+;; (define eval-timing
+;;   (let ((original-eval-application eval-application))
+;;     (lambda (exp env cont)
+;;       (let ((start-clock (real-time-clock)))
+;; 	(base-eval exp env (lambda (ans)			      			     
+;; 			     (let ((stop-clock (real-time-clock)))
+;; 			       (display "#:start ") (display start-clock)
+;; 			       (display " #:stop ") (display stop-clock)
+;; 			       (newline))				
+;; 			     (cont ans)))))))
+
+(define eval-timing
+  (lambda (exp env cont)
+    (let ((start-clock (real-time-clock)))		 
+      (base-eval (car (cdr exp)) env (lambda (ans)
+				       (display "the answer was #: ")
+				       (display ans)
+				       (newline)
+				       (let ((stop-clock (real-time-clock)))
+					 (display "#:Xstart ") (display start-clock)
+					 (display " #:Xstop ") (display stop-clock)
+					 (display " #:Xtime Xtaken : ")
+					 (display (- stop-clock start-clock))
+					 (newline))
+				       (cont ans))))))
+
+
+(let ((old-eval-app eval-application))
+  (set! eval-application
+	(lambda (exp env cont)
+	  (cond ((eq? (car exp) 'timing)
+		 (eval-timing (car (cdr exp)) env cont))
+		(else
+		 (old-eval-app exp env cont))))))
+
+
+
+
+
+
+
+
+
+ 
+
+
+
+;; (define eval-timing
+;;   (let ((original-eval-application eval-application)
+;; 	(the-answer #f))
+;;     (lambda (exp env cont)
+;;       (with-timings
+;;        (lambda () ;; thunk
+;; 	 (base-eval exp env (lambda (ans)
+;; 			      (set! the-answer ans))))
+;;        (lambda (run-time gc-time real-time)
+;; 	 (write (internal-time/ticks->seconds run-time))
+;; 	 (write-char #\space)
+;; 	 (write (internal-time/ticks->seconds gc-time))
+;; 	 (write-char #\space)
+;; 	 (write (internal-time/ticks->seconds real-time))
+;; 	 (newline)
+	 
+;; 	 (set! eval-application original-eval-application)			      
+;; 	 (cont the-answer))))))
+  
+
+
+    ;; (let ((original-eval-application eval-application)
+    ;;       (instr-counter 0))
+    ;;   (set! eval-application
+    ;;         (lambda (exp env cont)
+    ;;           (set! instr-counter (+ instr-counter 1))
+    ;;           (original-eval-application exp env cont)))
+    ;;   (base-eval exp env (lambda (ans)
+    ;;                        (set! eval-application original-eval-application)
+    ;;                        (display "#app: ") (write instr-counter) (newline)
+    ;;                        (cont ans))))))
+

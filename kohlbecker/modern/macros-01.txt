@@ -1,0 +1,396 @@
+
+ftp://ftp.cs.indiana.edu/pub/scheme-repository/doc/misc/macros-01.txt
+
+From: HOUSEL@delphi.COM
+Newsgroups: comp.lang.scheme
+Subject: An introduction to macro expansion algorithms, part 1
+Date: 7 Aug 1993 08:40:34 -0400
+Message-ID: <01H1GHN8IG0Y91VY9G@delphi.com>
+
+[This is part 1 of a 9-part series of articles on macro expansion
+algorithms in Scheme. Part 2 should be posted next week.]
+
+				PREFACE
+
+Knowledge about how the LISP evaluator works is widespread and easily
+available.  There are even introductory textbooks such as [1] that
+give a full "operational" demonstration of how LISP/Scheme
+interpreters and compilers work, including real working example code.
+
+There remains, however, quite a bit of general confusion about macro
+expansion, especially about the new "hygienic" macro expansion
+algorithms.  A year or so ago I decided to implement an
+R4RS-compatible Scheme interpreter, including the macro facility
+described in the appendix. However, I soon discovered I had no idea
+how to go about implementing an efficient algorithm for hygienic
+macro expansion.  Last fall, upon returning to the U.S. from Taiwan,
+I set myself to researching all of the relevant material I could
+find.  At this point I ran into another problem: without any
+background in denotational semantics, I was quite baffled by the
+notation used in many of these articles.
+
+Eventually I studied up on programming-language semantics, completed
+my research on macro expansion, and wrote my macro expander.  My
+intention in writing this introduction is to save others some of the
+confusion and trouble I went through by collecting much of the
+information together in one place, (hopefully) in a form slightly
+easier to understand.
+
+I originally outlined this article in mid-December but then let it
+fall by the wayside.  Recent discussions (i.e., flame wars) on
+comp.lang.scheme have convinced me that it is needed.
+
+Your comments on this article are appreciated, both from people who
+can't understand what it's trying to say, and from people who
+understand exactly what I mean and can point to errors.  If it
+survives the unforgiving public scrutiny of the net I plan to submit
+it to LISP Pointers or SIGPLAN Notices.
+
+-Peter S. Housel-	HOUSEL@DELPHI.COM
+
+------------------------------------------------------------------------------
+
+				BIBLIOGRAPHY
+
+[1]  H. Abelson and G. J. Sussman, with J. Sussman.  Structure and
+     Interpretation of Computer Programs., MIT Press, Cambridge MA, 1985.
+
+[2]  R. K. Dybvig, D. P. Friedman, and C. Haynes.  "Expansion-Passing Style:
+     Beyond Conventional Macros," Proceedings 1986 ACM Conference on Lisp 
+     and Functional Programming, 143-150.
+
+[3]  E. Kohlbecker, D. P. Friedman, M. Felleisen, and B. Duba.  "Hygienic
+     Macro Expansion", Proceedings 1986 ACM Conference on Lisp and Functional
+     Programming, 151-161.
+
+[4]  E. Kohlbecker Jr.  Syntactic Extensions in the Programming Language
+     Lisp.  Technical Report no. 199 (Ph.D. thesis), Indiana University 
+     Computer Science Department, August 1986.
+
+[5]  E. Kohlbecker and M. Wand.  "Macro-by-Example: Deriving Syntactic
+     Transformations from their Specifications," Proceedings 1987 Conference
+     on Principles of Programming Language, 77-84.
+
+[6]  R. K. Dybvig.  The Scheme Programming Language.  Prentice-Hall, 1987.
+
+[7]  A. Bawden and J. Rees.  "Syntactic Closures," Proceedings 1988 ACM
+     Conference on Lisp and Functional Programming, 86-95.
+
+[8]  W. Clinger and J. Rees.  "Macros That Work," Proceedings 1991 ACM
+     Conference on Principles of Programming Languages, 155-162.
+
+[9]  W. Clinger and J. Rees, ed.  Revised^4 Report on the Algorithmic
+     Language Scheme.  LISP Pointers (IV)3, 1991.
+
+[10] W. Clinger.  "Macros in Scheme," LISP Pointers (IV)4, 1991.
+
+[11] W. Clinger.  "Hygienic Macros Through Explicit Renaming," LISP Pointers
+     IV(4), 1991.
+
+[12] C. Hanson.  "A Syntactic Closures Macro Facility," LISP Pointers
+     IV(4), 1991.
+
+[13] R. Hieb, R. K. Dybvig, and C. Bruggerman.  Syntactic Abstraction in
+     Scheme.  Technical Report no. 355, Indiana University Computer Science
+     Department, June 1992.
+
+[14] R. K. Dybvig.  Writing Hygienic Macros in Scheme with Syntax-Case.
+     Technical Report No. 356, Indiana University Computer Science
+     Department, June 1992.
+
+------------------------------------------------------------------------------
+
+1. Introduction.
+
+Macros allow programmers to extend the syntax of a language by adding
+new language constructs defined in terms of simpler ones.  Extending
+language syntax can be a powerful abstraction method, and LISP
+programmers have long benefited from the availability of macro
+facilities.  Because of LISP's simple syntax, and because LISP
+programs and data can be expressed in the same form, LISP-like
+languages are easily adapted to the addition of a macro facility.
+
+Macro calls in LISP and Scheme follow the pattern:
+
+        (<macro keyword> <argument>*)
+
+A macro keyword is an identifier that has been associated with a
+macro definition.  A macro definition is a user-definable
+transformation that tells how macro calls can be transformed into
+simpler forms.  The result of a transformation may also contain macro
+calls, and these will also be transformed recursively, until the
+entire expression being expanded is expressed in terms of the
+primitive forms of the language.
+
+As the appendix to [9] says,
+
+        Evaluation of a program proceeds in two logical steps. First
+        the program is converted into an intermediate language via
+        macro-expansion, and then the result of macro expansion is
+        evaluated.
+
+This is our basic model.  We could express this in code as:
+
+        (define (eval exp env)
+          (eval-expanded
+            (expand exp)
+            env))
+
+You can imagine `eval-expanded' as something like the metacircular
+evaluator in section 4.1 of [1].  (Of course, a compiler would also
+have to make use of the macro expander in a similar way.)
+
+1.1.  The "Naive" Expansion Algorithm.
+
+Traditionally, the `expand' procedure for most LISP systems has
+implemented with what is known (perhaps a bit uncharitably) as the
+"naive expansion algorithm".  In this section, we'll take a look at
+this algorithm and why it is not really adequate.
+
+In most systems, macro definitions are expressed as "macro
+transformer procedures," each one associated with a macro keyword.
+The macro expander does a "code walk," recursively expanding each
+subexpression.  When it identifies a macro call, it calls the
+appropriate transformer procedure with the entire macro call as its
+argument.  The result of the transformer is then treated as an
+expression to be re-expanded, and the process continues until the
+entire expression contains only "primitive" expressions.
+
+We can write `naive-expand' using the following simple Scheme code
+(which is modeled after an example in [2]):
+
+        (define naive-expand
+          (lambda (form)
+            (if (not (pair? form))
+                form
+                (case (car form)
+                  ((quote) form)
+                  ((lambda) `(lambda ,(cadr form)
+                                     ,@(map naive-expand (cddr form))))
+                  ((set!) `(set! ,(cadr form) 
+                                 ,(naive-expand (caddr form))))
+                  ((if) `(if ,@(map naive-expand (cdr form))))
+                  (else (if (macro-tag? (car form))
+                            (naive-expand 
+                              ((macro-transformer (car form)) form))
+                            (map naive-expand form)))))))
+
+How do we keep track of the associations between macro tags and macro
+transformers?  There are many possible ways; one way to implement the
+database is to use a global association list:
+
+        (define *macro-transformers* '())
+
+        (define macro-tag?
+          (lambda (tag)
+            (and (symbol? tag)
+                 (assq tag *macro-transformers*))))
+
+        (define macro-transformer
+          (lambda (tag)
+            (cdr (assq tag *macro-transformers*))))
+
+        (define macro-transformer-set!
+          (lambda (tag transformer)
+            (let ((pair (assq tag *macro-transformers*)))
+              (if pair
+                  (set-cdr! pair transformer)
+                  (set! *macro-transformers*
+                        (cons (cons tag transformer) 
+                              *macro-transformers*))))))
+
+Then the `macro-transformer-set!' procedure can be used to define a
+new macro keyword along with its transformer procedure.
+
+Let's look at some examples.  The first is a macro (push a l), which
+can be used to push a data item `a' onto the head of a list `l':
+
+        (macro-transformer-set!
+          'push                                 ; (push a l)
+          (lambda (form)                        ; ==> (set! l (cons a l))
+            `(set! ,(caddr form)
+                   (cons ,(cadr form) ,(caddr form)))))
+
+The second is a macro definition that transforms the `let' special
+form:
+
+        (macro-transformer-set!
+          'let                                  ; (let ((var init) ...)
+          (lambda (form)                        ;   body ...)
+            `((lambda ,(map car (cadr form))    ; ==> ((lambda (var ...)
+                 ,@(cddr form))                 ;        body ...)
+              ,@(map cadr (cadr form)))))       ;      init ...)
+
+The third is a macro transformer for the `or' form:
+
+        (macro-transformer-set!
+          'or
+          (lambda (form)
+            (cond
+              ((null? (cdr form))               ; (or)
+               '#f)                             ; ==> #f
+              ((null? (cddr form))              ; (or e)
+               (cadr form))                     ; ==> e
+              (else                             ; (or e1 e2 ...)
+               `((lambda (temp)                 ; ==> ((lambda (temp)
+                   (if temp                     ;        (if temp
+                       temp                     ;            temp
+                       (or ,@(cddr form))))     ;            (or e2 ...)))
+                 ,(cadr form))))))              ;      e1)
+
+Each of these transformers "takes apart" the structure of the list
+structure of the macro call and reassembles it in "simpler" form.
+
+1.2. Some Implementation "Shortcuts" for Interpreted Systems
+
+As an aside, while we're discussing the naive macro expander, let's
+look at a couple of implementation shortcuts that are commonly used
+to make it faster in LISP and Scheme interpreters.
+
+The first trick is to integrate the expander into the evaluator.  The
+evaluator and expander parse the program in more-or-less the same
+way, and it is a simple step to add another case for macro calls.
+With this simplification the program is only parsed once, and it is
+not necessary for the expander to build list structure that will only
+be taken apart again by the evaluator.
+
+There is a problem, though, if this is implemented incorrectly in
+systems that store interpreter code in unparsed form.  If a procedure
+containing a macro call is executed more than once, the macro call
+will be transformed (exactly the same way) every time.  "Macro
+memoizing" and "macro displacing" were invented to solve this
+problem.
+
+Macro memoizing simply stores the macro call and the resulting
+expansion in a hash table.  When the same call is encountered again,
+the correct expansion is retrieved from the table without the
+necessity of performing the transformation again.
+
+A more effective but "hairier" solution is macro displacing.  After
+doing the macro expansion the first time, the expander "splices" the
+expansion back into the original program text.  A code fragment that
+does this might look something like this:
+
+        (let ((result ((macro-transformer (car form)) form)))
+          (set-car! form (car result))
+          (set-cdr! form (cdr result))
+          (expand result))
+
+The next time the original code is executed, the macro call will no
+longer be there, having been replaced.  Of course, if this method is
+used, the output of the transformer must be a pair.  The improvement
+in speed is probably worth this restriction, however.
+
+There are several other caveats related to memoizing and displacing
+that we won't get into here.  Interested parties should see Jonathan
+Rees's unpublished "public service announcement" (found in the
+`memo.txt' file of his "simple macro" interpreter).
+
+We will continue to assume that the macro expander is a preprocessor
+for the interpreter or compiler.  However, it may be useful to keep these
+implementation tricks in mind.
+
+1.3. So What's Wrong with Naive Expansion?
+
+What indeed?  The algorithm is efficient and is easy to understand
+and implement.  It has been used more-or-less successfully in LISP
+systems since before I was even born, continuing to the present day.
+
+The big problem is one of "capturing".  Two simple examples will make
+this clear.
+
+The expression:
+
+        (let ((cons '()))
+          (push "ghengis" cons)
+          (push "khubla" cons)
+          cons)
+
+expands, using the naive expander, to:
+
+        ((lambda (cons)
+          (set! cons (cons "ghengis" cons))
+          (set! cons (cons "khubla" cons))
+          cons)
+         (quote ()))
+
+which fails miserably.  The rebinding of `cons' within the `let' body
+has captured the reference to the standard `cons' procedure found in
+the macro.
+
+Of course, we could have avoided this problem by using a name other
+than `cons' (which is a stupid pun anyway).  This misses the point,
+however.   The `push' macro is an abstraction, which separates the
+idea of pushing an item onto the head of a linked list from its
+actual implementation using `set!' and `cons'.  Telling the user
+that particular names are forbidden eliminates some of the benefits
+of the abstraction and reduces the flexibility of the macro.
+
+Capturing can happen the other way, too.  Using the above definition
+for `or',
+
+        (let ((temp 37.0))
+          (or (foo temp)
+              temp))
+
+expands into
+
+        ((lambda (temp)
+           ((lambda (temp)
+              (if temp temp temp))
+            (foo temp)))
+         37.0)
+
+Here the `temp' variable used in the macro expansion has captured the
+`temp' in the original expression.
+
+There are a couple of common workarounds for the second problem.  The
+most common is to forbid macro definitions to use any name that might
+be referenced by the user.  We could use a bizarre name like
+`%%temp@^&%--~@', but that isn't a certain guarantee.  So, we utilize
+a procedure like `gensym' (see [6]) which is defined to return a new,
+unique symbol each time it is called.  Our definition for `or' then
+becomes:
+
+        (macro-transformer-set!
+          'or
+          (lambda (form)
+            (cond
+              ((null? (cdr form))
+               '#f)
+              ((null? (cddr form))
+               (cadr form))
+              (else
+               (let ((tmpnam (gensym)))
+        	 `((lambda (,tmpnam)
+                     (if ,tmpnam
+                         ,tmpnam
+                         (or ,@(cddr form))))
+                   ,(cadr form)))))))
+
+This definition insures that a new variable name is used every time,
+and no possible name conflict could occur.
+
+The other common workaround is to use "thunks".  With this method, we
+can "freeze" the rest of the `or' in an environment outside the
+rebinding of `temp', and then "thaw" it out with a call to the thunk.
+You can see several examples of this technique in section 7.3 of [9].
+In fact, the definition of `or' found there looks something like this:
+
+        (or e1 e2 ...)
+        ==> (let ((temp e1)
+                  (thunk (lambda () (or e2 ...))))
+              (if temp temp (thunk)))
+
+This is easy enough for a simple macro like `or', but it becomes more
+difficult to get right for a more complex macro transformation.
+Therein lies the problem: in either of these two methods, the
+responsibility for preventing conflicts belongs entirely to the
+writer of the macro transformer.  If there are any conflict bugs in
+the transformer, then the user (who may have never seen the macro
+definition) will be faced with debugging a very hard-to-find problem.
+
+If we allow "local" macro definitions (as we will do in later
+sections), then there are two other types of possible capturing
+problems; see [7] and [8] for examples of these.
+

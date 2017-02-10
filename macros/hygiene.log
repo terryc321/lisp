@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.17 (TeX Live 2016/Debian) (preloaded format=latex 2017.1.19)  10 FEB 2017 12:25
+This is pdfTeX, Version 3.14159265-2.6-1.40.17 (TeX Live 2016/Debian) (preloaded format=latex 2017.1.19)  10 FEB 2017 12:30
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -47,13 +47,13 @@ LaTeX Font Info:    External font `cmex10' loaded for size
 [1
 
 ] [1]
-Overfull \hbox (17.24684pt too wide) in paragraph at lines 84--84
+Overfull \hbox (17.24684pt too wide) in paragraph at lines 86--86
 []\OT1/cmtt/m/n/10 (defmacro silly-bad-or (let if) `(let ((tmp ,let)) (if tmp t
 mp ,if)))[] 
  []
 
 [2] [3]
-Overfull \hbox (11.99689pt too wide) in paragraph at lines 198--198
+Overfull \hbox (11.99689pt too wide) in paragraph at lines 201--201
 []\OT1/cmtt/m/n/10 [3]> (macroexpand `(let ((tmp 5)) ,(macroexpand '(bad-or nil
  tmp))))[] 
  []
@@ -68,4 +68,4 @@ Here is how much of TeX's memory you used:
  14 hyphenation exceptions out of 8191
  23i,6n,17p,124b,239s stack positions out of 5000i,500n,10000p,200000b,80000s
 
-Output written on hygiene.dvi (5 pages, 4224 bytes).
+Output written on hygiene.dvi (5 pages, 4352 bytes).

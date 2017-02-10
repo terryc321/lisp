@@ -1,0 +1,37 @@
+
+;; (EM (load "instr.blk"))
+;; (load "../fibonacci.scm")
+;; (instr (fibonacci 5))
+;; #app: 380
+
+
+;; instruction takes expression environment and continuation
+(define eval-instr
+  (lambda (exp env cont)
+    ;; save original eval application
+    ;; have instrumentation counter
+    (let ((original-eval-application eval-application)
+          (instr-counter 0))
+      ;; this bit code replaces current eval-application
+      ;; change eval-application again takes expression environment and continuation
+      (set! eval-application
+            (lambda (exp env cont)
+	      ;; increment instrument counter
+              (set! instr-counter (+ instr-counter 1))
+	      ;; evaluate as we did original 
+              (original-eval-application exp env cont)))
+
+      ;; evaluate , side effect write out number applcations the expression required
+      (base-eval exp env (lambda (ans)
+                           (set! eval-application original-eval-application)
+                           (display "#app: ") (write instr-counter) (newline)
+                           (cont ans))))))
+
+
+(let ((original-eval-application eval-application))
+  (set! eval-application
+	(lambda (exp env cont)
+	  (cond ((eq? (car exp) 'instr)
+		 (eval-instr (car (cdr exp)) env cont))
+		(else
+		 (original-eval-application exp env cont))))))

@@ -1,0 +1,395 @@
+
+ftp://ftp.cs.indiana.edu/pub/scheme-repository/doc/misc/macros-03.txt
+
+From: HOUSEL@delphi.COM
+Newsgroups: comp.lang.scheme
+Subject: An introduction to macro expansion algorithms, part 3
+Date: 2 Sep 1993 17:46:27 -0400
+
+[This is part 3 of a 9-part series of articles on macro expansion
+algorithms in Scheme. Sorry for the delay posting this part; part 4
+should be posted next week.]
+
+3. Another Approach: Syntactic Closures
+
+After Kohlbecker's 1986 paper and Ph.D. thesis, the next new approach
+to LISP macros was introduced in Bawden and Rees's 1988 Lisp and
+Functional Programming conference paper [7].  While the Kohlbecker
+algorithm is quite similar in spirit to the naive expander, even to
+the extent that most of our original macro definitions for the naive
+expander still work with it, a macro system based on syntactic
+closures is quite different.  As we saw in section 2.1, the
+Kohlbecker algorithm prevents capturing by using implicit information
+about the context of variables.  A syntactic closure macro system,
+however, maintains explicit "syntactic environments" to keep track of
+the meanings of names used within the program.
+
+Moreover, writers of macro definitions can have explicit control over
+the interpretation of variables through the manipulation of syntactic
+closures.  Just as an ordinary closure is a representation of a piece
+of code and a variable environment, a syntactic closure represents an
+expression and a syntactic environment.  When an ordinary closure is
+applied, the values of variables within the code body are determined
+by the variable environment; when a syntactic closure is expanded,
+the denotation of variable names is determined by the syntactic
+environment.
+
+Syntactic closures have one feature that traditional lexical closures
+do not: a list of names that are to be determined dynamically.  This
+allows macros to bind variables within their bodies, either
+maintaining hygiene or not.
+
+Through the manipulation of syntactic closures, macro transformers
+can exercise fine control over how identifiers in macro calls are
+to be interpreted.
+
+3.1. Our Sample Macro Definitions Using Syntactic Closures
+
+Let's look at the particulars.  Syntactic closures are created with
+the `make-syntactic-closure' procedure, which takes three arguments:
+a syntactic environment, a list of variable names to be left "free",
+and an expression.  Macro transformer procedures may insert syntactic
+closures in their transformed output in any place where an expression
+may appear.  (They may also appear in the variable name position of a
+`set!' expression.)  Macro transformer procedures in a syntactic
+closure system take two arguments: the macro call to be transformed,
+and the syntactic environment in which it occurred.
+
+When performing the transformation for the `push' macro,
+
+        (push a l) ==> (set! l (cons a l))
+
+we want the `set!' and `cons' names in the expansion to have the
+default, top-level meanings (independent of any local bindings), and
+we want names within the `a' and `l' expressions to have the meanings
+they have at the place of the macro call.  We can accomplish this by
+closing the two arguments in the use environment, and the entire
+expression in the top-level "global syntactic environment":
+
+	(define push-transformer
+	  (lambda (form env)
+	    (let ((a-form (make-syntactic-closure env '() (cadr form)))
+		  (l-form (make-syntactic-closure env '() (caddr form))))
+	      (make-syntactic-closure
+	        *global-syntactic-environment*
+		'()
+		`(set! ,l-form (cons ,a-form ,l-form))))))
+
+With this transformer, `set!' and `cons' can't be captured since
+their meanings come from the top-level syntactic environment.
+
+The `or' transformer looks like this:
+
+	(define or-transformer
+	  (lambda (form env)
+	    (let ((operands (map (lambda (operand)
+				   (make-syntactic-closure env '() operand))
+				 (cdr form))))
+	      (cond
+	       ((null? operands)
+		(make-syntactic-closure env '() '#f))
+	       ((null? (cdr operands))
+		(car operands))
+	       (else
+		(make-syntactic-closure
+		  *global-syntactic-environment*
+		  '()
+		  `((lambda (temp)
+		      (if temp
+			  temp
+			  (or ,@(cdr operands))))
+		    ,(car operands))))))))
+
+
+Again, the names `lambda', and `if' can't be captured because their
+meanings come from the global environment.  Also, the lambda-binding of
+`temp' cannot capture any occurrences within the operands of `or',
+since the meanings of names within the operands are determined by a
+syntactic environment that doesn't include the lambda-binding.
+
+An example of a macro transformer that uses the free variable
+list attribute of a syntactic closure is the `let' transformer:
+
+	(define let-transformer
+	  (lambda (form env)
+	    (let* ((vars
+		    (map car (cadr form)))
+		   (init-forms
+		    (map (lambda (spec)
+			   (make-syntactic-closure env '() (cadr spec)))
+			 (cadr form)))
+		   (body-forms
+		    (map (lambda (body-form)
+			   (make-syntactic-closure env vars body-form))
+			 (cddr form))))
+	      (make-syntactic-closure
+	        *global-syntactic-environment*
+		'()
+		`((lambda ,vars
+			  ,@body-forms)
+		  ,@init-forms)))))
+
+We close the `init-forms' in the use environment just as before.
+However, the `body-forms' need to be expanded in an environment that
+looks like the use environment, with the addition of the variables
+bound by the `let' form.  So, we include them in the list of free
+variables for the syntactic closures, which permits them to be
+lambda-bound.
+
+The same "free names list" feature is used to write non-hygienic
+macros.  Following [7], we can write our `catch' transformer from the
+previous chapter like this:
+
+	(define catch-transformer
+	  (lambda (form env)
+	    (let ((body-form
+		   (make-syntactic-closure env '(throw) (cadr form))))
+	      (make-syntactic-closure
+	        *global-syntactic-environment*
+		'()
+		`(call-with-current-continuation
+		   (lambda (throw)
+		     ,body-form))))))
+
+Putting `throw' in the free-names list allows it to be captured
+within the body.
+
+
+3.2. The Syntactic Closures Expander
+
+Our implementation of the syntactic closures expander is fairly
+straightforward, though its structure is a bit different from the
+previous two.
+
+Top-level expressions are expanded in the top-level syntactic environment.
+
+	(define synclo-expand
+	  (lambda (exp)
+	    (synclo-expand-aux exp *global-syntactic-environment*)))
+
+	(define synclo-expand-aux
+	  (lambda (exp synenv)
+	    (cond
+	      ((symbol? exp)
+	       (expand-symbol exp synenv))
+	      ((syntactic-closure? exp)
+	       (expand-syntactic-closure exp synenv))
+	      ((pair? exp)
+	       (expand-pair exp synenv))
+	      (else exp))))
+
+The `lookup' procedure searches for the denotation of a name within a
+given syntactic environment.  There are four possibilities:
+
+ 1. The name denotes reserved word of the core language, such as
+    `lambda' or `if'.  In this case `(core? meaning)' will be true.
+
+ 2. The name denotes a macro.  Here the meaning is the transformer
+    procedure itself.
+
+ 3. The name denotes a bound variable, and the value returned by
+    `lookup' is a symbol whose use will be discussed below.
+
+ 4. The name denotes a free (top-level) variable.  In this case
+    `(free? meaning)' will return true.
+
+	(define expand-symbol
+	  (lambda (exp synenv)
+	    (let ((meaning (lookup exp synenv)))
+	      (cond
+	        ((symbol? meaning) meaning)
+		((free? meaning) exp)
+		(else (error "symbol doesn't denote a variable" exp))))))
+
+When we encounter a syntactic closure, we expand it by creating a new
+syntactic environment and expanding the closure's form within it.
+The `combine-syntactic-environments' procedure is used to make this
+new environment, which is based on the closure's environment, except
+that the "free names" are determined by the usage environment.
+
+	(define expand-syntactic-closure
+	  (lambda (exp synenv)
+	    (synclo-expand-aux (syntactic-closure-form exp)
+			       (combine-syntactic-environments
+				 (syntactic-closure-free-names exp)
+				 synenv
+				 (syntactic-closure-environment exp)))))
+
+A pair could be a core form, a macro call, or a procedure call.  Note
+how we expand macro calls: the transformer procedure is called, and
+then the result is expanded within `*bogus-syntactic-environment*'.
+This is a guard against macro transformers that return "raw" expressions
+not closed in any syntactic environment.
+
+	(define expand-pair
+	  (lambda (exp synenv)
+	    (if (not (symbol? (car exp)))
+		(map (lambda (exp) (synclo-expand-aux exp synenv)) exp)
+		(let ((meaning (lookup (car exp) synenv)))
+		  (cond
+		    ((procedure? meaning)
+		     (synclo-expand-aux (meaning exp synenv)
+					*bogus-syntactic-environment*))
+		    ((core? meaning)
+		     (expand-core exp synenv))
+		    (else
+		     (map (lambda (exp) (synclo-expand-aux exp synenv))
+			  exp)))))))
+
+Looking at the expander for the `lambda' case, we can see why the
+denotation for bound variables is a symbol.  As with the Kohlbecker
+algorithm, we need to rename all bound variables (i.e., do an
+alpha-conversion).  Instead of doing the renaming all at once,
+though, we add the new names to the "use" syntactic environment and
+replace the names as we encounter them.
+
+	(define expand-core
+	  (lambda (exp synenv)
+	    (case (car exp)
+	      ((quote) exp)
+	      ((set! if)
+	       (cons (car exp)
+		     (map (lambda (exp) (synclo-expand-aux exp synenv))
+			  (cdr exp))))
+	      ((lambda)
+	       (let* ((new-syms (map symbol->unique-symbol (cadr exp)))
+		      (new-env (extend-syntactic-environment
+				 synenv
+				 (cadr exp)
+				 new-syms)))
+		 `(lambda ,new-syms
+			  ,@(map (lambda (exp)
+				   (synclo-expand-aux exp new-env))
+				 (cddr exp))))))))
+
+Our implementation of syntactic environments is very simple.
+Environments are represented as lists of frames.  Frames are pairs
+whose car is a list of names, and whose cdr is a list of
+corresponding values (denotations).
+
+	(define combine-syntactic-environments
+	  (lambda (names names-synenv else-synenv)
+	    (let ((meanings (map (lambda (name) (lookup name names-synenv))
+				 names)))
+	      (extend-syntactic-environment else-synenv
+					    names
+					    meanings))))
+
+	(define extend-syntactic-environment
+	  (lambda (synenv names meanings)
+	    (cons (cons names meanings)
+		  synenv)))
+
+	(define lookup
+	  (lambda (name env)
+	    (cond
+	      ((bogus-environment? env)
+	       (error "macro transformer didn't enclose form"))
+	      ((null? env)
+	       #f)			; #f means `free'
+	      (else
+	       (search-frame
+		 name
+		 (caar env)
+		 (cdar env)
+		 (lambda ()
+		   (lookup name (cdr env))))))))
+
+	(define search-frame
+	  (lambda (name frame-names frame-vals failure-thunk)
+	    (cond
+	      ((null? frame-names)
+	       (failure-thunk))
+	      ((eq? name (car frame-names))
+	       (car frame-vals))
+	      (else
+	       (search-frame
+		 name
+		 (cdr frame-names)
+		 (cdr frame-vals)
+		 failure-thunk)))))
+
+	(define *core-syntactic-environment*
+	  '(((quote lambda set! if) . (CORE CORE CORE CORE))))
+
+	(define *global-syntactic-environment* *core-syntactic-environment*)
+
+	(define *bogus-syntactic-environment* #f)
+
+	(define bogus-environment?
+	  (lambda (x)
+	    (eq? x *bogus-syntactic-environment*)))
+
+	(define free?
+	  (lambda (x)
+	    (eq? x #f)))
+
+	(define core?
+	  (lambda (x)
+	    (eq? x 'CORE)))
+
+In the final utility definitions, we define a new data structure to
+represent syntactic closures.
+
+	(define make-syntactic-closure
+	  (lambda (synenv free-names form)
+	    (vector 'SYNTACTIC-CLOSURE synenv free-names form)))
+
+	(define syntactic-closure?
+	  (lambda (x)
+	    (and (vector? x)
+		 (= (vector-length x) 4)
+		 (eq? (vector-ref x 0) 'SYNTACTIC-CLOSURE))))
+
+	(define syntactic-closure-environment
+	  (lambda (x)
+	    (vector-ref x 1)))
+	(define syntactic-closure-free-names
+	  (lambda (x)
+	    (vector-ref x 2)))
+	(define syntactic-closure-form
+	  (lambda (x)
+	    (vector-ref x 3)))
+
+	(define symbol->unique-symbol
+	  (lambda (sym)
+	    (gensym)))
+
+3.3. Some Loose Ends
+
+Running the syntactic closures expander on our example from section 2
+is left as an excercise for the reader---one I reccommend.
+
+In section 3.1 we ignored the issue of how we would "register" the
+macro transformer definitions with the expander.  One way to do it is
+to use `extend-syntactic-environment' to augment the global syntactic
+environment:
+
+	(set! *global-syntactic-environment*
+	  (extend-syntactic-environment
+	    *global-syntactic-environment*
+	    '(push or let)
+	    (list push-transformer or-transformer let-transformer)))
+
+The original syntactic closures proposal discussed "macrologies",
+which are procedures for extending advertised syntactic environments
+to make new ones.  Macrologies are not important to our presentation
+here: in our macro definitions we've only used one advertised
+syntactic environment, namely `*global-syntactic-environment*', and
+later on we'll be able to get rid of that.  Those interested in
+macrologies should consult [7].
+
+Careful examination of our expander reveals that we have
+"un-reserved" the Scheme reserved words, simply by not treating them
+specially except within `expand-core'.  (This opens the way for local
+redefinition of reserved words, either with variable bindings or
+local syntactic bindings.)
+
+We will leave several other loose ends untied for now, as this is not
+our last look at syntactic closures.  One of these is the issue of
+"local" macro definitions.  Hierarchical syntactic environments are
+very suggestive of the idea of macro definitions with a limited
+lexical scope.  We could easily add keywords for binding macros
+locally to our present system; however, this subject will wait until
+we return to syntactic closures in section 7.
+
