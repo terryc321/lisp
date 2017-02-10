@@ -1,0 +1,94 @@
+\documentclass{article}
+
+\title{My first document}
+\date{2013-09-01}
+\author{John Doe}
+
+  
+\begin{document}
+\pagenumbering{gobble}
+\maketitle
+\newpage
+\pagenumbering{arabic}
+
+\section{All about Macros}
+
+
+\subsection{the BAD-OR macro}
+
+Let us define a two argument BAD-OR macro in terms of LET and IF
+
+\begin{verbatim}
+(defmacro bad-or (a b) 
+  (let ((tmp a))
+     (if tmp tmp b)))
+\end{verbatim}
+
+Now let us put the macro to work in an environment where TMP is bound
+
+\begin{verbatim}
+(let ((tmp 5)) 
+  (bad-or #f tmp))
+\end{verbatim}
+
+\begin{verbatim}
+=> (let ((tmp 5)) 
+    (let ((tmp #f))
+     (if tmp tmp tmp)))
+\end{verbatim}
+
+\begin{verbatim}
+=>  (let ((tmp #f))
+      (if tmp tmp tmp))
+\end{verbatim}
+
+\begin{verbatim}
+=>  (if #f #f #f)
+\end{verbatim}
+
+\begin{verbatim}
+=>  #f
+\end{verbatim}
+
+\section{The need for hygienic macros}
+
+\begin{verbatim}
+(let ((tmp 5))  =>   5
+  (or #f tmp))
+\end{verbatim}
+
+\newpage
+
+\section{defmacro}
+
+\begin{verbatim}
+(defmacro my-unless (condition &body body)
+  `(if (not ,condition)
+     (progn
+       ,@body)))
+\end{verbatim}
+
+
+
+
+\subsection{free variable capture}
+
+The problem is when inadvertant variable capture occurs there is no telling
+when or how the bug will manifest itself.  An almost impossible task to
+debug this sort of problem.
+
+If one bad macro is allowed then all other macros that depend on that will
+become susceptible to 
+
+
+\section{kohlbecker}
+
+\section{macro stepper and debugger}
+
+
+\section{continuation passing macros}
+
+
+\end{document}
+
+
