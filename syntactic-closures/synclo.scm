@@ -300,9 +300,6 @@
 	  (set! ,b temp))))))
 
 
-
-
-
 ;; (define swap-transformer
 ;;   (lambda (form env)
 ;;     (let ((operands (map (lambda (operand)
@@ -319,6 +316,8 @@
 
 ;; now install this transformer.
 (install-transformer 'swap swap-transformer)
+
+
 
 (define demo-swap (synclo-expand
 		   '(let ((a 5)(b 10))
@@ -342,6 +341,8 @@
 		      (swap a b)
 		      (swap a b)		  		      
 		      (list a b))))
+
+
 
 
 
