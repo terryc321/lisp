@@ -330,13 +330,21 @@
 (define demo0 (ppp
 	       ((Ehyg '(LAMBDA x (LAMBDA x ((f x) x)))) ST)))
 
-
 ;; prettify un-interned symbols
 (define demo1 (ppp
 	       ((Ehyg '(LET x (OR a v) (NAIVE-OR x v))) ST)))
 
-(define demo2 (ppp
+(define demo2 (ppp	      
 	       ((Ehyg '(LAMBDA a (CASE (FAKE a) (QUOTE a)))) ST)))
+
+;; if we use let or -- it doesnt work
+;; if we use LET , OR 
+(define demo3 (ppp
+	       ((Ehyg 
+		 '(LET temp 37 
+		    (OR (foo temp)
+			temp))) ST)))
+
 
 
 

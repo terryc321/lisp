@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html>
+  <head> 
+  
+  <title>
+    Intuitive hygienic macros
+</title>
+  <meta content='text/html; charset=utf-8' http-equiv='Content-Type' />
+  <meta content='Michael Arntzenius' name='author' />
+  <meta name=viewport content="width=device-width, initial-scale=1">
+  <link href='/style.css' rel='stylesheet' type='text/css' />
+  <!-- <script src="/hue.js" async></script> -->
+
+  <link href='/blog/atom.xml' rel='alternate' type='application/atom+xml' />
+ </head>
+  <body> 
+
+
+
+
+
+
+
+<div id="body">
+  
+  <nav id="menu">
+    <span id="my-name">Michael Arntzenius</span>
+    <ul>
+        
+  
+  <li >
+    <a href="/index.html">home</a>
+  </li>
+
+        
+  
+  <li >
+    <a href="/datafun/">datafun</a>
+  </li>
+
+        
+  
+  <li >
+    <a href="/resume.html">résumé</a>
+  </li>
+
+        
+  
+  <li >
+    <a href="/forthyr/guide.html">forthyr</a>
+  </li>
+
+    </ul>
+  </nav>
+
+  
+
+
+
+
+
+<div id="content">
+  
+  <header>
+    <h1>
+      Intuitive hygienic macros
+    </h1>
+      <p class="publishdate">
+        <time datetime="2009-03-03">
+          March 2009
+        </time>
+      </p>
+  </header>
+  <p>Of the many differences between Lisp and Scheme, that between their respective
+facilities for defining macros is one of the most glaring and controversial. If
+I may be permitted to generalize for the sake of illustration, Schemers detest
+the unhygienic nature of Lisp macros, while Lispers find Scheme's <code>syntax-rules</code>
+confusing and inflexible. Both arguments have merit, and several efforts have
+been made to remedy the situation, most notably the <code>syntax-case</code> macro system
+available in several Schemes.</p>
+
+<p>Other solutions notwithstanding, I'd like to present my particular contribution
+to this problem: a macro system which is hygienic, yet almost identical in usage
+to Lisp-style quasiquotation-based macros. I have implemented this system as a
+modification of <a href="http://arclanguage.com">Arc</a>, <a href="http://www.paulgraham.com">Paul
+Graham</a>'s mzscheme-based lisp; but it's not necessary
+to know Arc or understand its internals to understand this article. In fact, Arc
+is clear enough that it should be almost self-evident what I'm doing, but just
+in case, here's an example macro definition in plain Arc:</p>
+
+<pre><code>(mac iflet (variable expression then . else)
+  (w/uniq temporary
+    `(let ,temporary ,expression
+       (if ,temporary
+         (let ,variable ,temporary ,then)
+         (do ,@else)))))
+</code></pre>
+
+<p>This defines the <code>iflet</code> macro, which tests whether <code>expression</code> is true, and if
+so, binds it to <code>variable</code> and executes <code>then</code>, and otherwise, executes <code>else</code>
+as a <code>do</code> body. There are a few Arc-specific things of note here: Arc's <code>do</code> is
+Common Lisp's <code>progn</code> and Scheme's <code>begin</code>, rather than the usual Lisp/Scheme
+<code>do</code> loop; <code>let</code> binds a <em>single</em> variable to a value, no parentheses - it is
+<em>not</em> like <code>let</code> in other Lisps; <code>w/uniq</code> is an Arc macro that calls <code>uniq</code> -
+Arc's equivalent of <code>gensym</code> - to generate unique symbols for use in
+macroexpansion.</p>
+
+<p>As you can see, macros in Arc are quasiquotation-based, and they behave for our
+purposes exactly like their counterparts in Common Lisp. Now, here's how you'd
+define that same macro using my hygienic quasiquotes:</p>
+
+<pre><code>(mac iflet (variable expression then . else)
+  #`(let temporary #,expression
+      (if temporary
+        (let #,variable #,temporary #,then)
+        (do #,@else))))
+</code></pre>
+
+<p>At first sight, it seems I've just prefixed all the quasiquotation symbols with
+"<code>#</code>". On second look, though, there's no use of <code>w/uniq</code> - the symbol
+<code>temporary</code> is automatically mangled to avoid variable collision: <em>this</em> form of
+quasiquotation is hygienic. Of course, this form of hygiene is easily emulated
+with gensyms; if it weren't, Lispers wouldn't have a leg to stand on in
+arguments for and against hygienic macros. But hygienic macros don't just avoid
+local symbol collisions; they avoid global collisions, too. Consider the
+following macro:</p>
+
+<pre><code>(mac square (x)
+  (w/uniq tmp
+    `(let ,tmp x
+       (* ,tmp ,tmp))))
+</code></pre>
+
+<p>And suppose I called the macro as follows:</p>
+
+<pre><code>(let * 2 (square *))
+</code></pre>
+
+<p>Suddenly, everything falls apart. The <code>*</code> function in the macroexpansion of
+<code>square</code>, supposed to refer to the globally-bound multiplication function, is
+instead bound to the number 2. Admittedly, this example is highly contrived;
+<code>square</code> is better written as a function, and nobody would use <code>*</code> as a local
+variable name. But it serves to illustrate a principle that affects even
+perfectly useful and necessary macros: locally-bound symbols can shadow global
+variables.</p>
+
+<p>Consider: what if the macro in question is part of some module's API, but the
+function it invokes is not? A collision in this case is much more plausible than
+if the function is, like <code>*</code>, part of the core language. Common Lisp solves this
+problem by way of its package system, which is based on symbol-renaming. This
+reduces the problem to avoiding collisions within a package, which is eminently
+pragmatic, but uglier than a general solution: it "tacks on", as it were, a
+solution to a problem with unhygienic macros to a solution to a totally
+different problem (namespacing).</p>
+
+<p>Unfortunately, Arc lacks a module system, so although the principle behind the
+implementation of my hygienic quasiquotation could be applied to such, I am
+unable to demonstrate it. However, it at least handles the problem of local
+variables shadowing global ones, which is to say that <code>square</code> as defined below
+will <em>not</em> break if you invoke it after locally rebinding <code>*</code>:</p>
+
+<pre><code>(mac square (x)
+  #`(let tmp #,x
+      (* tmp tmp)))
+</code></pre>
+
+<p>Alright, enough already about how lovely my hygienic macro system is. How does
+it <em>work</em>?</p>
+
+<h2>Syntactic closures</h2>
+
+<p>The idea behind hygienic macros is that the bindings of symbols in the
+quasiquoted code are separate from those in the code from which the macro is
+invoked. In order to track this information, while still maintaining the lisp
+model in which a macro simply manipulates code as data, an extra layer of
+indirection is necessary.</p>
+
+<p>Lisp has two datatypes which behave specially when understood as code: lists and
+symbols. Lists represent function calls, macro invocations, or special forms.
+Symbols represent variables. To implement hygienic macros, I add another such
+type: syntactic closures. Syntactic closures consist of a "syntactic
+environment" and a piece of code. When evaluated, the code is evaluated within
+that environment.</p>
+
+<p>If this sounds familiar, that's because it is; a "closure" usually refers to a
+combination of a <em>function</em> and an environment. Although usually "closure" is
+used to refer only to functions which require a concrete representation of some
+part of their environment at runtime, it makes sense more generally to say that
+<em>every</em> function has an associated environment and forms a closure; when you
+invoke a function, the code in the function is not invoked with whatever
+symbol-to-value bindings are present at the moment, but with the bindings
+present where it was defined, augmented by binding the values passed to it to
+its parameters.</p>
+
+<p>It is possible to do without this sort of environmental juggling entirely, and
+in fact there is a name for the distinction: with closures, one has lexical
+scoping; without them, one has dynamic scoping. The latter is much easier to
+implement, and used to be the norm for lisps; emacs lisp still uses it. Lexical
+scoping is generally agreed to be preferable, and for good reasons - reasons
+analogous to the arguments for hygienic macros. In fact, hygiene is very much
+the equivalent of lexical scoping for macros.</p>
+
+<p>The difference between syntactic closures and their functional counterparts is
+that, just as a macro operates on code at compile-time while a function operates
+on values at run-time, a syntactic closure is an element of lisp code and its
+environment tracks bindings of symbols to variables (and is hence called
+"syntactic"), while a function closure is a value and its environment tracks
+bindings of variables to values.</p>
+
+<p>On a side note, syntactic closures are not <em>quite</em> as simple as I make them
+seem. They don't just have special meaning when evaluated; they also alter the
+semantics of code when one appears as the parameter in a let-binding or a
+function. In such a case, the "code" they enclose represents the parameter much
+as it would normally, but instead of introducing a symbol-to-variable binding in
+the syntactic environment of the let-expression or function, it introduces it in
+the environment of the closure.</p>
+
+<p>I imagine that if Arc (and lisps in general) were less homogenous languages - if
+there were more "kinds" of arc code than just expressions and "binders" such as
+function- and let-parameters - then there would be more special cases like this
+hanging around the usage of hygienic macros.</p>
+
+<h2>Hygienic quasiquotation</h2>
+
+<p>Although it's clear that syntactic closures are what we want, it may still be
+less than obvious how to apply them to solve our problem, and moreover how to
+put an intuitive quasiquotation-like interface on this solution. Thankfully, the
+solution's implementation follows fairly naturally from considering the
+semantics of syntactic closures as compared to the desired behavior of hygienic
+macros.</p>
+
+<p>When we invoke a macro, we expect the most of the code of the macroexpansion to
+be evaluated in a separate syntactic environment; in particular, in the
+environment the macro was defined in. Hence, we enclose the resultant code in
+the macro's defining environment. The exceptions to this rule mostly involve the
+code which was passed into the macro, which we expect to maintain its source
+environment; so we must enclose <em>it</em> in the callee's environment.</p>
+
+<p>Representing this solution in terms of quasiquoting is similarly simple: make
+the hygienic quasiquoter enclose its argument in the syntactic environment of
+the macro definition, and make the hygienic unquoter enclose its evaluated
+argument in the callee's syntactic environment. There are, however, two
+exceptional cases we must consider.</p>
+
+<p>First, what if the macro wants, as an anaphoric macro might, to introduce a
+binding in the callee's environment whose symbol is not one of the arguments
+passed to it? The solution here is to hygienically unquote the desired symbol's
+quotation; it will then be enclosed in the callee's environment by the unquoter.</p>
+
+<p>Second, what if the macro wants to generate and insert code via unquotation that
+is <em>not</em> supposed to be enclosed in the callee's environment? The solution here
+is to use the normal, unhygienic unquoter from within the hygienic quasiquoter.
+Any code within the generated code which <em>does</em> needs to be in the callee's
+environment can be hygienically unquoted as usual.</p>
+
+<h2>Implementation details</h2>
+
+<p>At this point, we will delve more deeply into the internals of the arc compiler,
+found in the file <code>ac.scm</code>. Feel free to skip this section if you only wanted
+the theory.</p>
+
+<p>I have yet to fully flesh out this section. The basic idea, however, is that
+where the original arc compiler keeps track merely of a list of symbols
+currently lexically bound, the hygienic compiler keeps track of the current
+syntactic environment and of the bindings from conses of lexically-bound arc
+symbols with their syntactic environment to mzscheme symbols, and inserts the
+corresponding mzscheme symbols in place of the arc symbol. Arc symbols which are
+in the default environment are always bound to themselves, but symbols in other
+environments are bound to gensyms.</p>
+
+<h2>Using the hygienic version of Arc</h2>
+
+<p>As <a href="http://arclanguage.org/item?id=8599">posted on the arc forums</a>, the hygienic
+arc compiler is maintained as an anarki branch. It should be fully compatible
+with the master anarki branch, but as I'm not completely sure of this and
+moreover I'm not sure people would appreciate the massive changes it makes to
+<code>ac.scm</code>, I won't merge it into the main branch. In order to use the hygiene
+branch, from your local copy of the anarki repo, run:</p>
+
+<pre><code>git checkout --track -b hygiene origin/hygiene
+</code></pre>
+
+<p>After doing this, you will be on the hygiene branch. You should only need to run
+the above once. If you want to go back to the master branch, run "git checkout
+master"; if you want to go again to the hygiene branch, run "git checkout
+hygiene". For more information on branching in git, read the
+<a href="http://git-scm.com/documentation">docs</a>.</p>
+
+
+</div>
+
+</div>
+ </body>
+</html>
+
+

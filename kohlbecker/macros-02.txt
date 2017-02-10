@@ -1,0 +1,376 @@
+
+
+ftp://ftp.cs.indiana.edu/pub/scheme-repository/doc/misc/macros-02.txt
+
+[This is part 2 of a 9-part series of articles on macro expansion
+algorithms in Scheme. Part 3 should be posted next week.]
+
+------------------------------------------------------------------------------
+
+2. Kohlbecker's ``Hygienic'' Expansion Algorithm Saves the Day
+
+We can look at our capturing problem as a problem of confusion
+between variables and variable names.  In the first example, we have
+the macro definition
+
+        (push a l) ==> (set! l (cons a l))
+
+where the name `cons' is a free variable referring to the standard
+`cons' procedure, and the expression
+
+        (let ((cons '()))
+          (push "ghengis" cons)
+          (push "khubla" cons)
+          cons)
+
+where the name `cons' within the body of the `let' refers to a bound
+variable.  These are two different variables: at the places where
+they are  defined, they "mean" different things.  The evaluator only
+looks at the name `cons', however, and when the naive expander
+"blindly" substitutes the transformed macro into the expression
+without preserving any context information, the evaluator can't tell
+the difference between the two different `cons' variables.
+
+We want our macros to be "referentially transparent": it should be
+possible to look at a variable reference and determine from the
+surrounding text what it refers to.  If the macro expander inserts
+code, the names in that code should have the meaning that was
+lexically apparent at the place where the macro transformation was
+defined.  A macro system that correctly preserves the meanings of
+variables is said to "maintain hygiene".
+
+Sometimes we do want to have non-hygienic macros.  Occasionally it is
+useful to let a macro capture a particular set of identifiers on
+purpose.  This happens relatively infrequently, however. For example,
+none of the "derived expression types" in section 7.3 of the Scheme
+report [9] need to capture any variables.  It might stand to reason
+that macro transformers should be hygienic by default, and perhaps
+require a bit of extra effort to capture variables.  The naive macro
+expander has this backwards: the default behavior easily violates
+hygiene, and requires a lot of extra effort to maintain it.
+
+2.1. The Kohlbecker Algorithm
+
+In [3], and in his Ph.D. thesis [4], Eugene Kohlbecker introduced the
+first hygienic macro expansion algorithm.  His algorithm solves the
+variable capturing problem by doing an alpha-conversion:
+systematically renaming all bound variables in a way that respects
+variables, instead of just variable names.
+
+This is easier said than done.  The Kohlbecker algorithm does it with
+a four-phase process:
+
+        (define kohlbecker-expand
+          (lambda (form)
+            (unmark
+              (alpha-convert
+                (expand-marked
+                  (mark form (make-new-mark)))))))
+
+ 1. The first pass replaces all variable names in the source expression
+    with "marked identifiers".  These are objects, distinguishable
+    from symbols, which are composed of the original name of the
+    variable and a "mark".  (Marks are referred to as "time stamps" in
+    [3], and as "colors" in [7].)  Every variable receives the same
+    mark in this pass.
+
+	(define mark
+	  (lambda (s stamp-value)
+	    (cond
+	      ((or (identifier? s)
+		   (macro-tag? s)
+		   (reserved-word? s)) s)
+	      ((symbol? s) (make-identifier s stamp-value))
+	      ((pair? s) (map (lambda (z) (mark z stamp-value)) s))
+	      (else s))))
+
+	(define reserved-word?
+	  (lambda (x) (memq x '(quote lambda set! if))))
+
+ 2. The second pass does a macro-expansion using basically the same
+    algorithm as the naive expander, with one difference: after a
+    macro transformer procedure is called, the new variables
+    it introduced are replaced with marked identifiers.  The
+    variables introduced by different macro calls are given different
+    marks.
+
+        (define expand-marked
+          (lambda (mform)
+            (if (not (pair? mform))
+                mform
+                (case (car mform)
+                  ((quote) mform)
+                  ((lambda) `(lambda ,(cadr mform)
+                                     ,@(map expand-marked (cddr mform))))
+                  ((set!) `(set! ,(cadr mform)
+                                 ,(expand-marked (caddr mform))))
+                  ((if) `(if ,@(map expand-marked (cdr mform))))
+                  (else (if (macro-tag? (car mform))
+                            (expand-marked
+                              (mark ((macro-transformer (car mform)) mform)
+				    (make-new-mark)))
+                            (map expand-marked mform)))))))
+
+ 3. The third pass assigns unique names to all bound variables.  It
+    does this by walking through the expression, assigning names to
+    all variables bound by lambda-expressions, and then substituting
+    the new names for the corresponding identifier objects within the
+    body.  We unmark `quote' forms to prevent interference with the
+    substitution machinery.
+
+	(define alpha-convert
+	  (lambda (mform)
+	    (if (not (pair? mform))
+		mform
+		(case (car mform)
+		  ((lambda) (alpha-convert-lambda
+			      (cadr mform)
+			      (map alpha-convert (cddr mform))))
+		  ((quote) (unmark mform))
+		  ((set!) `(set! ,(cadr mform)
+				 ,(alpha-convert (caddr mform))))
+		  ((if) `(if ,@(map alpha-convert (cdr mform))))
+		  (else (map alpha-convert mform))))))
+
+	(define alpha-convert-lambda
+	  (lambda (varlist body)
+	    (let ((substitutions (make-substitution-info varlist)))
+	      `(lambda ,(perform-substitutions substitutions varlist)
+		       ,@(perform-substitutions substitutions body)))))
+
+	(define make-substitution-info
+	  (lambda (varlist)
+	    (map (lambda (id)
+		   (cons id
+			 (identifier->unique-symbol id)))
+		 varlist)))
+
+	(define perform-substitutions
+	  (lambda (substitutions s)
+	    (cond
+	      ((identifier? s)
+	       (let ((entry (assoc-id s substitutions)))
+		 (if entry
+		     (cdr entry)
+		     s)))
+	      ((not (pair? s))
+	       s)
+	      (else
+	       (cons (perform-substitutions substitutions (car s))
+		     (perform-substitutions substitutions (cdr s)))))))
+
+ 4. The fourth pass changes all remaining identifier objects back into
+    symbols.  Since we took care of bound variables and quoted symbols
+    in the third pass, this leaves only the free variables for the
+    fourth and final pass.
+
+	(define unmark
+	  (lambda (s)
+	    (cond
+	      ((identifier? s) (identifier->symbol s))
+	      ((pair? s) (map unmark s))
+	      (else s))))
+
+It doesn't matter much how we represent the marks that we apply to
+variables, as long as it is easy to generate unique marks and to
+compare them efficiently for equality.  We use integers here.
+
+	(define make-new-mark
+	  (let ((v 0))
+	    (lambda ()
+	      (begin (set! v (+ v 1))
+		     v))))
+
+	(define mark=? =)
+
+Here we define a new data structure to represent identifiers.
+
+	(define make-identifier
+	  (lambda (name mark)
+	    (vector 'IDENTIFIER name mark)))
+
+	(define identifier->symbol
+	  (lambda (x) (vector-ref x 1)))
+	(define identifier-mark
+	  (lambda (x) (vector-ref x 2)))
+
+	(define identifier?
+	  (lambda (x)
+	    (and (vector? x)
+		 (= (vector-length x) 3)
+		 (eq? (vector-ref x 0) 'IDENTIFIER))))
+
+	(define identifier=?
+	  (lambda (x y)
+	    (and (identifier? x)
+		 (identifier? y)
+		 (eq? (identifier->symbol x) (identifier->symbol y))
+		 (mark=? (identifier-mark x) (identifier-mark y)))))
+
+	(define assoc-id
+	  (lambda (id s)
+	    (cond
+	      ((null? s) #f)
+	      ((identifier=? id (caar s)) (car s))
+	      (else (assoc-id id (cdr s))))))
+
+	(define identifier->unique-symbol
+	  (lambda (x)
+	    (gensym)))
+
+Obviously, giving every bound variable a new, unique name can prevent
+capturing.  In order to determine which references to variables get
+which new names, it is necessary to keep track of the original
+contexts where the variables were referenced.  Kohlbecker's algorithm
+does this implicitly, assigning different marks to variables in
+different contexts.
+
+2.2. An Example
+
+Let's look at how the Kohlbecker expander handles one of our examples
+from section 1.3.  To make the output easier to understand, let's
+redefine the `identifier->unique-symbol' procedure:
+
+	(define identifier->unique-symbol
+	  (lambda (x)
+	    (string->symbol
+	      (string-append (symbol->string (identifier->symbol x))
+	                     ":"
+	                     (number->string (identifier-mark x))))))
+
+(Of course, the symbols it generates aren't guaranteed to be unique.)
+
+We'll look at the following expression step-by-step:
+
+        (let ((temp 37.0))
+          (or (foo temp)
+              temp))
+
+The first pass takes this expression and changes all symbols to
+identifier objects, giving them the mark `1':
+
+	(let ((#(identifier temp 1) 37.0))
+	  (or (#(identifier foo 1) #(identifier temp 1))
+	      #(identifier temp 1)))
+
+Then we begin the second pass.  When the expander encounters the `let'
+macro call, it calls the corresponding macro transformer, yielding:
+
+	((lambda (#(identifier temp 1))
+           (or (#(identifier foo 1) #(identifier temp 1))
+               #(identifier temp 1)))
+         37.0)
+
+It then tries to mark all newly introduced variables with the mark
+`2'.  The result is the same, since there are no new variables here yet.
+
+Continuing to expand recursively, the expander encounters the `or'
+macro call and invokes the macro transformer procedure on
+
+        (or (#(identifier foo 1) #(identifier temp 1))
+            #(identifier temp 1)))
+
+to give:
+
+	((lambda (temp)
+	   (if temp
+	       temp
+	       (or #(identifier temp 1))))
+	 (#(identifier foo 1) #(identifier temp 1)))
+
+Marking this result with `3' gives:
+
+	((lambda (#(identifier temp 3))
+	   (if #(identifier temp 3)
+	       #(identifier temp 3)
+	       (or #(identifier temp 1))))
+	 (#(identifier foo 1) #(identifier temp 1)))
+
+The expander handles the inner `or' in a similar way.  Eventually,
+the second pass completes with the result:
+
+	((lambda (#(identifier temp 1))
+	   ((lambda (#(identifier temp 3))
+	      (if #(identifier temp 3)
+	          #(identifier temp 3)
+	          #(identifier temp 1)))
+	    (#(identifier foo 1) #(identifier temp 1))))
+	 37.0)
+
+The third pass assigns names to the bound variables and substitutes them
+into the expression, giving:
+
+	((lambda (temp:1)
+	   ((lambda (temp:3)
+	      (if temp:3 temp:3 temp:1))
+	    (#(identifier foo 1) temp:1)))
+	 37.0)
+
+The fourth pass unmarks the free variables, in this case just `foo':
+
+	((lambda (temp:1)
+	   ((lambda (temp:3)
+	      (if temp:3 temp:3 temp:1))
+	    (foo temp:1)))
+	 37.0)
+
+This is our final answer.  Our two `temp' variables from different
+contexts have been given different names.
+
+We seem to have fixed the problem, right?  Well, yes and no, as we'll
+see later in section 4.
+
+2.3. Capturing Variables
+
+Before moving on, let's take a look at how we can go about capturing
+variables on purpose with this algorithm.  As an example, we'll
+define a `catch' macro that captures the name `throw' within it's
+body.  The definition of `catch' for the naive expander would be:
+
+	(macro-transformer-set!
+	  'catch
+	  (lambda (form)
+	    `(call-with-current-continuation
+	       (lambda (throw)
+		 ,(cadr form)))))
+
+Our Kohlbecker expander will rename the `throw' binding, preventing
+the capture of the `throw' name and preserving hygiene.  How do we
+fool the expander into letting us capture variables?
+
+The key is in the first pass, which marks all identifiers in the
+original expression with the same mark.  If a macro is to capture an
+identifier, it has to insert an identifier with the same context
+information as the identifiers in the original expression.
+
+The following changes to the expander will allow this:
+
+	(define *top-mark* #f)
+
+        (define kohlbecker-expand
+          (lambda (form)
+	    (set! *top-mark* (make-new-mark))
+            (unmark
+              (alpha-convert
+                (expand-marked
+                  (mark form *top-mark*))))))
+
+	(define capture
+	  (lambda (var)
+	    (make-identifier var *top-mark*)))
+
+The `capture' procedure returns an identifier object having the same
+top-level mark that the identifiers in the original expression had.
+Our revised `catch' macro definition uses it to insert the name
+`throw' in the lambda variables list:
+
+	(macro-transformer-set!
+	  'catch
+	  (lambda (form)
+	    `(call-with-current-continuation
+	       (lambda (,(capture 'throw))
+		 ,(cadr form)))))
+
+Using this method, macro writers can break the hygiene rule for
+special-purpose macros, but still benefit from safe macros being
+the default.
