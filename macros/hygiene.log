@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.17 (TeX Live 2016/Debian) (preloaded format=latex 2017.1.19)  10 FEB 2017 11:07
+This is pdfTeX, Version 3.14159265-2.6-1.40.17 (TeX Live 2016/Debian) (preloaded format=latex 2017.1.19)  10 FEB 2017 12:25
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -25,35 +25,47 @@ File: size10.clo 2014/09/29 v1.4h Standard LaTeX file (size option)
 ) (./hygiene.aux)
 \openout1 = `hygiene.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 8.
-LaTeX Font Info:    ... okay on input line 8.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 8.
-LaTeX Font Info:    ... okay on input line 8.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 8.
-LaTeX Font Info:    ... okay on input line 8.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 8.
-LaTeX Font Info:    ... okay on input line 8.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 8.
-LaTeX Font Info:    ... okay on input line 8.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 8.
-LaTeX Font Info:    ... okay on input line 8.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 7.
+LaTeX Font Info:    ... okay on input line 7.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 7.
+LaTeX Font Info:    ... okay on input line 7.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 7.
+LaTeX Font Info:    ... okay on input line 7.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 7.
+LaTeX Font Info:    ... okay on input line 7.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 7.
+LaTeX Font Info:    ... okay on input line 7.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 7.
+LaTeX Font Info:    ... okay on input line 7.
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <12> on input line 10.
+(Font)              <12> on input line 9.
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <8> on input line 10.
+(Font)              <8> on input line 9.
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <6> on input line 10.
+(Font)              <6> on input line 9.
 
 [1
 
-] [1] [2] (./hygiene.aux) ) 
+] [1]
+Overfull \hbox (17.24684pt too wide) in paragraph at lines 84--84
+[]\OT1/cmtt/m/n/10 (defmacro silly-bad-or (let if) `(let ((tmp ,let)) (if tmp t
+mp ,if)))[] 
+ []
+
+[2] [3]
+Overfull \hbox (11.99689pt too wide) in paragraph at lines 198--198
+[]\OT1/cmtt/m/n/10 [3]> (macroexpand `(let ((tmp 5)) ,(macroexpand '(bad-or nil
+ tmp))))[] 
+ []
+
+[4] (./hygiene.aux) ) 
 Here is how much of TeX's memory you used:
  229 strings out of 494946
  2456 string characters out of 6181058
- 50472 words of memory out of 5000000
+ 51472 words of memory out of 5000000
  3600 multiletter control sequences out of 15000+600000
  7755 words of font info for 28 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 23i,6n,17p,125b,187s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 23i,6n,17p,124b,239s stack positions out of 5000i,500n,10000p,200000b,80000s
 
-Output written on hygiene.dvi (3 pages, 2040 bytes).
+Output written on hygiene.dvi (5 pages, 4224 bytes).

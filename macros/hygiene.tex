@@ -3,7 +3,6 @@
 \title{My first document}
 \date{2013-09-01}
 \author{John Doe}
-
   
 \begin{document}
 \pagenumbering{gobble}
@@ -13,15 +12,12 @@
 
 \section{All about Macros}
 
-
 \subsection{the BAD-OR macro}
 
 Let us define a two argument BAD-OR macro in terms of LET and IF
 
 \begin{verbatim}
-(defmacro bad-or (a b) 
-  (let ((tmp a))
-     (if tmp tmp b)))
+(defmacro bad-or (a b) `(let ((tmp ,a)) (if tmp tmp ,b)))
 \end{verbatim}
 
 Now let us put the macro to work in an environment where TMP is bound
@@ -37,25 +33,79 @@ Now let us put the macro to work in an environment where TMP is bound
      (if tmp tmp tmp)))
 \end{verbatim}
 
+We can ignore outer let as the binding it set up cannot be seen by anything
+
 \begin{verbatim}
 =>  (let ((tmp #f))
       (if tmp tmp tmp))
 \end{verbatim}
 
+by substitution this is 
+
 \begin{verbatim}
 =>  (if #f #f #f)
 \end{verbatim}
+
+resulting in the conclusion
 
 \begin{verbatim}
 =>  #f
 \end{verbatim}
 
-\section{The need for hygienic macros}
+Ideally we would want the following to be true
 
 \begin{verbatim}
 (let ((tmp 5))  =>   5
   (or #f tmp))
 \end{verbatim}
+
+\newpage
+
+\subsection{syntactic closures}
+
+Let us return to the BAD-OR macro
+
+\begin{verbatim}
+(defmacro bad-or (a b) `(let ((tmp ,a)) (if tmp tmp ,b)))
+\end{verbatim}
+
+Let us look at introduced variables \begin{verbatim} tmp  \end{verbatim}
+
+Now let us suppose everything in the language is in a state of flux and can be redefined at any time.
+
+\begin{verbatim}
+(defmacro bad-or (a b) `(let ((tmp ,a)) (if tmp tmp ,b)))
+\end{verbatim}
+
+Parameters of BAD-OR are A and B , what if they were named LET and IF ?
+
+\begin{verbatim}
+(defmacro silly-bad-or (let if) `(let ((tmp ,let)) (if tmp tmp ,if)))
+\end{verbatim}
+
+
+
+
+\begin{verbatim}
+(defmacro bad-or (a b) `(let ((tmp ,a)) (if tmp tmp ,b)))
+\end{verbatim}
+
+
+\begin{verbatim}
+(let ((tmp 5)) 
+  (bad-or #f tmp))
+Renamed =>
+ (let:0 ((tmp:1 5))
+   (bad-or:0 #f tmp:1))
+\end{verbatim}
+
+
+
+
+
+
+
+
 
 \newpage
 
@@ -87,6 +137,79 @@ become susceptible to
 
 
 \section{continuation passing macros}
+
+
+\section{scrap}
+
+\begin{verbatim}
+[1]> (defmacro bad-or (a b) `(let ((tmp ,a)) (if tmp tmp ,b)))
+BAD-OR
+\end{verbatim}
+
+So this says whenever i say
+\begin{verbatim}
+ (bad-or ?a ?b)
+\end{verbatim}
+
+replace that with
+
+\begin{verbatim}
+ (let ((tmp ?a)) (if tmp tmp ?b))
+\end{verbatim}
+
+
+
+
+
+
+
+
+Lets try it in a few cases
+
+\begin{verbatim}
+[5]> (let ((a 1)(b 5)) (bad-or a b))
+1
+[6]> (let ((a nil)(b 5)) (bad-or a b))
+5
+\end{verbatim}
+
+So everything appears to be working normally.
+
+\begin{verbatim}
+:: (let ((a 1)(b 5)) (bad-or a b))
+=> (let ((a 1)(b 5)) (let ((tmp a)) (if tmp tmp b)))
+1
+[6]> (let ((a nil)(b 5)) (bad-or a b))
+5
+\end{verbatim}
+
+
+\begin{verbatim}
+[2]> (macroexpand '(bad-or nil tmp))
+(LET ((TMP NIL)) (IF TMP TMP TMP)) ;
+\end{verbatim}
+
+\begin{verbatim}
+T
+[3]> (macroexpand `(let ((tmp 5)) ,(macroexpand '(bad-or nil tmp))))
+(LET ((TMP 5)) 
+ (LET ((TMP NIL)) 
+  (IF TMP TMP TMP))) ;
+NIL
+\end{verbatim}
+
+\begin{verbatim}
+[3] (let ((tmp 5)) (bad-or nil tmp))
+=> NIL
+\end{verbatim}
+
+\begin{verbatim}
+[5]> (if nil nil nil)
+NIL
+\end{verbatim}
+
+\newpage
+
 
 
 \end{document}
