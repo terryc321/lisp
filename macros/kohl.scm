@@ -22,6 +22,23 @@
 ;; STF = tsmstree -> tsstree
 ;; theta in set { ST } = tsmstree -> tsstree , < lambda term >
 
+;;----------------------------------------------------------------------
+;; add core forms -- eg IF
+;; need to add how to expand that form onto E 
+;; need to add it to core-token?
+;; need to remove it from macro-token?
+;; need to add phrase into */*
+;; need to add phrase into A
+;;
+
+
+
+
+
+
+
+
+
 (define constant?
   (lambda (x)
     (or
@@ -31,8 +48,7 @@
 (define macro-token?
   (lambda (v)
     (if 
-     (and (symbol? v) (memq v '(LET
-				IF
+     (and (symbol? v) (memq v '(LET			     
 				OR
 				NAIVE-OR
 				FAKE
@@ -41,13 +57,16 @@
      #f)))
 
 
+;;
+;; if it is a CORE-TOKEN then its not a MACRO-TOKEN
+;;
 (define macro?
   (lambda (m)
     (if (pair? m)
 	(let ((op (car m)))
 	  (cond
 	   ((eq? op 'LET) #t)
-	   ((eq? op 'IF) #t)
+	   ;;((eq? op 'IF) #t)
 	   ((eq? op 'OR) #t)
 	   ((eq? op 'NAIVE-OR) #t)
 	   ((eq? op 'FAKE) #t)
@@ -58,15 +77,31 @@
 
 
 
+
+;;
+;; extend core primitives IF and SET! by adding them here.
+;;  
 (define core-token?
   (lambda (v)
-    (if (and (symbol? v) (memq v '(LAMBDA QUOTE)))
+    (if (and (symbol? v) (memq v '(LAMBDA
+				   QUOTE
+				   IF
+				   SET!
+				   )))
 	#t
 	#f)))
 
-;; varialble is just a symbol 
+
+
+;; variable is just a symbol
+;; atomic non variable
+;; not stamped
+;; not macro-token
+;; not core-token
 (define variable?
-  (lambda (x) (symbol? x)))
+  (lambda (x)
+    (symbol? x)))
+
 
 
 (define quote?
@@ -163,14 +198,18 @@
 	(let ((info (assq v seen)))
 	  (if info
 	      (cdr info)
-	      (let ((new (make-symbol (symbol->string v))))
-		(put-original-name new v)
-		
+	      (let ((new (gensym (format #f "~a:~a:" v n))))
+	      ;;(let ((new (string->symbol (format #f "~a:~a" v n))))
+		(put-original-name new v)		
 		(set! seen
 		  (cons
 		   (cons v new)
 		   seen))
 		new)))))))
+
+
+
+
 		
 
 (define S stamp)
@@ -216,6 +255,7 @@
 
 
 
+
 ;; fun
 ;; arg
 
@@ -249,7 +289,51 @@
 	 (null? (cdr (cdr (cdr s)))))))
 
 
-;; theta
+;; theta -- ST is the actual expander
+(define ST
+  (lambda (m)
+    (cond
+     ;; LET
+     ((and (pair? m) (eq? (car m) 'LET))
+      (let ((i (car (cdr m)))
+	    (e (car (cdr (cdr m))))
+	    (b (car (cdr (cdr (cdr m))))))
+	`((LAMBDA ,i ,b) ,e)))
+     
+     ;; IF
+     ;; ((and (pair? m) (eq? (car m) 'IF))
+     ;;  (let ((a (car (cdr m)))
+     ;; 	    (b (car (cdr (cdr m))))
+     ;; 	    (c (car (cdr (cdr (cdr m))))))
+     ;; 	`(((ef ,a) ,b) ,c)))
+     
+     ;; OR
+     ((and (pair? m) (eq? (car m) 'OR))
+      (let ((a (car (cdr m)))
+	    (b (car (cdr (cdr m)))))
+	`(LET v ,a (IF v v ,b))))
+     ;; NAIVE-OR
+     ((and (pair? m) (eq? (car m) 'NAIVE-OR))
+      (let ((a (car (cdr m)))
+	    (b (car (cdr (cdr m)))))
+	(let ((v (S0 'v)))
+	  `(LET ,v ,a (IF ,v ,v ,b)))))
+     ;; FAKE
+     ((and (pair? m) (eq? (car m) 'FAKE))
+      (let ((x (car (cdr m))))
+	`(QUOTE ,x)))
+     ;; CASE exp pr
+     ((and (pair? m) (eq? (car m) 'CASE))
+      (let ((exp (car (cdr m)))
+	    (pr  (car (cdr (cdr m)))))
+	`(LET v ,exp
+	      (IF ((eq? v)
+		   (QUOTE ,(car pr)))
+		  ,(car (cdr pr))
+		  #f))))
+     (else (error "syntax table: no match" m)))))
+
+
 
 ;; application?
 ;; (F ARG)
@@ -273,6 +357,24 @@
     (car (cdr s))))
 
 
+
+;; IF a b c
+;; CDR= a b c
+;; CDR= b c
+;; CDR= c
+;; CDR= ()
+(define (if? s)
+  (and (pair? s)
+       (eq? 'IF (car s))
+       (pair? (cdr s))
+       (pair? (cdr (cdr s)))
+       (pair? (cdr (cdr (cdr s))))
+       (null? (cdr (cdr (cdr (cdr s)))))))
+
+       
+       
+       
+
 ;; E : Expand
 (define E
   (lambda (s)
@@ -283,14 +385,172 @@
 	 ((stamped? s) s)
 	 ((quote? s) s)
 	 ((macro? s)
-	  (((E ((T (theta s)) (S j))) theta)
-	   (add1 j)))
+	  (((E ((T (theta s)) (S j))) theta) (add1 j)))
 	 ((lambda? s)
-	  `(lambda ,(lambda-variable s)
-	     ,(((E (lambda-body s)) theta) j)))
+	  `(LAMBDA ,(lambda-variable s)
+		   ,(((E (lambda-body s)) theta) j)))
+	 ((if? s)
+	  `(IF ,(((E (car (cdr s))) theta) j)
+	       ,(((E (car (cdr (cdr s)))) theta) j)
+	       ,(((E (car (cdr (cdr (cdr s))))) theta) j)))	       
 	 ((application? s)
 	  `(,(((E (application-function s)) theta) j)
-	    ,(((E (application-argument s)) theta) j))))))))
+	    ,(((E (application-argument s)) theta) j)))
+	 (else
+	  (error "expand E : un matched " s theta j )))))))
+
+
+
+
+
+
+
+
+;; atomic non variable
+(define atomic-non-variable?
+  (lambda (y)
+    (or (constant? y)
+	(stamped? y)
+	(macro-token? y)
+	(core-token? y))))
+
+
+
+;; atomic-not-stamped?
+(define atomic-not-stamped?
+  (lambda (x)
+    (or (constant? x)
+	(and (variable? x)
+	     (not (stamped? x)))
+	(macro-token? x)
+	(core-token? x))))
+
+
+;; U
+(define U
+  (lambda (t)
+    (format #t "U t = ~a ~%" t)
+    (cond
+     ((atomic-not-stamped? t) t)
+     ((stamped? t)
+      (get-original-name t))
+     (else (map U t)))))
+
+
+
+
+;; */*
+(define */*
+  (lambda (v w)
+    (lambda (t)
+      (format #t "*/* v w t  = ~a : ~a : ~a ~%" v w t)
+      (cond
+       ((stamped? t) (if (eq? t w) v t))
+       ((atomic-not-stamped? t) t)
+       ((quote? t) t)
+       ((lambda? t)
+	(if (eq? w (lambda-variable t))
+	    `(LAMBDA ,w ,(lambda-body t))
+	    `(LAMBDA ,(lambda-variable t)
+		     ,((*/* v w)
+		       (lambda-body t)))))
+       ((if? t)
+	`(IF ,((*/* v w) (car (cdr t)))
+	     ,((*/* v w) (car (cdr (cdr t))))
+	     ,((*/* v w) (car (cdr (cdr (cdr t)))))))
+       
+       ((application? t)
+	`(,((*/* v w) (application-function t))
+	  ,((*/* v w) (application-argument t))))))))
+
+
+
+
+
+;; A
+(define A
+  (lambda (s)
+    (format #t "A s  = ~a ~%" s)
+    (cond
+     ((variable? s) s)
+     ((atomic-non-variable? s) s)  
+     ((quote? s) s)
+     ((lambda? s)
+      (let ((v (gensym (format #f "~a:~a:"
+			       (U (lambda-variable s))
+			       "new"))))
+	`(LAMBDA ,v
+		 ,(A ((*/* v (lambda-variable s)) ;; */*
+		      (lambda-body s))))))
+
+     ((if? s)
+      `(IF ,(A (car (cdr s)))
+	   ,(A (car (cdr (cdr s))))
+	   ,(A (car (cdr (cdr (cdr s)))))))
+     
+     ((application? s)
+      `(,(A (application-function s))
+	,(A (application-argument s)))))))
+
+
+
+
+;; Ehyg
+(define Ehyg
+  (lambda (s)
+    (lambda (theta)
+      (U
+       (A 
+	(((E ((T s) S0)) theta) 1)
+	)))
+    ))
+
+
+
+
+
+
+
+
+      
+;;(U (A
+;;;    )))))
+
+
+
+(define (demo0) ((T '(a b c)) S0))
+(define (demo1) ((T '(QUOTE x)) S0))
+(define (demo2) (((E ((T '(QUOTE x)) S0)) ST) 1))
+(define (demo3) (((E ((T '(IF a b c)) S0)) ST) 1))
+
+(define (check1) ((Ehyg '(LET x (OR a v) (NAIVE-OR x v))) ST))
+(define (check2) ((Ehyg '(LAMBDA a (CASE (FAKE a) (QUOTE a)))) ST))
+
+(define (check3) ((Ehyg '(LET a 1 (IF a b c))) ST))
+;;(define (check4) (((E ((T '(IF a b c)) S0)) ST) 1))
+
+
+;; quasiquote -- doesnt require .
+;; (define (check4) ((Ehyg '(LET a 1 `(a ,a a))) ST))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
