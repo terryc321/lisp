@@ -4,7 +4,6 @@
 
 
 ;; (push a l) ==> (set! l (cons a l))
-
 (define push-transformer
   (lambda (form env)
     (let ((a-form (make-syntactic-closure env '() (cadr form)))
@@ -248,6 +247,7 @@
 (install-transformer 'push push-transformer)
 (install-transformer 'or or-transformer)
 (install-transformer 'let let-transformer)
+(install-transformer 'catch catch-transformer)
 
 
 
@@ -341,9 +341,4 @@
 		      (swap a b)
 		      (swap a b)		  		      
 		      (list a b))))
-
-
-
-
-
 

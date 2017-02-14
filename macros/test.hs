@@ -3,40 +3,30 @@
 twice x = x * 2
 add1 x = x + 1
 
--- the-type : the-meaning
 
--- v in set var : identifier : symbol?
-data Variable = Var String deriving (Show ,Eq)
+---data Constant = Cint Integer | CTrue | CFalse deriving (Show ,Eq)
+-- data Variable = Var String deriving (Show ,Eq)
+
 --- define some variables , shorthand
-vx = Var "x"
-vy = Var "y"
-vz = Var "z"
-
-
---- w in set TSVar : time stamped variable 
-data Time_Stamped_Variable = Tsv Variable Integer deriving (Show , Eq)
-
---- some constants
-data Constant = Ci Integer | Cb Bool deriving (Show , Eq)
+---vx = Var "x"
+---vy = Var "y"
+---vz = Var "z"
 
 --- data Dir = D Int String deriving Show
 --- Var
 
 
---- uppercase for constructors
---- functions need to be lower case
-s :: Integer -> Variable -> Time_Stamped_Variable
-s i v = Tsv v i
-
---- S naught
-s0 v = Tsv v 0 
-
---- initially tau is s 0
-tau = (s 0)
+--- need some stupid input parser to make an s expression tree
+---
 
 
+---- constants
+--- integers -> integers
+--- variable -> time stamped variable
+--- anything else -> anything else
+data Stree = SC Integer | SV String deriving (Show,Eq)
 
-tee (Var name) = \t -> (t (Var name))
+data Tsstree = TC Integer | TV String deriving (Show, Eq)
 
 
 
@@ -44,10 +34,27 @@ tee (Var name) = \t -> (t (Var name))
 
 
 
+-- data Time_Stamped_Variable = TStamp Variable Integer deriving (Show ,Eq)
+
+-- uppercase for constructors
+-- functions need to be lower case
+--- s :: Integer -> Variable -> Time_Stamped_Variable
+--- s i v = TStamp v i
+
+-- -- --- S naught
+--- s0 = (s 0) 
+-- tau = s0
+
+-- --- initially tau is s 0
+-- tau = s 0
+
+--- tf
+--- tf (Var s) t = \t -> (t (Var s))
+--- tf () t = \t -> ()
+-- --- Integer -> Const
 
 
 
---- Integer -> Const
 
 
 
