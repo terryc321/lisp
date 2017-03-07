@@ -1,0 +1,20 @@
+%%%% Starting test test-cdr
+Group begin: test-cdr
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 48
+  source-form: (test-equal (exec (quote (ldc (a b) cdr stop)) any) (quote (b)))
+Test end:
+  result-kind: pass
+  actual-value: (b)
+  expected-value: (b)
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 49
+  source-form: (test-eqv (exec (quote (ldc (a) cdr stop)) any) (quote ()))
+Test end:
+  result-kind: pass
+  actual-value: ()
+  expected-value: ()
+Group end: test-cdr
+# of expected passes      7

@@ -1,0 +1,28 @@
+%%%% Starting test test-comp-lambda
+Group begin: test-comp-lambda
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 218
+  source-form: (test-equal 7 (secd (quote ()) (quote ()) (compil (quote ((lambda (x y) (add x y)) 3 4))) (quote ())))
+Test end:
+  result-kind: pass
+  actual-value: 7
+  expected-value: 7
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 225
+  source-form: (test-equal (quote (3 . 4)) (secd (quote ()) (quote ()) (compil (quote ((lambda (x y) (cons x y)) 3 4))) (quote ())))
+Test end:
+  result-kind: pass
+  actual-value: (3 . 4)
+  expected-value: (3 . 4)
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 232
+  source-form: (test-equal (quote (8 . 6)) (secd (quote ()) (quote ()) (compil (quote (cons 8 6))) (quote ())))
+Test end:
+  result-kind: pass
+  actual-value: (8 . 6)
+  expected-value: (8 . 6)
+Group end: test-comp-lambda
+# of expected passes      64

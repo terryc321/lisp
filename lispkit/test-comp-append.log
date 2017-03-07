@@ -1,0 +1,12 @@
+%%%% Starting test test-comp-append
+Group begin: test-comp-append
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 390
+  source-form: (test-equal (quote (a b c d e f)) (secd (quote ()) (quote ()) (compil (quote (letrec ((app (lambda (xs ys) (if (null xs) ys (cons (car xs) (app (cdr xs) ys)))))) (app (quote (a b c)) (quote (d e f)))))) (quote ())))
+Test end:
+  result-kind: pass
+  actual-value: (a b c d e f)
+  expected-value: (a b c d e f)
+Group end: test-comp-append
+# of expected passes      79

@@ -1,0 +1,28 @@
+%%%% Starting test test-leq
+Group begin: test-leq
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 92
+  source-form: (test-equal (exec (quote (ldc 271 ldc 127 leq stop)) any) #f)
+Test end:
+  result-kind: pass
+  actual-value: #f
+  expected-value: #f
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 93
+  source-form: (test-equal (exec (quote (ldc 127 ldc 127 leq stop)) any) #t)
+Test end:
+  result-kind: pass
+  actual-value: #t
+  expected-value: #t
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 94
+  source-form: (test-equal (exec (quote (ldc 127 ldc 271 leq stop)) any) #t)
+Test end:
+  result-kind: pass
+  actual-value: #t
+  expected-value: #t
+Group end: test-leq
+# of expected passes      25

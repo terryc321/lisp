@@ -1,0 +1,28 @@
+%%%% Starting test test-sub
+Group begin: test-sub
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 74
+  source-form: (test-equal (exec (quote (ldc 10 ldc 8 sub stop)) any) 2)
+Test end:
+  result-kind: pass
+  actual-value: 2
+  expected-value: 2
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 75
+  source-form: (test-equal (exec (quote (ldc 10 ldc 10 sub stop)) any) 0)
+Test end:
+  result-kind: pass
+  actual-value: 0
+  expected-value: 0
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 76
+  source-form: (test-equal (exec (quote (ldc 1 ldc 2 sub stop)) any) -1)
+Test end:
+  result-kind: pass
+  actual-value: -1
+  expected-value: -1
+Group end: test-sub
+# of expected passes      19

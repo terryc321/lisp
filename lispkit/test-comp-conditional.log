@@ -1,0 +1,28 @@
+%%%% Starting test test-comp-conditional
+Group begin: test-comp-conditional
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 180
+  source-form: (test-equal 1 (secd (quote ()) (quote ((3))) (comp (quote (if #t 1 2)) (quote ()) (quote (stop))) (quote ())))
+Test end:
+  result-kind: pass
+  actual-value: 1
+  expected-value: 1
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 181
+  source-form: (test-equal 1 (secd (quote ()) (quote ((3))) (comp (quote (if (leq 3 4) 1 2)) (quote ()) (quote (stop))) (quote ())))
+Test end:
+  result-kind: pass
+  actual-value: 1
+  expected-value: 1
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 182
+  source-form: (test-equal 2 (secd (quote ()) (quote ((3))) (comp (quote (if (leq 4 3) 1 2)) (quote ()) (quote (stop))) (quote ())))
+Test end:
+  result-kind: pass
+  actual-value: 2
+  expected-value: 2
+Group end: test-comp-conditional
+# of expected passes      49

@@ -1,0 +1,27 @@
+%%%% Starting test vec-test
+Group begin: vec-test
+Test begin:
+  source-file: "test.scm"
+  source-line: 17
+  source-form: (test-assert (vector? v))
+Test end:
+  result-kind: pass
+  actual-value: #t
+Test begin:
+  source-file: "test.scm"
+  source-line: 19
+  source-form: (test-eqv 99 (vector-ref v 2))
+Test end:
+  result-kind: pass
+  actual-value: 99
+  expected-value: 99
+Test begin:
+  source-file: "test.scm"
+  source-line: 21
+  source-form: (test-eqv 7 (vector-ref v 2))
+Test end:
+  result-kind: pass
+  actual-value: 7
+  expected-value: 7
+Group end: vec-test
+# of expected passes      3

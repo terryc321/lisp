@@ -1,0 +1,36 @@
+%%%% Starting test test-comp-let
+Group begin: test-comp-let
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 264
+  source-form: (test-equal 3 (secd (quote ()) (quote ()) (comp (quote (let ((x (add 1 2))) x)) (quote ()) (quote (stop))) (quote ())))
+Test end:
+  result-kind: pass
+  actual-value: 3
+  expected-value: 3
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 271
+  source-form: (test-equal 10 (secd (quote ()) (quote ()) (comp (quote (let ((x (add 1 2)) (y (add 3 4))) (add x y))) (quote ()) (quote (stop))) (quote ())))
+Test end:
+  result-kind: pass
+  actual-value: 10
+  expected-value: 10
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 280
+  source-form: (test-equal 6 (secd (quote ()) (quote ((7 9))) (comp (quote (let ((x 1) (y 2) (z 3)) (add x (add y z)))) (quote ((a b))) (quote (stop))) (quote ())))
+Test end:
+  result-kind: pass
+  actual-value: 6
+  expected-value: 6
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 287
+  source-form: (test-equal 32 (secd (quote ()) (quote ()) (comp (quote (let ((x (add 1 2)) (y (add 30 5))) (sub y x))) (quote ()) (quote (stop))) (quote ())))
+Test end:
+  result-kind: pass
+  actual-value: 32
+  expected-value: 32
+Group end: test-comp-let
+# of expected passes      70

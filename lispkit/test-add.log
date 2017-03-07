@@ -1,0 +1,20 @@
+%%%% Starting test test-add
+Group begin: test-add
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 69
+  source-form: (test-equal (exec (quote (ldc 271 ldc 127 add stop)) any) 398)
+Test end:
+  result-kind: pass
+  actual-value: 398
+  expected-value: 398
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 70
+  source-form: (test-equal (exec (quote (ldc 1 ldc 2 add stop)) any) 3)
+Test end:
+  result-kind: pass
+  actual-value: 3
+  expected-value: 3
+Group end: test-add
+# of expected passes      16

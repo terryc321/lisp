@@ -1,0 +1,12 @@
+%%%% Starting test test-rem
+Group begin: test-rem
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 88
+  source-form: (test-equal (exec (quote (ldc 271 ldc 127 rem stop)) any) 17)
+Test end:
+  result-kind: pass
+  actual-value: 17
+  expected-value: 17
+Group end: test-rem
+# of expected passes      22

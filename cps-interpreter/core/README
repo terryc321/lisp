@@ -1,0 +1,16 @@
+
+
+
+
+this is where we place all our trusted and tested code , the stuff we are most proud of.
+
+READER
+MACRO EXPANDER including quasi-quote
+COMPILER
+EVALUATOR
+
+map
+apply -- primitive
+eval  -- ?? uses ??
+
+

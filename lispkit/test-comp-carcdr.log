@@ -1,0 +1,36 @@
+%%%% Starting test test-comp-carcdr
+Group begin: test-comp-carcdr
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 208
+  source-form: (test-equal 7 (secd (quote ()) (quote ((7 9))) (comp (quote (car (cons a a))) (quote ((a b))) (quote (stop))) (quote ())))
+Test end:
+  result-kind: pass
+  actual-value: 7
+  expected-value: 7
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 209
+  source-form: (test-equal 9 (secd (quote ()) (quote ((7 9))) (comp (quote (cdr (cons a b))) (quote ((a b))) (quote (stop))) (quote ())))
+Test end:
+  result-kind: pass
+  actual-value: 9
+  expected-value: 9
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 211
+  source-form: (test-equal (quote x) (secd (quote ()) (quote ((x y))) (comp (quote (car (cons a a))) (quote ((a b))) (quote (stop))) (quote ())))
+Test end:
+  result-kind: pass
+  actual-value: x
+  expected-value: x
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 212
+  source-form: (test-equal (quote y) (secd (quote ()) (quote ((x y))) (comp (quote (cdr (cons a b))) (quote ((a b))) (quote (stop))) (quote ())))
+Test end:
+  result-kind: pass
+  actual-value: y
+  expected-value: y
+Group end: test-comp-carcdr
+# of expected passes      61

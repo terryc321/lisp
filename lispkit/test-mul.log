@@ -1,0 +1,12 @@
+%%%% Starting test test-mul
+Group begin: test-mul
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 80
+  source-form: (test-equal (exec (quote (ldc 271 ldc 127 mul stop)) any) 34417)
+Test end:
+  result-kind: pass
+  actual-value: 34417
+  expected-value: 34417
+Group end: test-mul
+# of expected passes      20

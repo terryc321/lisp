@@ -1,0 +1,36 @@
+%%%% Starting test test-comp-cons
+Group begin: test-comp-cons
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 197
+  source-form: (test-equal (quote (7 . 7)) (secd (quote ()) (quote ((7 7))) (comp (quote (cons a a)) (quote ((a b))) (quote (stop))) (quote ())))
+Test end:
+  result-kind: pass
+  actual-value: (7 . 7)
+  expected-value: (7 . 7)
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 198
+  source-form: (test-equal (quote (7 . 9)) (secd (quote ()) (quote ((7 9))) (comp (quote (cons a b)) (quote ((a b))) (quote (stop))) (quote ())))
+Test end:
+  result-kind: pass
+  actual-value: (7 . 9)
+  expected-value: (7 . 9)
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 200
+  source-form: (test-equal (quote (x . x)) (secd (quote ()) (quote ((x y))) (comp (quote (cons a a)) (quote ((a b))) (quote (stop))) (quote ())))
+Test end:
+  result-kind: pass
+  actual-value: (x . x)
+  expected-value: (x . x)
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 201
+  source-form: (test-equal (quote (x . y)) (secd (quote ()) (quote ((x y))) (comp (quote (cons a b)) (quote ((a b))) (quote (stop))) (quote ())))
+Test end:
+  result-kind: pass
+  actual-value: (x . y)
+  expected-value: (x . y)
+Group end: test-comp-cons
+# of expected passes      57

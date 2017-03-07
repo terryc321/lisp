@@ -1,0 +1,44 @@
+%%%% Starting test test-eq
+Group begin: test-eq
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 61
+  source-form: (test-equal (exec (quote (ldc a ldc b eq stop)) any) #f)
+Test end:
+  result-kind: pass
+  actual-value: #f
+  expected-value: #f
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 62
+  source-form: (test-equal (exec (quote (ldc a ldc a eq stop)) any) #t)
+Test end:
+  result-kind: pass
+  actual-value: #t
+  expected-value: #t
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 63
+  source-form: (test-equal (exec (quote (ldc b ldc b eq stop)) any) #t)
+Test end:
+  result-kind: pass
+  actual-value: #t
+  expected-value: #t
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 64
+  source-form: (test-equal (exec (quote (ldc 1 ldc 1 eq stop)) any) #t)
+Test end:
+  result-kind: pass
+  actual-value: #t
+  expected-value: #t
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 65
+  source-form: (test-equal (exec (quote (ldc 1 ldc 2 eq stop)) any) #f)
+Test end:
+  result-kind: pass
+  actual-value: #f
+  expected-value: #f
+Group end: test-eq
+# of expected passes      14

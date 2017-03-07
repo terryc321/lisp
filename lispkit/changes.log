@@ -1,0 +1,44 @@
+diff --git a/e6b4c0ec98720d59ec8b3094722384ce0d563094:lispkit.scm b/6b41b219a59574f0934ea47d4787432e64de253f:lispkit.scm
+index f326189..e61a162 100644
+--- a/e6b4c0ec98720d59ec8b3094722384ce0d563094:lispkit.scm
++++ b/6b41b219a59574f0934ea47d4787432e64de253f:lispkit.scm
+@@ -162,13 +162,18 @@
+   (set! c (cdr c)))
+ 
+ 
++
+ (define (scons)
+-  (set! s (cons (cons (car s)
+-		      (car (cdr s)))
++  (set! s (cons (cons (car (cdr s))
++		      (car s))	      
+ 		(cdr (cdr s))))
+   (set! c (cdr c)))
+ 
+ 
++
++
++
++
+ ;; arithmetic
+ 
+ (define (sub)
+@@ -351,7 +356,9 @@
+     (comp (car (cdr e)) n (cons 'null c)))
+    ;; cons
+    ((eq? (car e) 'cons)
+-    (comp (car (cdr (cdr e))) n (comp (car (cdr e)) n (cons 'cons c))))   
++    (comp (car (cdr e)) n
++	  (comp (car (cdr (cdr e))) n (cons 'cons c))))
++   
+    ;; if
+    ((eq? (car e) 'if)
+     (let ((thenpt (comp (car (cdr (cdr e))) n '(join)))
+@@ -383,7 +390,6 @@
+    (else (complis (cdr e) n (comp (car e) n (cons 'ap c))))))
+ 
+ 
+-
+ (define (complis e n c)
+   (cond
+    ((null? e) (cons 'ldc (cons '() c)))

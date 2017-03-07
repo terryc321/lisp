@@ -1,0 +1,12 @@
+%%%% Starting test test-div
+Group begin: test-div
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 84
+  source-form: (test-equal (exec (quote (ldc 512 ldc 256 div stop)) any) 2)
+Test end:
+  result-kind: pass
+  actual-value: 2
+  expected-value: 2
+Group end: test-div
+# of expected passes      21

@@ -1,0 +1,12 @@
+%%%% Starting test test-comp-reverse
+Group begin: test-comp-reverse
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 404
+  source-form: (test-equal (quote (z y x w v u t s r q p o n m l k j i h g f e d c b a)) (secd (quote ()) (quote ()) (compil (quote (letrec ((rev (lambda (xs) (if (null xs) xs (app (rev (cdr xs)) (cons (car xs) (quote ())))))) (app (lambda (xs ys) (if (null xs) ys (cons (car xs) (app (cdr xs) ys)))))) (rev (quote (a b c d e f g h i j k l m n o p q r s t u v w x y z)))))) (quote ())))
+Test end:
+  result-kind: pass
+  actual-value: (z y x w v u t s r q p o n m l k j i h g f e d c b a)
+  expected-value: (z y x w v u t s r q p o n m l k j i h g f e d c b a)
+Group end: test-comp-reverse
+# of expected passes      80

@@ -1,0 +1,20 @@
+%%%% Starting test test-comp-add-var
+Group begin: test-comp-add-var
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 171
+  source-form: (test-equal 4 (secd (quote ()) (quote ((3))) (comp (quote (add x 1)) (quote ((x))) (quote (stop))) (quote ())))
+Test end:
+  result-kind: pass
+  actual-value: 4
+  expected-value: 4
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 173
+  source-form: (test-equal 25 (secd (quote ()) (quote ((5))) (comp (quote (mul x x)) (quote ((x))) (quote (stop))) (quote ())))
+Test end:
+  result-kind: pass
+  actual-value: 25
+  expected-value: 25
+Group end: test-comp-add-var
+# of expected passes      46

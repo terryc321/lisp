@@ -1,0 +1,12 @@
+%%%% Starting test test-letrec-kogge2
+Group begin: test-letrec-kogge2
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 432
+  source-form: (test-equal 6 (secd (quote ()) (quote ()) (compil (quote (let ((x 3) (one 1)) (letrec ((fac (lambda (n m) (if (eq n 0) m (fac (sub n 1) (mul n m)))))) (fac x one))))) (quote ())))
+Test end:
+  result-kind: pass
+  actual-value: 6
+  expected-value: 6
+Group end: test-letrec-kogge2
+# of expected passes      81

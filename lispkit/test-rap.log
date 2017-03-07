@@ -1,0 +1,12 @@
+%%%% Starting test test-rap
+Group begin: test-rap
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 145
+  source-form: (test-equal (exec (quote (dum ldf (ld (0 . 0) stop) rap)) (quote ((b c)))) (quote (b c)))
+Test end:
+  result-kind: pass
+  actual-value: (b c)
+  expected-value: (b c)
+Group end: test-rap
+# of expected passes      38

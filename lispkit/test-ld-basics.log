@@ -1,0 +1,28 @@
+%%%% Starting test test-ld-basics
+Group begin: test-ld-basics
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 163
+  source-form: (test-equal (secd (quote ()) (quote ((a b c))) (quote (ld (1 . 1) stop)) (quote ())) (quote a))
+Test end:
+  result-kind: pass
+  actual-value: a
+  expected-value: a
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 164
+  source-form: (test-equal (secd (quote ()) (quote ((a b c))) (quote (ld (1 . 2) stop)) (quote ())) (quote b))
+Test end:
+  result-kind: pass
+  actual-value: b
+  expected-value: b
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 165
+  source-form: (test-equal (secd (quote ()) (quote ((a b c))) (quote (ld (1 . 3) stop)) (quote ())) (quote c))
+Test end:
+  result-kind: pass
+  actual-value: c
+  expected-value: c
+Group end: test-ld-basics
+# of expected passes      44

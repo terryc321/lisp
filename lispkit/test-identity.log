@@ -1,0 +1,20 @@
+%%%% Starting test test-identity
+Group begin: test-identity
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 488
+  source-form: (test-equal 5 (secd (quote ()) (quote ()) (compil (quote ((lambda (x) x) 5))) (quote ())))
+Test end:
+  result-kind: pass
+  actual-value: 5
+  expected-value: 5
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 491
+  source-form: (test-equal 12 (secd (quote ()) (quote ()) (compil (quote (let ((id (lambda (x) x))) (id 12)))) (quote ())))
+Test end:
+  result-kind: pass
+  actual-value: 12
+  expected-value: 12
+Group end: test-identity
+# of expected passes      101

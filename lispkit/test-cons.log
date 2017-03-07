@@ -1,0 +1,20 @@
+%%%% Starting test test-cons
+Group begin: test-cons
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 55
+  source-form: (test-equal (quote (a . b)) (exec (quote (ldc a ldc b cons stop)) any))
+Test end:
+  result-kind: pass
+  actual-value: (a . b)
+  expected-value: (a . b)
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 56
+  source-form: (test-equal (quote ((1 . 2) 3 . 4)) (secd (quote ()) (quote ()) (compil (quote (cons (cons 1 2) (cons 3 4)))) (quote ())))
+Test end:
+  result-kind: pass
+  actual-value: ((1 . 2) 3 . 4)
+  expected-value: ((1 . 2) 3 . 4)
+Group end: test-cons
+# of expected passes      9

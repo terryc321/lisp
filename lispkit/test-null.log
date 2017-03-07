@@ -1,0 +1,28 @@
+%%%% Starting test test-null
+Group begin: test-null
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 370
+  source-form: (test-equal #t (secd (quote ()) (quote ()) (compil (quote (null (quote ())))) (quote ())))
+Test end:
+  result-kind: pass
+  actual-value: #t
+  expected-value: #t
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 375
+  source-form: (test-equal #t (secd (quote ()) (quote ()) (compil (quote (let ((n (quote ()))) (null n)))) (quote ())))
+Test end:
+  result-kind: pass
+  actual-value: #t
+  expected-value: #t
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 380
+  source-form: (test-equal #f (secd (quote ()) (quote ()) (compil (quote (null 5))) (quote ())))
+Test end:
+  result-kind: pass
+  actual-value: #f
+  expected-value: #f
+Group end: test-null
+# of expected passes      78

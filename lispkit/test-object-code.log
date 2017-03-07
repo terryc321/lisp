@@ -1,0 +1,148 @@
+%%%% Starting test test-object-code
+Group begin: test-object-code
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 449
+  source-form: (test-equal (quote (ldc a stop)) (compil (quote (quote a))))
+Test end:
+  result-kind: pass
+  actual-value: (ldc a stop)
+  expected-value: (ldc a stop)
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 450
+  source-form: (test-equal (quote (ldc a car stop)) (compil (quote (car (quote a)))))
+Test end:
+  result-kind: pass
+  actual-value: (ldc a car stop)
+  expected-value: (ldc a car stop)
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 451
+  source-form: (test-equal (quote (ldc a cdr stop)) (compil (quote (cdr (quote a)))))
+Test end:
+  result-kind: pass
+  actual-value: (ldc a cdr stop)
+  expected-value: (ldc a cdr stop)
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 452
+  source-form: (test-equal (quote (ldc a atom stop)) (compil (quote (atom (quote a)))))
+Test end:
+  result-kind: pass
+  actual-value: (ldc a atom stop)
+  expected-value: (ldc a atom stop)
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 453
+  source-form: (test-equal (quote (ldc a ldc b cons stop)) (compil (quote (cons (quote a) (quote b)))))
+Test end:
+  result-kind: pass
+  actual-value: (ldc a ldc b cons stop)
+  expected-value: (ldc a ldc b cons stop)
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 455
+  source-form: (test-equal (quote (ldc a ldc b add stop)) (compil (quote (add (quote a) (quote b)))))
+Test end:
+  result-kind: pass
+  actual-value: (ldc a ldc b add stop)
+  expected-value: (ldc a ldc b add stop)
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 456
+  source-form: (test-equal (quote (ldc a ldc b sub stop)) (compil (quote (sub (quote a) (quote b)))))
+Test end:
+  result-kind: pass
+  actual-value: (ldc a ldc b sub stop)
+  expected-value: (ldc a ldc b sub stop)
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 457
+  source-form: (test-equal (quote (ldc a ldc b mul stop)) (compil (quote (mul (quote a) (quote b)))))
+Test end:
+  result-kind: pass
+  actual-value: (ldc a ldc b mul stop)
+  expected-value: (ldc a ldc b mul stop)
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 458
+  source-form: (test-equal (quote (ldc a ldc b div stop)) (compil (quote (div (quote a) (quote b)))))
+Test end:
+  result-kind: pass
+  actual-value: (ldc a ldc b div stop)
+  expected-value: (ldc a ldc b div stop)
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 460
+  source-form: (test-equal (quote (ldc a ldc b rem stop)) (compil (quote (rem (quote a) (quote b)))))
+Test end:
+  result-kind: pass
+  actual-value: (ldc a ldc b rem stop)
+  expected-value: (ldc a ldc b rem stop)
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 461
+  source-form: (test-equal (quote (ldc a ldc b leq stop)) (compil (quote (leq (quote a) (quote b)))))
+Test end:
+  result-kind: pass
+  actual-value: (ldc a ldc b leq stop)
+  expected-value: (ldc a ldc b leq stop)
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 463
+  source-form: (test-equal (quote (ldf (ldc a rtn) stop)) (compil (quote (lambda (x) (quote a)))))
+Test end:
+  result-kind: pass
+  actual-value: (ldf (ldc a rtn) stop)
+  expected-value: (ldf (ldc a rtn) stop)
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 465
+  source-form: (test-equal (quote (ldf (ld (1 . 1) rtn) stop)) (compil (quote (lambda (x) x))))
+Test end:
+  result-kind: pass
+  actual-value: (ldf (ld (1 . 1) rtn) stop)
+  expected-value: (ldf (ld (1 . 1) rtn) stop)
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 467
+  source-form: (test-equal (quote (ldf (ld (1 . 2) rtn) stop)) (compil (quote (lambda (x y) y))))
+Test end:
+  result-kind: pass
+  actual-value: (ldf (ld (1 . 2) rtn) stop)
+  expected-value: (ldf (ld (1 . 2) rtn) stop)
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 469
+  source-form: (test-equal (quote (ldc a ldc () cons ldf (ld (1 . 1) rtn) ap stop)) (compil (quote ((lambda (x) x) (quote a)))))
+Test end:
+  result-kind: pass
+  actual-value: (ldc a ldc () cons ldf (ld (1 . 1) rtn) ap stop)
+  expected-value: (ldc a ldc () cons ldf (ld (1 . 1) rtn) ap stop)
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 472
+  source-form: (test-equal (quote (ldc a ldc () cons ldf (ld (1 . 1) rtn) ap stop)) (compil (quote (let ((x (quote a))) x))))
+Test end:
+  result-kind: pass
+  actual-value: (ldc a ldc () cons ldf (ld (1 . 1) rtn) ap stop)
+  expected-value: (ldc a ldc () cons ldf (ld (1 . 1) rtn) ap stop)
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 475
+  source-form: (test-equal (quote (dum ldc a ldc () cons ldf (ld (1 . 1) rtn) rap stop)) (compil (quote (letrec ((x (quote a))) x))))
+Test end:
+  result-kind: pass
+  actual-value: (dum ldc a ldc () cons ldf (ld (1 . 1) rtn) rap stop)
+  expected-value: (dum ldc a ldc () cons ldf (ld (1 . 1) rtn) rap stop)
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 480
+  source-form: (test-equal (quote (ldc a sel (ldc b join) (ldc c join) stop)) (compil (quote (if (quote a) (quote b) (quote c)))))
+Test end:
+  result-kind: pass
+  actual-value: (ldc a sel (ldc b join) (ldc c join) stop)
+  expected-value: (ldc a sel (ldc b join) (ldc c join) stop)
+Group end: test-object-code
+# of expected passes      99

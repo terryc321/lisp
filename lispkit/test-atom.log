@@ -1,0 +1,20 @@
+%%%% Starting test test-atom
+Group begin: test-atom
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 36
+  source-form: (test-eqv (exec (quote (ldc a atom stop)) any) #t)
+Test end:
+  result-kind: pass
+  actual-value: #t
+  expected-value: #t
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 37
+  source-form: (test-eqv (exec (quote (ldc (a) atom stop)) any) #f)
+Test end:
+  result-kind: pass
+  actual-value: #f
+  expected-value: #f
+Group end: test-atom
+# of expected passes      4

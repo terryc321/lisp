@@ -1,0 +1,36 @@
+%%%% Starting test test-comp-eq
+Group begin: test-comp-eq
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 187
+  source-form: (test-equal #t (secd (quote ()) (quote ((7 7))) (comp (quote (eq a a)) (quote ((a b))) (quote (stop))) (quote ())))
+Test end:
+  result-kind: pass
+  actual-value: #t
+  expected-value: #t
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 188
+  source-form: (test-equal #f (secd (quote ()) (quote ((7 9))) (comp (quote (eq a b)) (quote ((a b))) (quote (stop))) (quote ())))
+Test end:
+  result-kind: pass
+  actual-value: #f
+  expected-value: #f
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 190
+  source-form: (test-equal #t (secd (quote ()) (quote ((x y))) (comp (quote (eq a a)) (quote ((a b))) (quote (stop))) (quote ())))
+Test end:
+  result-kind: pass
+  actual-value: #t
+  expected-value: #t
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 191
+  source-form: (test-equal #f (secd (quote ()) (quote ((x y))) (comp (quote (eq a b)) (quote ((a b))) (quote (stop))) (quote ())))
+Test end:
+  result-kind: pass
+  actual-value: #f
+  expected-value: #f
+Group end: test-comp-eq
+# of expected passes      53

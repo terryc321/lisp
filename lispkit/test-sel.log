@@ -1,0 +1,20 @@
+%%%% Starting test test-sel
+Group begin: test-sel
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 98
+  source-form: (test-equal (exec (quote (ldc #t sel (ldc a stop) (ldc b stop))) any) (quote a))
+Test end:
+  result-kind: pass
+  actual-value: a
+  expected-value: a
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 99
+  source-form: (test-equal (exec (quote (ldc #f sel (ldc a stop) (ldc b stop))) any) (quote b))
+Test end:
+  result-kind: pass
+  actual-value: b
+  expected-value: b
+Group end: test-sel
+# of expected passes      27

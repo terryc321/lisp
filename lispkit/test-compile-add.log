@@ -1,0 +1,20 @@
+%%%% Starting test test-compile-add
+Group begin: test-compile-add
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 149
+  source-form: (test-equal 3 (exec (compil (quote (add 1 2))) (quote ())))
+Test end:
+  result-kind: pass
+  actual-value: 3
+  expected-value: 3
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 150
+  source-form: (test-equal 10 (exec (compil (quote (add (add 1 2) (add 3 4)))) (quote ())))
+Test end:
+  result-kind: pass
+  actual-value: 10
+  expected-value: 10
+Group end: test-compile-add
+# of expected passes      40

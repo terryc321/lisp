@@ -1,0 +1,20 @@
+%%%% Starting test test-join
+Group begin: test-join
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 103
+  source-form: (test-equal (exec (quote (ldc #t sel (ldc a join) (ldc b join) stop)) any) (quote a))
+Test end:
+  result-kind: pass
+  actual-value: a
+  expected-value: a
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 104
+  source-form: (test-equal (exec (quote (ldc #f sel (ldc a join) (ldc b join) stop)) any) (quote b))
+Test end:
+  result-kind: pass
+  actual-value: b
+  expected-value: b
+Group end: test-join
+# of expected passes      29

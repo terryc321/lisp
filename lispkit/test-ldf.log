@@ -1,0 +1,28 @@
+%%%% Starting test test-ldf
+Group begin: test-ldf
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 118
+  source-form: (test-equal (quote ((ldc a))) (secd (quote ((b c))) (quote ()) (quote (ldf (ldc a) stop)) (quote ())))
+Test end:
+  result-kind: pass
+  actual-value: ((ldc a))
+  expected-value: ((ldc a))
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 120
+  source-form: (test-equal (quote ((ldc a))) (secd (quote ((b c))) (quote ()) (quote (ldf (ldc a) stop)) (quote ())))
+Test end:
+  result-kind: pass
+  actual-value: ((ldc a))
+  expected-value: ((ldc a))
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 124
+  source-form: (test-equal (quote ((ldc a) (p q r s))) (secd (quote ((b c))) (quote ((p q r s))) (quote (ldf (ldc a) stop)) (quote ())))
+Test end:
+  result-kind: pass
+  actual-value: ((ldc a) (p q r s))
+  expected-value: ((ldc a) (p q r s))
+Group end: test-ldf
+# of expected passes      35

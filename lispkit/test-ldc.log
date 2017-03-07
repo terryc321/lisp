@@ -1,0 +1,12 @@
+%%%% Starting test test-ldc
+Group begin: test-ldc
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 31
+  source-form: (test-eqv (exec (quote (ldc a stop)) any) (quote a))
+Test end:
+  result-kind: pass
+  actual-value: a
+  expected-value: a
+Group end: test-ldc
+# of expected passes      2

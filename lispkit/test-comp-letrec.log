@@ -1,0 +1,44 @@
+%%%% Starting test test-comp-letrec
+Group begin: test-comp-letrec
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 304
+  source-form: (test-equal 127 (secd (quote ()) (quote ()) (comp (quote (letrec ((fac 127)) fac)) (quote ()) (quote (stop))) (quote ())))
+Test end:
+  result-kind: pass
+  actual-value: 127
+  expected-value: 127
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 313
+  source-form: (test-equal 5 (secd (quote ()) (quote ()) (comp (quote (letrec ((fac (lambda (n) n))) (fac 5))) (quote ()) (quote (stop))) (quote ())))
+Test end:
+  result-kind: pass
+  actual-value: 5
+  expected-value: 5
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 323
+  source-form: (test-equal 120 (secd (quote ()) (quote ()) (comp (quote (letrec ((fac (lambda (n) (if (leq n 2) n (mul n (fac (sub n 1))))))) (fac 5))) (quote ()) (quote (stop))) (quote ())))
+Test end:
+  result-kind: pass
+  actual-value: 120
+  expected-value: 120
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 333
+  source-form: (test-equal 55 (secd (quote ()) (quote ()) (comp (quote (letrec ((fib (lambda (n) (if (eq n 1) n (if (eq n 2) 1 (add (fib (sub n 1)) (fib (sub n 2)))))))) (fib 10))) (quote ()) (quote (stop))) (quote ())))
+Test end:
+  result-kind: pass
+  actual-value: 55
+  expected-value: 55
+Test begin:
+  source-file: "/home/terry/lisp/lispkit/test.scm"
+  source-line: 350
+  source-form: (test-equal 55 (secd (quote ()) (quote ()) (compil (quote (letrec ((fib (lambda (n) (if (eq n 1) n (if (eq n 2) 1 (add (fib (sub n 1)) (fib (sub n 2)))))))) (fib 10)))) (quote ())))
+Test end:
+  result-kind: pass
+  actual-value: 55
+  expected-value: 55
+Group end: test-comp-letrec
+# of expected passes      75
