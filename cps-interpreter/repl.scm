@@ -202,6 +202,7 @@
 
 
 
+
 ;; ---------------------- map --------------------------------------------
 ;; surprisingly difficult to get this right , really.
 ;; map f  xs
@@ -1171,6 +1172,20 @@
 					 cont)))))))
 
 
+
+;; dont know about defmacro
+
+;; ;; (defmacro (name x y . z) .... )
+;; (define (eval-defmacro exp env cont)
+;;   (let ((name (car (cdr exp)))
+;; 	(body (cdr (cdr exp))))
+;;     (base-eval macro-part env
+;; 	       (lambda (v1)
+;; 		 (cont (macro-expand v1))))))
+
+
+
+
 ;; (macro-expand x)
 (define (eval-macro-expand exp env cont)
   (let ((macro-part (car (cdr exp))))
@@ -1196,7 +1211,10 @@
    'c 3
 
    ;; give system access to macro-expander
+   ;;'defmacro  (cps-primitive eval-defmacro)
+   
    'macro-expand  (cps-primitive eval-macro-expand)
+
    
    'cps-primitive  cps-primitive
 
