@@ -222,5 +222,6 @@
 
 (pretty-write (flat-closure-convert example))
 
-;;(pretty-write (shared-closure-convert example))                  
-;;(test)
+(pretty-write (shared-closure-convert example))
+                    
+(test)
