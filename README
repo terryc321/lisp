@@ -1,5 +1,47 @@
 
 
+the best part is under CPS-INTERPRETER directory
+there is a file called repl.scm
+load this into GUILE scheme
+
+that should pull in all the required defmacro expander and quasiquote.
+
+at the moment macro expansion is handled outside of the lisp interpreter ,
+so lisp interpreter only sees a few core forms ,
+dont ask me what they are i think i forgot
+ LET
+ IF
+ SET!
+ LAMBDA 
+
+could of done away with LET using
+ ((lambda let-vars  ... let body ....) ... let-arguments ... )
+ but then i just see a SEA of LAMBDAs and have no idea whats going on.
+
+then i think that really many more CORE forms , makes debugging easier because culprit
+is easy to identify , whereas if its all macro expanded out ,
+maybe need to track where that expression came from.
+
+because the interpreter , the evaluator anyway is in CPS , call/cc is a simple two liner .
+
+
+other things
+ COND = macro expands into 
+ 
+
+
+also thinking of a way to play connect4 , but that went quiet for a time.
+thought about lists , but WAY too slow.
+nice idea about assignment to SYMBOLS , seems fairly fast ,
+mutating board coupled with alpha beta search .
+none of that works for sure though....
+
+
+
+
+what follows is just rambling 
+********************************************************************************
+
 6th March 2017  -- main focus is cps-interpreter/  directory
 it has a repl , macro expander , quasiquote capability
 
@@ -70,7 +112,6 @@ if access to memory model of machine can lay out complex quoted expressions befo
 so running the program is already built with these things laid out in memory
 
 ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
-
 
 
 
