@@ -1,5 +1,12 @@
 
+
+
+
+;; guile specific stuff
 (use-modules (ice-9 pretty-print))
+
+(load "/home/terry/lisp/cps-interpreter/core/synclo.scm")
+
 
 
 
@@ -15,6 +22,8 @@
   (set! fexpr-tagged? (lambda (exp) (and (pair? exp)
 				       (eq? (car exp) special))))
   (set! fexpr-untag (lambda (exp) (cdr exp))))
+
+
 
 
 
@@ -1214,7 +1223,6 @@
    ;;'defmacro  (cps-primitive eval-defmacro)
    
    'macro-expand  (cps-primitive eval-macro-expand)
-
    
    'cps-primitive  cps-primitive
 
@@ -1334,28 +1342,44 @@
 ;; ----------- SECTION 1 -----------------
 ;; section 1 should be
 
-;; quasiquotation
-(load "core/quasiquote.scm")
+
+(define library
+  (lambda (path)
+    (string-append *installation-directory* path)))
+
+;;quasiquotation
+(load  	  "/home/terry/lisp/cps-interpreter/core/quasiquote.scm")
+
 ;; macro expander
-(load "core/macro-expander.scm")
+(load 	  "/home/terry/lisp/cps-interpreter/core/macro-expander.scm")
+
 ;; quasiquote expander
-(load "macros/quasiquote.scm")
+(load 	  "/home/terry/lisp/cps-interpreter/macros/quasiquote.scm")
+
 ;; cond is nested ifs
-(load "macros/cond.scm")
+(load 	  "/home/terry/lisp/cps-interpreter/macros/cond.scm")
+
 ;; let is just applied lambda
-(load "macros/let.scm")
+(load 	  "/home/terry/lisp/cps-interpreter/macros/let.scm")
+
 ;; letrec requires lets and sets
-(load "macros/letrec.scm")
+(load 	  "/home/terry/lisp/cps-interpreter/macros/letrec.scm")
+
 ;; let* are sequential lets
-(load "macros/let-star.scm")
+(load 	  "/home/terry/lisp/cps-interpreter/macros/let-star.scm")
+
 ;; when is just conditional with sequencing
-(load "macros/when.scm")
+(load 	  "/home/terry/lisp/cps-interpreter/macros/when.scm")
+
 ;; dont know if we need lambda expander , 
-(load "macros/lambda.scm")
+(load 	  "/home/terry/lisp/cps-interpreter/macros/lambda.scm")
+
 ;; conjunction
-(load "macros/and.scm")
+(load 	  "/home/terry/lisp/cps-interpreter/macros/and.scm")
+
 ;; disjunction
-(load "macros/or.scm")
+(load 	  "/home/terry/lisp/cps-interpreter/macros/or.scm")
+
 
 
 
@@ -1364,17 +1388,17 @@
 ;; section 2 should be loaded in the repl , so fib fac are defined
 ;; some useful routines
 (base-eval '(begin
-	      (load "util/not.scm")	      
-	      (load "util/list.scm")	      
-	      (load "util/append.scm")
-	      (load "util/length.scm")
-	      (load "util/reverse.scm")
-	      (load "util/map.scm")
-	      (load "util/fac.scm")
-	      (load "util/fib.scm")
+	      (load "/home/terry/lisp/cps-interpreter/util/not.scm")
+	      (load "/home/terry/lisp/cps-interpreter/util/list.scm")
+	      (load "/home/terry/lisp/cps-interpreter/util/append.scm")
+	      (load "/home/terry/lisp/cps-interpreter/util/length.scm")
+	      (load "/home/terry/lisp/cps-interpreter/util/reverse.scm")
+	      (load "/home/terry/lisp/cps-interpreter/util/map.scm")
+	      (load "/home/terry/lisp/cps-interpreter/util/fac.scm")
+	      (load "/home/terry/lisp/cps-interpreter/util/fib.scm")
 	      ;; -- run the tests --
-	      (load "tests/apply.scm")
-	      (load "tests/fib.scm")	      
+	      (load "/home/terry/lisp/cps-interpreter/tests/apply.scm")
+	      (load "/home/terry/lisp/cps-interpreter/tests/fib.scm")
 	      )
 	   environment
 	   (lambda (k)
@@ -1383,6 +1407,8 @@
 	     (repl)))
 
 ;; ------ run the tests ----------
+
+
 
 
 
