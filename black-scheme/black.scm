@@ -1,6 +1,7 @@
-;
-; Eval functions
-;
+
+;;
+;; Eval functions
+;;
 (define (base-eval exp env cont)
   (cond ((number? exp)		 (meta-apply cont exp))
 	((boolean? exp)		 (meta-apply cont exp))
@@ -186,7 +187,7 @@
 		      (meta-apply cont arg))))
 	       ((pair? (member operator primitive-procedures))
 		(meta-apply cont (scheme-apply operator operand)))
-	       (else ; called when going down a level.
+	       (else ;; called when going down a level.
 		(lambda (Mcont)
 		  ((scheme-apply operator operand)
 		   (cons-stream (list (get-global-env env) cont) Mcont))))))
@@ -254,9 +255,9 @@
     (meta-apply 'base-eval (list 'cons car-part (list 'delay cdr-part))
 			   env cont)))
 
-;
-; Primitives
-;
+;;
+;; Primitives
+;;
 (define (eval-map fun lst env cont)
   (if (null? lst)
       (meta-apply cont '())
@@ -306,9 +307,9 @@
 				(display ")")))))))
 	  (else (display lst))))
   (print-sub lst depth length #t))
-;
-; Meta-apply
-;
+;;
+;; Meta-apply
+;;
 (define (meta-apply proc-name-or-cont . operand)
   (lambda (Mcont)
     (let* ((meta-env (car (head Mcont)))
@@ -321,14 +322,14 @@
 	     (if (pair? (member operator primitive-procedures))
 		 ((meta-apply 'base-apply operator operand meta-env meta-cont)
 		  meta-Mcont)
-		 ((scheme-apply operator operand) ; evaluator functions
+		 ((scheme-apply operator operand) ;; evaluator functions
 		  Mcont)))
 	    (else
 	     ((meta-apply 'base-apply operator operand meta-env meta-cont)
 	      meta-Mcont))))))
-;
-; Initial Continuation
-;
+;;
+;; Initial Continuation
+;;
 (define (init-cont env level turn cont)
   (meta-apply cont
     (lambda (answer)
@@ -344,13 +345,13 @@
 (define (run env level answer)
   (meta-apply 'init-cont env level 0
 	      (lambda (cont) (meta-apply cont answer))))
-;
-; Environment
-;
-;(load "env.scm")
-;
-; Primitive Procedures
-;
+;;
+;; Environment
+;;
+;;(load "env.scm")
+;;
+;; Primitive Procedures
+;;
 (define primitive-procedures
   (list car cdr cons list pair? null? eq? eqv? equal? not set-car! set-cdr!
 	append
@@ -363,9 +364,9 @@
 	make-pairs extend can-receive? get set-value! define-value
 	search copy
 ))
-;
-; Initial Environment
-;
+;;
+;; Initial Environment
+;;
 (define init-env (list (list
   (cons 'car			car)
   (cons 'cdr			cdr)
@@ -450,34 +451,35 @@
   (cons 'eval-cons-stream	eval-cons-stream)
   (cons 'eval-map		eval-map)
 
-  (cons 'init-env		0)	; to be filled when making a new level
+  (cons 'init-env		0)	;; to be filled when making a new level
   (cons 'init-cont		init-cont)
   (cons 'run			run)
   (cons 'primitive-procedures	primitive-procedures)
   (cons 'old-env		old-env)
   (cons 'old-cont		old-cont)
 )))
-;
-; Meta-level Initial Continuation
-;
+;;
+;; Meta-level Initial Continuation
+;;
 (define (meta-init-cont env level supplied-env)
-  (define-value 'init-env supplied-env env) ; share-env
+  (define-value 'init-env supplied-env env) ;; share-env
   (display "New level loaded.") (newline)
   (lambda (result)
     (meta-apply 'run env level result)))
-;
-; Initial Meta-Continuation
-;
+;;
+;; Initial Meta-Continuation
+;;
 (define (init-Mcont level supplied-env)
   (let ((env (copy init-env)))
     (cons-stream (list env (meta-init-cont env level supplied-env))
 		 (init-Mcont (+ level 1) env))))
-;
-; Start up
-;
+;;
+;; Start up
+;;
 (define (black)
   (let* ((base-Mcont (init-Mcont 0 (copy init-env)))
 	 (env (car (head base-Mcont)))
 	 (cont (car (cdr (head base-Mcont))))
 	 (Mcont (tail base-Mcont)))
     ((cont 'start) Mcont)))
+

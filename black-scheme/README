@@ -27,6 +27,8 @@ cons-stream and pp, it should run on almost any Scheme by typing:
 Followings are the Scheme system on which we have tested our
 implementation together with some specific definitions required:
 
+DOES NOT WORK WITH GUILE ! aww boo.	       
+
 Chez Scheme Version 5.0a:
 	(define head car)
 	(define (tail x) (force (cdr x)))

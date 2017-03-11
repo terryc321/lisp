@@ -1,18 +1,19 @@
-#lang r5rs
+#lang racket
+
 
 (define-syntax curry
   (syntax-rules () 
-    ((curry (i) b ...) (lambda (i) b ...))
-    ((curry (i j ...) b ...)
-     (lambda (i) (curry (j ...) b ...)))))
+    [(curry (i) b ...) (lambda (i) b ...)]
+    [(curry (i j ...) b ...)
+     (lambda (i) (curry (j ...) b ...))]))
 
 
 ;; (curry (x y z) ...)
 ;; =>  (lambda (x) (lambda (y) (lambda (z) ...)))
 (define-syntax C
   (syntax-rules ()
-    ((C m n) (m n))
-    ((C m n p ...) (C (m n) p ... ))))
+    [(C m n) (m n)]
+    [(C m n p ...) (C (m n) p ... )]))
 
 ;; heres what this does ....
 ;;> (C 'a 'b 'c 'd 'e)
@@ -23,20 +24,11 @@
 ;; this is defined again later on. 
 ;; (define tower
 ;;   (letrec
-;;       ((loop
+;;       ([loop
 ;;         (lambda (n)
 ;;           (lambda (theta)
-;;             ((theta (R-E-P n)) (loop (add1 n)))))))
+;;             ((theta (R-E-P n)) (loop (add1 n)))))])
 ;;     (loop 0)))
-
-
-(define Y
-  (lambda (f)
-    (let ((d (lambda (x)
-               (f (lambda (arg)
-                    (C x x arg))))))
-      (d d))))
-
 
 
 (define shift-up
@@ -83,7 +75,6 @@
 ;; Conversely, we could have defined the appropriate functions to mk:
 ;; meta-car and meta-cdr by explicitly passing
 
-
 ;; (define meta-car
 ;;   (lambda (mk)
 ;;     (mk (lambda (k) (lambda (mk) k)))))
@@ -118,28 +109,16 @@
 (define denotation
   (lambda (e)
     (cond
-     ;;  if not symbol or pair , then just constant
-     ((not (or (pair? e) (symbol? e))) (denotation-of-value e))
-     ;; is it a symbol ?
-     ((symbol? e) (denotation-of-identifier e))
-     ;; is it a lambda abstraction
-     ((eq? (first e) 'lambda) (denotation-of-abstraction e))
-     ;; assumed it is an application
-     (else (denotation-of-application e)))))
+     [(atom? e) (denotation-of-identifier e)]
+     [(eq? (first e) 'lambda) (denotation-of-abstraction e)]
+     [else (denotation-of-application e)])))
 
-
-
-
-
-(define denotation-of-value
-  (curry (e r k)
-         (k e)))
 
 (define denotation-of-identifier
   (curry (e r k)
          (C r e
             (lambda (cell)
-              (let ((v (deref-cell cell)))
+              (let ([v (deref-cell cell)])
                 (if (eq? v 'UNASSIGNED)
                     (wrong (list "Brown: unbound id " e))
                     (k v)))))))
@@ -182,7 +161,7 @@
 
 ;; We next turn to the reifying functions. These functions take objects from the un-
 ;; derlying domains K and Env, and turn them into Brown functions that can be
-;; manipulated (4). An environment is turned into a one-argument Brown function
+;; manipulated [4]. An environment is turned into a one-argument Brown function
 ;; that evaluates its argument and passes the result (the evaluated actual parameter)
 ;; to the environment:
 (define U->BF
@@ -197,7 +176,7 @@
 
 
 (define K->BF
-  (curry (ki e r k)
+  (curry (kl e r k)
          (if (= (length e) 1)
              (C denotation (first e) r
                 (lambda (v) (C shift-down (ki v) k)))
@@ -216,7 +195,7 @@
 ;; we immediately redefine make-reifier ?
 (define make-reifier
   (let
-      ((ERK '(E R K)))
+      ([ERK '(E R K)])
     (curry (bf e r k)
            (shift-up (C bf
                         ERK
@@ -230,7 +209,7 @@
 
 
 (define BF->K
-  (let ((z '(v)))
+  (let ([z '(v)])
     (curry (bf v mk)
            (C bf z (extend global-env z (list v))
               (meta-car mk)
@@ -239,7 +218,7 @@
 
 
 (define BF->U
-  (let ((z ' (v)))
+  (let ([z ' (v)])
     (curry (bf v)
            (C bf z
               (extend global-env z (list v))))))
@@ -282,7 +261,7 @@
 (define extend
   (lambda (r names vals)
     (if (= (length names) (length vals))
-        (let ((cells (map make-cell vals)))
+        (let ([cells (map make-cell vals)])
           (curry (name k)
                  (rib-lookup name names cells k
                              (lambda () (C r name k)))))
@@ -294,15 +273,15 @@
   (lambda (id names cells sk fk)
     (C Y (curry (lookup names cells)
                 (cond
-                 ((null? names) (fk))
-                 ((eq? (first names) id) (sk (first cells)))
-                 (else (C lookup (rest names) (rest cells)))))
+                 [(null? names) (fk)]
+                 [(eq? (first names) id) (sk (first cells))]
+                 [else (C lookup (rest names) (rest cells))]))
        names cells)))
 
 
 (define id->BF
-  (let ((host->F
-         (curry (f v* k) (k (apply f v*)))))
+  (let ([host->F
+         (curry (f v* k) (k (apply f v*)))])
     (lambda (x)
       (F->BF (host->F (host-value x))))))
 
@@ -310,25 +289,20 @@
 (define global-env #f)
 
 (define boot-global-env
-  (let ((id->F-cell (lambda (x) (make-cell (id->BF x)))))
+  (let ([id->F-cell (lambda (x) (make-cell (id->BF x)))])
     (lambda ()
-      (let ((initnames
+      (let ([initnames
              (append
-              ;; i think this means #f #t 'wrong 'mean , rather than 'nil 't 
-              (list #f
-                    #t
-                    'wrong
-                    'meaning)
-              primop-name-table))
-            (initcells
+              (list 'nil 't 'wrong 'meaning)
+              primop-name-table)]
+            [initcells
              (append
               (map make-cell
-                   (list #f
-                         #t
+                   (list nil t
                          (K->BF terminate-level)
                          (F->BF meaning)))
               (map id->F-cell
-                   primop-name-table))))
+                   primop-name-table))])
         ;; changed define to set!
         (set! global-env
           (curry (id k)
@@ -336,20 +310,10 @@
                   id initnames initcells k
                   (lambda ()
                     (let
-                        ((c (make-cell 'UNASSIGNED)))
+                        ([c (make-cell 'UNASSIGNED)])
                       (set! initnames (cons id initnames))
                       (set! initcells (cons c initcells))
                       (k c))))))))))
-
-
-(define writeln (lambda args
-                  (letrec ((f (lambda (xs)
-                                (cond
-                                 ((null? xs) (newline))
-                                 (else (display (car xs))
-                                       (f (cdr xs)))))))
-                    (f args))))
-
 
 
 
@@ -359,15 +323,11 @@
          (C terminate-level 'wrong mk)))
 
 
-
 ;; ------------- helper functions  -------------------
 
 ;; atom is either
 (define atom? (lambda (x) (or (symbol? x)
 			      (number? x))))
-
-
-(define add +)
 
 
 
@@ -380,6 +340,14 @@
 (define make-cell (lambda (x) (cons x '())))
 (define set-cell!
   (lambda (x y) (set-car! x y) y))
+
+
+(define Y
+  (lambda (f)
+    (let ([d (lambda (x)
+               (f (lambda (arg)
+                    (C x x arg))))])
+      (d d))))
 
 
 ;; (define prompt&read
@@ -407,33 +375,19 @@
 
 
 (define prompt&read
-  (lambda (prompt)
-    (lambda (k)
-         (display prompt)
-         (display "-*")
-         (k (read)))))
+  (curry (prompt k)
+         (display prompt) (display "-*") (k (read))))
 
-
-;; (define R-E-P
-;;   (lambda (prompt)
-;;     (Y (curry (loop v)
-;;               ((prompt&read (print&prompt prompt v))
-;;                (lambda (v)
-;;                  (if (eof-object? v)
-;;                      (lambda (mk) '---done---)
-;;                      (C denotation v global-env loop))))))))
 (define R-E-P
   (lambda (prompt)
-    (prompt&read (lambda (v)
-                   (print&prompt prompt v)
-                   (if (eof-object? v)
-                       (lambda (mk) '---done---)
-                       (((denotation v) global-env) R-E-P))))))
+    (Y (curry (loop v)
+              ((prompt&read (print&prompt prompt v))
+               (lambda (v)
+                 (if (eof-object? v)
+                     (lambda (mk) '---done---)
+                     (C denotation v global-env loop))))))))
 
 
-
-
-                      
 
 (define brown-load
   (lambda (file)
@@ -441,5 +395,3 @@
 
 ;;
 (boot-tower)
-(brown-load "/home/terry/lisp/brown-scheme/prog.brn")
-

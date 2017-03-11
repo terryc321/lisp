@@ -1,0 +1,10 @@
+
+(define head car)
+(define (tail x) (force (cdr x)))
+(load "/home/terry/lisp/black-scheme/env.scm")
+(load "/home/terry/lisp/black-scheme/black.scm") ;; or (load "/home/terry/lisp/black-scheme/black-with-delta.scm")
+(black)
+
+
+
+
