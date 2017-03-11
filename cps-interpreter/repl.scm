@@ -4,8 +4,7 @@
 
 ;; guile specific stuff
 (use-modules (ice-9 pretty-print))
-
-(load "/home/terry/lisp/cps-interpreter/core/synclo.scm")
+;;(load "/home/terry/lisp/cps-interpreter/core/synclo.scm")
 
 
 
@@ -463,11 +462,6 @@
 	       env
 	       (lambda (v) (cont (number? v))))))
 
-
-
-
-
-
 ;;
 (define (eval-newline exp env cont)
   (newline)
@@ -519,7 +513,8 @@
 				     (pprint expr)
 				     (let ((expanded-expr (macro-expand expr)))
 				       (newline)
-				       (base-eval expanded-expr env
+				       (base-eval expanded-expr
+						  env
 						  (lambda (val)
 						    ;;(format #t "~% => : ~a ~%" val)
 						    (newline)

@@ -3,10 +3,15 @@
 the entire system can be loaded into guile using this one command
 *****************************************************************
           (load "repl.scm")
+
+file paths are absolute
+
 *****************************************************************
 
 core/quasiquote.scm		bawden system
 core/macro-expander.scm		defmacro like macro expander
+				fine as long as not trying to redefine primitives
+
 
 macros/				directory contains common macros
 macros/and
