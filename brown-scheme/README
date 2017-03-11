@@ -1,15 +1,12 @@
 
 
 
-
-
 expression e
 environment r
 continuation k
 memory store _
 
 but we do not look at the memory store in the brown paper.
-
 
 diagram to explain what we are trying to achieve
 
@@ -24,5 +21,6 @@ where pass to higher meta level  , so called UP
 
 process 2 : reflection
 where pass to a lower meta level , so called DOWN
+
 
 
