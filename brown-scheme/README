@@ -1,0 +1,28 @@
+
+
+
+
+
+expression e
+environment r
+continuation k
+memory store _
+
+but we do not look at the memory store in the brown paper.
+
+
+diagram to explain what we are trying to achieve
+
+[ meta level 0  ]  user observable 
+[ meta level 1  ]  underneath the user level
+[ metal level 2 ]
+   ,,,,,,,,,
+   and so on.
+
+process 1 : reification or reify
+where pass to higher meta level  , so called UP
+
+process 2 : reflection
+where pass to a lower meta level , so called DOWN
+
+
