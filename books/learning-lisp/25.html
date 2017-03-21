@@ -1,0 +1,127 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<html>
+<head>
+<meta name="generator" content=
+"HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org">
+<title>LEARNING LISP - Efficiency and Elimination of
+Recursion</title>
+</head>
+<body bgcolor="white">
+<h1>LEARNING LISP</h1>
+
+<p><a href="index.html">Contents</a> | <a href=
+"24.html">Simplifying Polynomials</a> | <a href=
+"26.html">ELIZA</a></p>
+
+<h2>Efficiency and Elimination of Recursion</h2>
+
+We have disregarded one issue throughout this entire book, namely,
+how hard the computer has to work to evaluate a function. In this
+chapter, we are going to look at some different ways of writing the
+same function, with emphasis on the efficiency of the evaluation.
+<a name="fact"></a> 
+<p>Here are four different versions of the factorial function.</p>
+
+<pre>
+:(define (fact1 (lambda (n)
+:  (cond
+:    ((equal n 0) 1)
+:    (t (mult n (fact1 (sub n 1))))
+:  )
+:)))
+
+FACT1
+
+:(define (fact2 (lambda (n)
+:  (cond
+:    ((equal n 0) 1)
+:    ((equal n 1) 1)
+:    (t (mult n (fact2 (sub n 1))))
+:  )
+:)))
+
+FACT2
+
+:(define (fact3 (lambda (n)
+:  (prog (m prod)
+:    (setq m 0)
+:    (setq prod 1)
+:    loop
+:    (cond
+:       ((equal m n) (return prod))
+:    )
+:    (setq m (add m 1))
+:    (setq prod (mult prod m))
+:    (go loop)
+:  )
+:)))
+
+FACT3
+
+:(define (fact4 (lambda (n)
+:  (fact4a n 1)
+:)))
+
+FACT4
+
+:(define (fact4a (lambda (n m)
+:  (cond
+:    ((equal n 0) m)
+:    (t (fact4a (sub n 1)
+:  )
+:)))
+
+FACT4A
+</pre>
+
+We haven't shown them working, but take our word for it, they do.
+What are the salient differences between each of the functions? 
+<p>FACT1 and FACT2 are the standard recursive definitions of the
+factorial. However, since FACT2 tests for an argument of 1, it will
+end a chain of recursive calls one setp sooner than FACT1. We still
+need to test for 0 because 0 is a special case. The importance of
+one less recursive call is, in this application, negligible.</p>
+
+<a name="loop"></a> 
+<p>FACT3 shows the factorial function in its iterative form. There
+is only one function call, but the function will loop n times just
+as FACT1 will call itself n times. Depending upon the phase of the
+moon, the iterative solution might be more efficient for the
+computer [that is, it will execute faster]. The recursive form will
+usually be more legible, though.</p>
+
+<a name="coll"></a> 
+<p>The fourth definition uses what is known as a <em>collection
+variable</em>, or an accumulation variable. As we decrement n we
+keep the running product in the collection variable m. The FACT4
+function serves only to pass the value of n and set up the
+collection variable for the function FACT4A. Although it may not
+seem very useful, this technique can be used to define very
+efficient recursive functions. It is particularly useful in cases
+where some values of the function are recomputed by different
+recursive calls.</p>
+
+<a name="compilerinterpreter"></a> 
+<p>So much for factorial. We mentioned several times that Lisp was
+an <em>interpreter</em>. What does this mean? Language processors
+come in two different types, interpreters, and <em>compilers</em>.
+An interpreter is a computer program written in assembly language
+[the language that is very close to what the computer understands
+directly]. <a name="rep"></a>An interpreter works in what is called
+a READ-EVAL-PRINT loop. If we were to call a function 1000 times,
+Lisp would re-evaluate each part of the function 1000 times. This
+is waste of time. This is where a compiler comes in. A Lisp
+compiler would translate each function into machine language. [This
+is what the computer processor understands directly.] This would
+make each function execute much more rapidly. You tipically would
+not want to use a compiler to compile functions while you are
+developing the programs. Because compiling takes a finite amount of
+time, you normally would want to wait until all your functions are
+debugged before running them through a compiler.</p>
+
+<p><a href="index.html">Contents</a> | <a href=
+"24.html">Simplifying Polynomials</a> | <a href=
+"26.html">ELIZA</a></p>
+</body>
+</html>
+

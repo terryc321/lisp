@@ -1,0 +1,324 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<html>
+<head>
+<meta name="generator" content=
+"HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org">
+<title>LEARNING LISP - Defining Your Own Functions</title>
+</head>
+<body bgcolor="white">
+<h1>LEARNING LISP</h1>
+
+<p><a href="index.html">Contents</a> | <a href="5.html">Bag of
+Predicates</a> | <a href="7.html">Help Functions</a></p>
+
+<h2>Defining Your Own Functions</h2>
+
+Up to this point in the discussion, Lisp has had a monopoly on
+functions; we have been forced to use the ones supplied by the
+system. If we were limited to these, Lisp wouldn't be much fun.
+What we are leading up to is that you, the user, are able to
+define, use, and even modify your own functions. 
+<p>Suppose that you are one of those select people who do not like
+the name CAR. Well, we are going to define a function called FIRST
+which does exactly the same thing as CAR. Let's go into Lisp.</p>
+
+<pre>
+:(DEFINE (FIRST (LAMBDA (L)
+
+:        (CAR L)))))
+
+  FIRST
+
+:(FIRST '(THIS HAD BETTER WORK))
+
+  THIS
+
+:(FIRST '(LONG LIVE DEFINE))
+
+  LONG
+</pre>
+
+<a name="define"></a> The explanation: We used the function DEFINE
+to set up our FIRST function. DEFINE takes as its argument a list
+containing the function definition. Note that we took more than one
+line to enter the function definition. This will generally be the
+case. Lisp will wait to see a matched set of parentheses. If you
+are not careful with the parentheses, you may have to do a lot of
+retyping. We can't explain everything about the form of the
+function definition at this point in the book. Suffice it to say
+that you must enter your functions in the above form. The first
+element in the function definition list is the name of the function
+you are defining, in this case, FIRST. The names that may be used
+for a function are the same as those for an alphabetic atom name. 
+<a name="lambda"></a>
+<p>The next thing in the function definition is a list whose first
+element is LAMBDA. Let's skip over the LAMBDA for the moment. <a
+name="args"></a> Following the LAMBDA is a list of <em>formal
+arguments</em> for your function. In our example, this is the list:
+"(L)". We have to make explicit to Lisp the number of arguments our
+function will have. We have already seen Lisp functions which take
+one, two, or sometimes an indefinite number of arguments. If our
+list had been (L1 L2) then we would be defining a function with a
+function to behave like CAR, which has only one argument. After the
+list of arguments comes an expression whose value will be returned
+as the value of the function. In this case we want a CAR to be the
+result. Note that we use the formal arguments in this expression.
+This will be explained in more detail later.</p>
+
+<p>The value of the Lisp function DEFINE is the name of the
+function being defined.</p>
+
+<p>Note that we called the list a list of formal arguments. What
+are formal arguments? Well, we would like to be able to enter an
+expression like the following:</p>
+
+<p>(first x)</p>
+
+<p>X is some pre-defined list. The name we use in the argument list
+in the function definition will, when the above expression is
+evaluated, take on the value of the list X. The name we use in our
+function, however, <em>only serves as a place holder for the value
+of the actual argument</em>. Note that here the actual argument is
+X. The formal argument, which in the FIRST definition is L, takes
+on the value of the actual argument when FIRST is evaluated. Be
+careful here, because the value of L will revert to whatever value
+[or lack thereof] it had previously, after the function had been
+evaluated.</p>
+
+<pre>
+:
+
+:(FIRST '(A LUCKY STAR))
+
+  A
+
+:L
+
+    ** ERROR: UNDEFINED ATOM **
+      EVAL :: L
+
++()
+
+  NIL
+</pre>
+
+We know that L had a value inside the function, because the
+function executed correctly. Once the function finishes, L goes
+away. Poof! 
+<p>Let's try our hand at another function definition.</p>
+
+<pre>
+:(DEFINE (SECOND (LAMBDA (ALIST)
+
+:     (CAR (CDR ALIST))))))
+
+  SECOND
+
+:(SECOND '(CAN YOU SAY THE WORD FUN))
+
+  YOU
+
+:ALIST
+
+    ** ERROR: UNDEFINED ATOM **
+      EVAL :: ALIST
+
++()
+
+  NIL
+</pre>
+
+This dialogue shows the same characteristic behavior of formal
+arguments: they clean up after themselves. That is, once the
+function has been terminated, the values of the formal arguments
+are no longer available. 
+<p>Now, let's deal with functions with two arguments. Let's define
+our own EQUAL function.</p>
+
+<pre>
+:(DEFINE (SAME (LAMBDA (LIST1 LIST2)
+
+:      (EQUAL LIST1 LIST2)))))))
+
+  SAME
+
+:(SAME '(TESTING) 'TESTING)
+
+  NIL
+
+:(SAME '(EQUAL) LIST2)
+
+    ** ERROR: UNDEFINED ATOM **
+      EVAL :: LIST2
+
++()
+
+  NIL
+
+:(SETQ LIST2 '(INVISIBLE))
+
+  (INVISIBLE )
+
+:(SAME 'CLONE 'CLONE)
+
+  T
+
+:LIST2
+
+  (INVISIBLE )
+</pre>
+
+Note that not only can't we get to the formal arguments after the
+function is finished, but if we have another object with the same
+name as a formal argument then that variable keeps its value even
+though the formal argument had a different value! That is both very
+important and very confusing. You may want to re-read this
+explanation and then try some of your own examples so that you
+develop a "feel" for the operation of the formal arguments. 
+<p>Suppose we want a function that will return the last element of
+a list, sort of the opposite of CAR. Well, first we will need a
+Lisp function called REVERSE.</p>
+
+<p>REVERSE will return a list with all of its top-level elements
+reversed. Let's make sure REVERSE works.</p>
+
+<pre>
+:(REVERSE '(P L E H))
+
+  (H E L P )
+
+:(REVERSE '(S D R A W K C A B))
+
+  (B A C K W A R D S )
+
+:(REVERSE '((A B) C D (E F))))
+
+  ((E F ) D C (A B ) )
+</pre>
+
+Now we get to our function: LAST. How do we go about getting the
+last element of a list? Well, now that we know about REVERSE, we
+can reverse the list, and then take the CAR. Let's try it. 
+<a name="nil"></a>
+<pre>
+:(DEFINE (LAST (LAMBDA (ZZZ)
+
+:   (CAR (REVERSE ZZZ)))))
+
+  LAST
+
+:(LAST '(NOW IS THE TIME))
+
+  TIME
+</pre>
+
+By this time you might be able to say to yourself, "So what?" Why
+bother defining a trivial function like LAST when you could just
+type out "(car (reverse . . .))"? The answer to this is two-fold.
+First, the functions that you define won't be so trivial later on.
+The work done in a single function is almost unlimited. We are just
+using simple examples at this point. 
+<a name="notnull"></a>
+<p>The second reason for learning how to define simplistic
+functions is more subtle. Remember that we mentioned the NOT
+function in chapter 5? It did exactly the same things as NULL. In
+fact we might have defined NOT [if it were not already there] by
+typing:</p>
+
+<pre>
+:(DEFINE (NOT (LAMBDA (A)
+
+:      (NULL A)))))
+
+  NOT
+</pre>
+
+The reason for having both NULL and NOT is that in some cases it
+makes more sense to the programmer to envision a NOT than a NULL.
+Go back over the example in <a href="5.html">Chapter 5</a> and
+you'll see this vividly. 
+<p>As with NOT and NULL, suppose that we were using a list to hold
+the names of our friends in the form:</p>
+
+<p>(firstname middlename lastname)</p>
+
+<p>We could then define functions called FIRSTNAME, MIDDLENAME, and
+LASTNAME to access the parts of the list. They would represent CAR,
+CADR, and CADDR respectively. It makes more sense to ask for
+"(middlename friend)" than it does to ask for "(cadr friend)".</p>
+
+<p>Using simple defined functions in this way helps us to organize
+our own thoughts when designing a program and also helps others
+when they try to read out work. Applying meaningful names to simple
+things is one very important use of DEFINE.</p>
+
+<h3>Exercises: Rolling Your Own Functions</h3>
+
+<ol>
+<li>Remember the infamous phone list? Define FIRST, SECOND, and
+THIRD which will get the first, etc. entry from the phone list.
+Note that these are no longer valid phone lists themselves.</li>
+
+<li>Now define two functions: NAME and NUMBER which give you the
+name or number from one of the result lists of the functions from
+the previous problem.<br>
+You should be able to do: 
+<p>(NAME (FIRST PHONELIST))<br>
+(NUMBER (FIRST PHONELIST)) etc.</p>
+</li>
+
+<li>Redo problems 1 and 2 from <a href="3.html">Chapter 3</a>,
+using the functions you've just defined.</li>
+</ol>
+
+<h3>Answers</h3>
+
+<ol>
+<li>
+<pre>
+(DEFINE (FIRST (LAMBDA (L)
+        (CAR L))))
+
+(DEFINE (SECOND (LAMBDA (L)
+        (CADR L))))
+
+(DEFINE (THIRD (LAMBDA (L)
+        (CADDR L))))
+</pre>
+</li>
+
+<li>
+<pre>
+(DEFINE (NAME (LAMBDA (L)
+        (CAR L))))
+
+(DEFINE (NUMBER (LAMBDA (L)
+        (CADR L))))
+</pre>
+</li>
+
+<li>An expression to reverse the list is: 
+<pre>
+(CONS (THIRD L) (CONS (SECOND L) (CONS (FIRST L) '() )))
+</pre>
+
+An expression to reverse the list and each entry is: 
+<pre>
+(CONS
+  (CONS (NUMBER (THIRD L)) (CONS (NAME (THIRD L)) '()))
+  (CONS
+   (CONS (NUMBER (SECOND L)) (CONS (NAME (SECOND L)) '()))
+   (CONS
+    (CONS (NUMBER (FIRST L)) (CONS (NAME (FIRST L)) '()))
+   '()))
+    )
+)
+</pre>
+</li>
+</ol>
+
+<p><a href="index.html">Contents</a> | <a href="5.html">Bag of
+Predicates</a> | <a href="7.html">Help Functions</a></p>
+</body>
+</html>
+

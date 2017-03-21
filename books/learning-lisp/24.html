@@ -1,0 +1,167 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<html>
+<head>
+<meta name="generator" content=
+"HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org">
+<title>LEARNING LISP - Simplifying Polynomials</title>
+</head>
+<body bgcolor="white">
+<h1>LEARNING LISP</h1>
+
+<p><a href="index.html">Contents</a> | <a href=
+"23.html">Differentiating Polynomials</a> | <a href=
+"25.html">Efficiency and Elimination of Recursion</a></p>
+
+<h2>Simplifying Polynomials</h2>
+
+Let us now return once again to the world of polynomials. We have
+only one task remaining, namely the simplification of a polynomial.
+Remember from the last episode that the result of the DERV function
+could be rather messy, as the following aptly demonstrates: 
+<pre>
+:(derv '(mult (add x 2) (add x 3)) 'x)
+  (ADD (MULT (ADD X 2) (ADD 1 0)) (MULT (ADD X 3)
+  (ADD 1 0)))
+</pre>
+
+<p>There is no intelligence in the DERV function. It should be
+clear that (MULT (ADD X 2) (ADD 1 0)) can be simplified to (ADD X
+2). In fact, there are many similar simplifications that can be
+performed on polynomials. Here is our list.</p>
+
+<pre>
+Lisp form      Simplified form
+---------      ---------------
+MULT ? 0              0
+MULT 0 ?              0
+MULT 1 ?              ?
+MULT ? 1              ?
+ADD 0 ?               ?
+ADD ? 0               ?
+SUB ? 0               ?
+EXP ? 0               1
+EXP ? 1               ?
+EXP 0 ?               0
+EXP 1 ?               1
+
+[where ? is any Lisp expression]
+</pre>
+
+<p>Assume we have at our disposal a function called SIMPLIFY which
+will perform these transformations. Here is some behavior.</p>
+
+<pre>
+:(simplify '(add x 0))
+  X
+:(simplify '(exp 0 0))
+  1
+:(simplify '(mult (mult 0 x) y))
+  0
+:(setq p (derv '(mult (add x 2) (add x 3)) 'x))
+  (ADD (MULT (ADD X 2) (ADD 1 0)) (MULT (ADD X 3)
+  (ADD 1 0)))
+:(simplify p)
+  (ADD (ADD X 2) (ADD X 3))
+</pre>
+
+<p>When we apply the SIMPLIFY function to an expression of the form
+MULT 1 ?, the result should be the result of applying SIMPLIFY to
+?. This means that SIMPLIFY is recursive.</p>
+
+<p>The following function implements the above table:</p>
+
+<pre>
+:(define (simplify1 (lambda (poly)
+:  (cond
+:       ((null poly) nil)
+:       ((atom poly) poly)
+:       ((equal 'mult (function poly))
+:         (cond
+:       ((equal 0 (firstterm poly)) 0)
+:       ((equal 0 (secondterm poly)) 0)
+:       ((equal 1 (firstterm poly))
+:                       (simplify1 (secondterm poly)))
+:       ((equal 1 (secondterm poly))
+:                       (simplify1 (firstterm poly)))
+:       (t (list 'mult
+:                (simplify1 (firstterm poly))
+:                (simplify1 (secondterm poly)))) ))
+:   ((equal 'add (function poly))
+:       (cond             ((equal 0 (firstterm poly))
+:                       (simplify1 (secondterm poly)))
+:         ((equal 0 (secondterm poly))
+:                       (simplify1 (firstterm poly)))
+:                (t (list 'add
+:                              (simplify1 (firstterm poly))
+:                              (simplify1 (secondterm poly)))) ))
+:   ((equal 'sub (function poly))
+:       (cond
+:         ((equal 0 (secondterm poly))
+:                      (simplify1 (firstterm poly)))
+:           (t (list 'sub
+:                    (simplify1 (firstterm poly))
+:                    (simplify1 (secondterm poly)))) ))
+:   ((equal 'exp (function poly))
+:       (cond
+:         ((equal 0 (secondterm poly)) 1)
+:         ((equal 1 (secondterm poly))
+:                       (simplify1 (firstterm poly)))
+:         ((equal 0 (firstterm poly)) 0)
+:         ((equal 1 (firstterm poly)) 1) ))
+:   (t poly) ))))
+  SIMPLIFY1
+</pre>
+<a name="func"></a>
+<p>SIMPLIFY1 uses some of the help functions from the last chapter.
+The structure of the function closely follows the list of
+semplifications given above. Notice the recursive calls when the
+terms are not constant.</p>
+
+<p>Let's compare it with our idealized SIMPLIFY.</p>
+
+<pre>
+:(simplify1 '(mult (add x 2) (add 1 0)))
+  (MULT (ADD X 2) 1)
+:(simplify '(mult (add x 2) (add 1 0)))
+  (ADD X 2)
+</pre>
+
+<p>We have here a discrepancy. What is the source of the problem?
+Well, when SIMPLIFY1 simplifies (ADD 1 0), it gets 1 as it should.
+However, the test for multiplication by 1 has already been
+performed before this. SIMPLIFY1 can't make the second
+semplification. If we view the polynomial as a tree, then SIMPLIFY1
+is moving down the tree and any reduction performed on subtrees
+can't migrate back to the upper levels. How can we beat this
+conundrum? What we really want to do is to keep applying SIMPLIFY1
+to the polynomial until the application no longer results in any
+change. Let's write a function which goes around in a loop while
+continually applying SIMPLIFY1 until a final constant expression is
+reached.</p>
+<a name="prog"></a>
+<p>This is one of those cases, when recursion isn't the easiest way
+to do things. Thus, let's use a PROG! The following is the PROG for
+SIMPLIFY:</p>
+
+<pre>
+:(define (simplify (lambda (poly)
+:        (prog (poly1)
+:        loop (setq poly1 (simplify1 poly))
+:             (cond ((equal poly poly1)) (return poly)))
+:             (setq poly poly1)
+:             (go loop) ))))
+  SIMPLIFY
+:(simplify '(mult (add x 2) (add 1 0)))
+  (ADD X 2)
+</pre>
+
+<p>This function continues to simplify the polynomial until there
+is no change between two successive simplifications. It then
+returns the simplified polynomial.</p>
+
+<p><a href="index.html">Contents</a> | <a href=
+"23.html">Differentiating Polynomials</a> | <a href=
+"25.html">Efficiency and Elimination of Recursion</a></p>
+</body>
+</html>
+

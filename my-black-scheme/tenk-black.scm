@@ -353,7 +353,7 @@
 			(cons 'eval-list  eval-list)  (cons 'base-apply       base-apply)
 			(cons 'my-error   my-error)   (cons 'eval-map         eval-map)
 			(cons 'init-env   0)
-					; to be filled later
+					;; to be filled later
 			(cons 'init-cont  init-cont)  (cons 'run            run)
 			(cons 'old-env    old-env)    (cons 'old-cont       old-cont)
 			(cons 'primitive-procedures   primitive-procedures)

@@ -1,0 +1,340 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<html>
+<head>
+<meta name="generator" content=
+"HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org">
+<title>LEARNING LISP - Simple Recursion</title>
+</head>
+<body bgcolor="white">
+<h1>LEARNING LISP</h1>
+
+<p><a href="index.html">Contents</a> | <a href="10.html">The
+Conditional</a> | <a href="12.html">The Lisp Editor ED</a></p>
+
+<h2>Simple Recursion</h2>
+
+<em>Recursion</em> occurs when a program calls itself as a help
+function. How can a function be defined in terms of itself? That
+sounds like a circular definition! 
+<p>Recursion avoids circularity by defining the function in terms
+of simpler cases of itself. If we keep using the function on
+simpler cases, then eventually the function will get to a simple
+enough case and as such will know the answer without having to
+recur.</p>
+
+<p>Let's try a simple program, called RECITE, to print out all the
+elements in a list with one element per line of output. We will do
+this by having our function print out the CAR of the list, using
+the built-in Lisp function PRINT, and then call itself, recur with
+the CDR of the list. Notice that because we are going to pass the
+CDR of the list, the list will get smaller with each recursive
+call.</p>
+<a name="term"></a>
+<p>Recursion is useless unless we can make it stop. RECITE,
+therefore, should do the following: If its argument is NIL, then it
+should return to NIL. [This type of test is called a
+<em>termination condition</em>. We need it to keep List from
+running away.] If its argument is not a NIL, then print the CAR of
+the argument and call RECITE again with the CDR. Here is
+RECITE.</p>
+
+<pre>
+:(DEFINE (RECITE (LAMBDA (STUFF)
+
+:   (COND ((NULL STUFF) ())
+
+:         (T (PRINT (CAR STUFF))
+
+:            (RECITE (CDR STUFF)))
+
+:     ))))
+
+  RECITE
+
+:(RECITE '(THIS IS A TEST LIST))
+  THIS
+  IS
+  A
+  TEST
+  LIST
+
+  NIL
+</pre>
+
+When STUFF is NIL, the COND evaluates "(null stuff)" to T and
+evaluates the "()" as dictated by COND. Otherwise it prints the CAR
+of the list and calls RECITE, binding the CDR of STUFF to the new
+STUFF. Notice that it does not replace the value of STUFF but
+simply binds a new local value to it. When that particular call
+terminates, the previous value of STUFF will return. The NIL
+displayed at the end is not printed by the PRINT function. Rather,
+it is the value returned by the RECITE function. It came from the
+succession of recursive function terminations. When the function we
+started off with terminates, it prints out its value because there
+is no "caller" to return to other than the user. 
+<p>What would have happened if we had left out the termination
+condition? Answer: no end in sight.</p>
+
+<pre>
+:(DEFINE (RECITE (LAMBDA (STUFF)
+
+:   (PRINT (CAR STUFF))
+
+:   (RECITE (CDR STUFF)))))))
+
+  RECITE
+
+:(RECITE '(THIS IS A TEST))
+  THIS
+  IS
+  A
+  TEST
+  NIL
+  NIL
+  NIL
+  NIL
+  NIL
+  NIL
+
++()
+
+  NIL
+</pre>
+
+{We hit control C.} <a name="errcontrolc"></a> 
+<p>The list of NILs in the above execution will go on forever.
+We've cut off at seven in order to preserve our forests. This is a
+good time to learn about how to do that--that is, stop a function
+that is running wild. The answer is control-C. When a Lisp function
+starts repeating, you simply hold CONTROL and hit C. This causes
+Lisp to break the function, suspend it, and enter the "+" mode.
+[We've talked about this before.]</p>
+<a name="member"></a>
+<p>Onward to another example. The function we are going to define
+is called MEMBER. This function will take two arguments, an atom
+and a list. MEMBER will return a T if the atom is one of the
+top-level elements of the list, NIL otherwise. We now exhibit the
+function definition and some examples of its uses.</p>
+
+<pre>
+:(DEFINE (MEMBER (LAMBDA (A L)
+
+:        (COND
+
+:          ((NULL L) NIL)
+
+:            ((EQUAL A (CAR L)) T)
+
+:            (T (MEMBER A (CDR L)))))))
+
+  MEMBER
+
+:(MEMBER 'MAN '(UNION MAN))
+
+  T
+
+:(MEMBER 'SNURD '(ELMER SNERD))
+
+  NIL
+
+:(MEMBER 'A '((A B) C D))
+
+  NIL
+</pre>
+
+Here, we first test to see if L is an empty list. If it is, we need
+to search no further. We then compare the specified atom A with the
+first element of list L. If they are equal, then we have a match
+and the value of T is returned. Otherwise, we try again, looking
+for the atom in the CDR of the list. Note that this process is
+guaranteed to terminate because the function either returns a value
+or tries again with a shorter list. A list can only contain a
+finite number of elements so that after a maximum number of calls
+equal to the number of top-level elements in the initial list, we
+must reach an answer. <a name="trace"></a> 
+<p>Let's follow the MEMBER function with a debugging tool called
+TRACE. The Lisp TRACE function will tell us who calls whom and what
+is returned. When you see "<code>--&gt;&gt;</code>", it means that
+the function is being called. When you see
+"<code>&lt;&lt;--</code>", it indicates that the function is
+returning. Follow these examples and watch what's happening. Note
+that you get an extra set of parentheses around the arguments in
+the "<code>--&gt;&gt;</code>" trace.</p>
+
+<pre>
+:(TRACE MEMBER)
+
+  T
+
+:(MEMBER 'ARM '(HEAD LEG ARM FOOT))
+
+   --&gt;&gt; MEMBER :: (ARM (HEAD LEG ARM FOOT))
+   --&gt;&gt; MEMBER :: (ARM (LEG ARM FOOT))
+   --&gt;&gt; MEMBER :: (ARM (ARM FOOT))
+   &lt;&lt;-- MEMBER :: T
+   &lt;&lt;-- MEMBER :: T
+   &lt;&lt;-- MEMBER :: T
+</pre>
+
+Note that the "T" result is passed back through each level of the
+recursive call. It isn't just popped right back up to the top from
+the last call [the last "<code>--&gt;&gt;</code>"]. 
+<p>Let's try one that fails [returns NIL].</p>
+
+<pre>
+:(MEMBER 'HAND '(ARM HEAD LEG FOOT))
+     -&gt;&gt; MEMBER :: (HAND (ARM HEAD LEG
+     FOOT ) )
+     -&gt;&gt; MEMBER :: (HAND (HEAD LEG FOOT )
+     )
+     -&gt;&gt; MEMBER :: (HAND (LEG FOOT ) )
+     -&gt;&gt; MEMBER :: (HAND (FOOT ) )
+     -&gt;&gt; MEMBER :: (HAND NIL )
+     &lt;&lt;- MEMBER :: NIL
+     &lt;&lt;- MEMBER :: NIL
+     &lt;&lt;- MEMBER :: NIL
+     &lt;&lt;- MEMBER :: NIL
+     &lt;&lt;- MEMBER :: NIL
+
+  NIL
+</pre>
+
+The same returning sequence happens with the NIL. In fact, the same
+type of thing will always happen in a Lisp function that returns
+the values to the routine that called it, never back to the user
+directly. We saw this in the ENDS example and it also applies to
+recursion.
+<a name="untrace"></a>
+<p>The opposite of TRACE is UNTRACE.</p>
+
+<pre>
+:(UNTRACE MEMBER)
+
+  NIL
+</pre>
+
+If you forget to UNTRACE your functions they will keep tracing
+themselves until you either restart Lisp, or shut off your
+computer. 
+<p>If you wish to turn tracing off of all of your functions at
+once, simply type (UNTRACE).</p>
+
+<pre>
+:(UNTRACE)
+
+  NIL
+</pre>
+
+<a name="fact"></a> As a third example, we will look at a recursive
+mathematical function, namely, the factorial. Recall that the
+factorial of n is the product of the first n integers and is
+defined by the following recursive formula: 
+<pre>
+n! = 1            if n = 0
+    n*(n-1)!      if n &gt; 0
+</pre>
+
+Notice that the termination condition is already specified in the
+definition, namely, that the recursion stops when n=0. The
+factorial can easily be defined in Lisp, as follows: 
+<pre>
+:
+
+:(DEFINE (FACTORIAL (LAMBDA (N)
+
+:   (COND
+
+:   ((EQUAL N 0) 1)
+
+:   (T (MULT N (FACTORIAL (SUB N 1))))
+
+:   ))))
+
+  FACTORIAL
+
+:(FACTORIAL 0)
+
+  1
+
+:(FACTORIAL 1)
+
+  1
+
+:(FACTORIAL 2)
+
+  2
+
+:(FACTORIAL 3)
+
+  6
+
+:(FACTORIAL 5)
+
+  120
+</pre>
+
+It would be instructive to trace an evaluation of FACTORIAL to see
+how it works. Here's a trace of (FACTORIAL 5). 
+<pre>
+:(FACTORIAL 5)
+     -&gt;&gt; FACTORIAL :: (5 )
+     -&gt;&gt; FACTORIAL :: (4 )
+     -&gt;&gt; FACTORIAL :: (3 )
+     -&gt;&gt; FACTORIAL :: (2 )
+     -&gt;&gt; FACTORIAL :: (1 )
+     -&gt;&gt; FACTORIAL :: (0 )
+     &lt;&lt;- FACTORIAL :: 1
+     &lt;&lt;- FACTORIAL :: 1
+     &lt;&lt;- FACTORIAL :: 2
+     &lt;&lt;- FACTORIAL :: 6
+     &lt;&lt;- FACTORIAL :: 24
+     &lt;&lt;- FACTORIAL :: 120
+
+  120
+</pre>
+
+Notice how each value of FACTORIAL is passed back through every
+level of the recursive call, where it is multiplied by the value of
+n at that level. Work through the example to be sure you understand
+it. 
+<h3>Exercises</h3>
+
+<ol>
+<li>Write a recursive function that adds up the numbers in a list,
+for example (1 2 3 4) = 10.</li>
+
+<li>Write a recursive function that takes a list and returns
+everything minus the last element.</li>
+</ol>
+
+<h3>Answers</h3>
+
+<ol>
+<li>
+<pre>
+(DEFINE (SUM (LAMBDA (L)
+   (COND
+      ((NULL L) 0)
+      (T (ADD (CAR L) (SUM (CDR L))))
+   )
+)))
+</pre>
+</li>
+
+<li>
+<pre>
+(DEFINE (RDC (LAMBDA (L)
+   (COND
+    ((NULL (CDR L)) NIL)
+    (T (CONS (CAR L) (RDC (CDR L))))
+   )
+)))
+</pre>
+</li>
+</ol>
+
+<p><a href="index.html">Contents</a> | <a href="10.html">The
+Conditional</a> | <a href="12.html">The Lisp Editor ED</a></p>
+</body>
+</html>
+

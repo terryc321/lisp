@@ -1,0 +1,257 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<html>
+<head>
+<meta name="generator" content=
+"HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org">
+<title>LEARNING LISP - Eval and Apply</title>
+</head>
+<body bgcolor="white">
+<h1>LEARNING LISP</h1>
+
+<p><a href="index.html">Contents</a> | <a href="20.html">Control
+Structures</a> | <a href="22.html">Properties and Lambda
+Expressions</a></p>
+
+<h2>Eval and Apply</h2>
+
+In this brief chapter, we will show you the entire Lisp
+interpreter. Well, not really, but we will show you some functions
+which form the "heart" of the Lisp system. <a name="eval"></a> 
+<p>When you type an expression into the Lisp system, it is passed
+to a function called EVAL. EVAL [EVALuate] processes your
+expression and returns the result. What is this thing called
+EVAL?</p>
+
+<pre>
+:(SETQ A '(CAR B))
+
+  (CAR B )
+
+:(SETQ B '(AA BB CC DD))
+
+  (AA BB CC DD )
+
+:(EVAL A)
+
+  AA
+
+:(CAR '(AA BB CC DD))
+
+  AA
+
+:(EVAL 'A)
+
+  (CAR B )
+</pre>
+
+Let's see what happened. First we defined two variables, A and B.
+Note that the value of A is a legal Lisp expression. When Lisp
+EVALuates A, it is as if we had typed in the expression ourselves.
+Lisp returns the value of the expression as the result. When Lisp
+EVALuates "A", it returns the value of the value of 'A, which is
+the same thing as the value of A. 
+<p>The importance of this ability may not be immediately apparent.
+However, notice that this enables us to manipulate programs as data
+and then evaluate them. Most other programming languages do not
+provide this facility. Here is a small example.</p>
+
+<pre>
+:(SETQ FUN 'MULT)
+
+  MULT
+
+:(SETQ X 3)
+
+  3
+
+:(SETQ Y 2)
+
+  2
+
+:(SETQ VARS '(X Y))
+
+  (X Y )
+
+:(EVAL (CONS FUN VARS))
+
+  6
+</pre>
+
+<a name="apply"></a> In Lisp, there is another function which will
+evaluate a function and its data: APPLY. The generic form of the
+APPLY function is "(APPLY function-name list-of-arguments)". To
+repeat the last line in the above example use the APPLY function. 
+<pre>
+:(APPLY FUN X Y)
+
+  6
+</pre>
+<a name="poly"></a>
+Let's apply what we know about EVAL to the problem of evaluating
+polynomials. The polynomials are going to be represented by their
+associated Lisp expressions. Thus, 
+<pre>
+3x<sup>2</sup>+15
+</pre>
+
+will be represented as 
+<pre>
+(ADD (MULT 3 (MULT x x)) 15)
+</pre>
+
+Suppose we have this representation as the value of some variable. 
+<pre>
+:(SETQ P '(ADD (MULT 3 (MULT X X)) 15))))
+
+  (ADD (MULT 3 (MULT X X ) ) 15 )
+
+:(EVAL P)
+
+  42
+</pre>
+
+<a name="fexpr"></a> Now we have the capability to form polynomials
+and then evaluate them. EVAL gives us a very handy way of making
+FEXPRs much more powerful. Suppose that we wanted to write an
+addition function that used many arguments, no just two. We want to
+be able to write "(add* 1 2 3 . . .)" and get back their sums.
+Here's a possible FEXPR to do that. 
+<pre>
+:(DEFINE (ADD* (FLAMBDA (L)
+
+:  (ADD-SUB L))))
+
+   ADD*
+
+:(DEFINE (ADD-SUB (LAMBDA (L)
+
+:  (COND
+
+:    ((NULL L) 0)
+
+:    (T (ADD (CAR L) (ADD-SUB (CDR L))))))))
+
+   ADD-SUB
+</pre>
+
+Convince yourself that this works for "(add* 1 2 3 4 5)". Now try
+using SETQ to set up some values and use them in ADD*. 
+<pre>
+:(SETQ SOME 5)
+
+  5
+
+:(SETQ MORE 6)
+
+  6
+
+:(SETQ VALUES 7)
+
+  7
+
+:(ADD* VALUES MORE SOME)
+
+    ** ERROR: BAD NUMERIC ARG **
+      ADD :: ((CAR L ) (ADD-SUB (CDR L ) )
+      )
+
++()
+
+  NIL
+</pre>
+
+What happened? Well, when recursion stopped down in ADD-SUB, it
+returned a 0 which the next level tried to add to the then-car of
+the list, SOME. Well, SOME is not a number! ADD can't deal with it
+like that! SOME is not an atom--it has a value, but its name isn't
+that value [it isn't like numeric atoms in that respect]. How do we
+get its value from its name? Right, EVAL! Here's a new definition
+of ADD-SUB that works: 
+<pre>
+:(DEFINE (ADD-SUB (LAMBDA (L)
+
+:  (COND ((NULL L) 0)
+
+:  (T (ADD (EVAL (CAR L))
+
+:     (ADD-SUB (CDR L))))))))
+
+  ADD-SUB
+</pre>
+
+Convince yourself! Trace EVAL and ADD-SUB and see why. 
+<h3>Exercises to Evaluate in Your Head</h3>
+
+<ol>
+<li>There is a way to write ADD* by changing ADD* itself instead of
+ADD-SUB. It also relies on EVAL but it does the evaluation before
+ADD-SUB ever gets called. Can you think of a way of doing this? If
+so, fix ADD*. If not, look up MAPCAR and recurse through this
+problem!</li>
+
+<li>Write a function called DEFUN that permits us to get rid of
+some of the irritating parentheses. We want to be able to do this: 
+<pre>
+:(defun function-name (args list) body . . .)
+:(defun function-name fexpr (arg) body . . .)
+</pre>
+
+Have it fill the material that DEFINE wants to see and then call
+DEFINE. Notice that unless we say "fexpr", it makes an EXPR. This
+will need a special test.</li>
+
+<li>Write a function called NEWSETQ that counts the number of times
+it is used. It should look exactly like SETQ as far as its
+arguments are concerned. You should also keep the count in some
+global variable called NEWSETQ-USE-COUNT.</li>
+</ol>
+
+<h3>Answers</h3>
+
+<ol>
+<li>
+<pre>
+(DEFINE (ADD* (FLAMBDA (L)
+   (ADD-SUB (MAPCAR 'EVAL L))
+)))
+</pre>
+</li>
+
+<li>
+<pre>
+(DEFINE (DEFUN (FLAMBDA (L)
+   (COND
+     ((EQUAL (CADR L) 'FEXPR)
+        (EVAL (CONS 'DEFINE
+           (LIST (CONS (CAR L)
+             (LIST (CONS 'FLAMBDA (CDDR L)))
+                 )
+        ))
+      ))
+   (T (EVAL (CONS 'DEFINE
+     (LIST (CONS (CAR L)
+        (LIST CONS 'LAMBDA (CDR L))
+          )
+     ))
+   ))
+   )
+)))
+</pre>
+</li>
+
+<li>
+<pre>
+(DEFINE (NEWSETQ (FLAMBDA (L)
+   (SETQ (NEWSETQ-USE-COUNT (ADD NEW-SETQ-USE-COUNT 1))
+   (EVAL (CONS 'SETQ L))
+)))
+</pre>
+</li>
+</ol>
+
+<a href="index.html">Contents</a> | <a href="20.html">Control
+Structures</a> | <a href="22.html">Properties and Lambda
+Expressions</a>
+</body>
+</html>
+

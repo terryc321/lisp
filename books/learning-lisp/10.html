@@ -1,0 +1,189 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<html>
+<head>
+<meta name="generator" content=
+"HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org">
+<title>LEARNING LISP - The Conditional</title>
+</head>
+<body bgcolor="white">
+<h1>LEARNING LISP</h1>
+
+<p><a href="index.html">Contents</a> | <a href="9.html">This Thing
+Called Lambda</a> | <a href="11.html">Simple Recursion</a></p>
+
+<h2>The Conditional</h2>
+
+<a name="cond"></a> This chapter deals with conditional expressions
+in Lisp. Conditions are used commonly in English: "If you're a bad
+boy then you'll be sent to bed without dinner". 
+<p>The conditional above has two parts: a test, "you're a bad boy",
+and a statement which will result if the test is true, "you'll be
+sent to bed without dinner".</p>
+
+<a name="nil"></a>
+<p>Here is a set of examples in Lisp:</p>
+
+<pre>
+:(COND (T '(HI THERE)) (NIL 'THEIR HIGH))
+:))
+
+  (HI THERE )
+
+:(COND (NIL '(THEIR HIGH)) (T '(HI THERE
+:))))
+
+  (HI THERE )
+
+:(COND (T '(THEIR HIGH)) (T '(HI THERE))))
+
+  (THEIR HIGH )
+</pre>
+COND takes as its arguments a set of lists. Suppose, for the sake
+of explanation, we use: 
+<p>(cond list1 list2)</p>
+
+COND will evaluate the CAR as LIST1. If the result is not a NIL,
+then COND will evaluate the remaining things in the list, and will
+return the value of the last thing it evaluated. If the result is
+NILL, COND will go on and do the same thing for LIST2. 
+<a name="t"></a>
+<p>In the first example above, the first list is "(t '(hi there))".
+The CAR of the expression is T, which evaluates to T. Following the
+process described above, COND notes that the value T does not equal
+NIL, and therefore evaluates the rest of the list. Its value is
+"(hi there)" which is what is returned. The second example shows
+the case where the first list is not evaluated but the second is.
+The CAR of the first list evaluates to NIL so that list is skipped.
+The CAR of the second list is T, so the rest is evaluated. Not too
+bad so far, eh?</p>
+
+<p>If both the first and the second CARs are true, then because
+COND starts at the beginning and works its way down [since the CAR
+of the first list evaluates to "T"], COND will never get to the
+second list. The second list will never be evaluated!! When COND
+can't find a list with a non-NIL CAR, then it returns a NIL.</p>
+
+<pre>
+:(COND (NIL '(FALSEHOOD)) (NIL '(FALSETTO
+
+:))))
+
+  NIL
+</pre>
+
+COND will work for any number of lists, not just two. 
+<pre>
+:(COND (NIL '(DOOR #1)) (NIL'(DOOR #2))
+
+:(T '(DOOR #5)))))
+
+  (DOOR #5 )
+</pre>
+
+Okay, the party is over, and now we put COND to work. Above, we
+used the values of T and NIL, because they evaluate to themselves.
+However, COND becomes a much more powerful tool when predicates are
+used as the first elements of the conditional lists. 
+<p>The definition of the absolute value function can be described
+as: If the number is positive, then return the number. Otherwise,
+return the number's negative.</p>
+
+<p>Note that this successfully "catches" zero, since the negative
+of zero is still zero.</p>
+
+<p>The equivalent Lisp function can be written:</p>
+
+<pre>
+:(DEFINE (ABS (LAMBDA (N)
+
+:        (COND
+
+:           ((GREATER N 0) N)
+
+:           (T (MULT N -1)))))))
+
+  ABS
+
+:(ABS 3)
+
+  3
+
+:(ABS -453)
+
+  453
+
+:(ABS 0)
+
+  0
+</pre>
+
+Here is a non-numerical function which uses COND. Make sure you
+understand the evaluation of the function. 
+<pre>
+:(DEFINE (MAKE-A-LIST (LAMBDA (A-LIST)
+
+:  (COND
+
+:    ((ATOM A-LIST) (CONS A-LIST NIL))
+
+:      (T A-LIST))))))
+
+  MAKE-A-LIST
+
+:(MAKE-A-LIST 'HAPPY)
+
+  (HAPPY )
+
+:(MAKE-A-LIST '(LISP LISP LISP))
+
+  (LISP LISP LISP )
+
+:
+</pre>
+
+<h3>Exercises</h3>
+
+<ol>
+<li>Write a function that returns T if its first argument is less
+than or equal to its second argument, and NIL otherwise.</li>
+
+<li>Write a function that compares two 2-atom lists, returning T if
+both lists are the same (assume EQUAL only works on atoms).</li>
+</ol>
+
+<h3>Answers</h3>
+
+<ol>
+<li>
+<pre>
+(DEFINE (LEQ (LAMBDA (N1 N2)
+  (COND
+   ((EQUAL N1 N2) T)
+   ((GREATER N2 N1) T)
+   (T NIL)
+  )
+)))
+</pre>
+</li>
+
+<li>
+<pre>
+(DEFINE (COMPARE (LAMBDA (L1 L2)
+  (COND
+    ((EQUAL (CAR L1) (CAR L2))
+     (COND
+       ((EQUAL ((CADR L1) (CADR L2)) T)
+       (T NIL)
+     )
+    (T NIL)
+  ))
+)))
+</pre>
+</li>
+</ol>
+
+<p><a href="index.html">Contents</a> | <a href="9.html">This Thing
+Called Lambda</a> | <a href="11.html">Simple Recursion</a></p>
+</body>
+</html>
+

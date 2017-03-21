@@ -1,0 +1,160 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<html>
+<head>
+<meta name="generator" content=
+"HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org">
+<title>LEARNING LISP - This Thing Called Lambda</title>
+</head>
+<body bgcolor="white">
+<h1>LEARNING LISP</h1>
+
+<p><a href="index.html">Contents</a> | <a href="8.html">How to Save
+the World</a> | <a href="10.html">The Conditional</a></p>
+
+<h2>This Thing Called Lambda</h2>
+<a name="lambda"></a>
+All the functions that were defined previously had something called
+LAMBDA in them. We left this without explanation up to now. Here
+we'll take a deeper look at the LAMBDA function and what it does.
+<a name="define"></a> 
+<p>Functions are always defined in the following form:</p>
+
+<p>(DEFINE (name (LAMBDA (formal arguments) function-expression
+)))</p>
+
+<p>"Name" is the name of the function being defined. This shouldn't
+cause any trouble. "Function-expression" is simply the expression
+that will be evaluated when we invoke the named function. We've
+been here before, right? When you type "(name . . .)" Lisp
+evaluates: "(function-expression)". That was how we got FIRST to do
+a CAR function. Whenever "(first . . .)" was entered, Lisp replaced
+it with its defined function-expression, "(car . . .)".</p>
+
+<a name="args"></a> 
+<p>"Formal arguments" serve to hold the place for the actual
+value[s] which will be inserted when the function is evaluated. As
+you will recall from previous chapters, we had a formal argument
+[L] in the FIRST function. We couldn't get the value of L outside
+of the function. The "function-expression" can use L, but we can't!
+Why is that?</p>
+
+<p>Let's look again at the function FIRST.</p>
+
+<pre>
+(define (first (lambda (L)
+(car L) )))
+</pre>
+
+Now, let's invoke FIRST. 
+<pre>
+:(FIRST '(A B C))
+
+  A
+</pre>
+
+This is the same result we would have gotten if we had instead done
+
+<pre>
+:(SETQ L '(A B C))
+
+  (A B C )
+
+:(CAR L)
+
+  A
+</pre>
+
+except that if we had done that, the value of L would still have
+been available after the CAR operation. It seems that the formal
+arguments got SETQed to match the supplied argument when the
+function was invoked. The only difference is that after the
+function finishes [that is, the function-expression is done
+evaluating] the values get unSETQed. <a name="errinter"></a> 
+<p>If the function has an error that causes an interrupt [you get
+an error message and get a "+" prompt], then it hasn't finished
+evaluation yet, and the values assigned to the formal arguments are
+still there. That is why we can look at them when we have the "+"
+prompt. When we tell Lisp to terminate the function that was
+suspended by entering a NIL to the "+", then it terminates the
+function and, POOF, the values that were in our formal arguments
+are gone.</p>
+
+<p>To be a little more specific, the supplied arguments in the
+calling expression are matched with the formal arguments. Then the
+values of the supplied arguments are inserted into the function
+expression where their associated formal arguments were. This is
+subsequently evaluated in place of the original expression.</p>
+<a name="lambdalist"></a>
+<p>Now let's discuss some variations on this theme. If there had
+been two variables in the formal argument list ["(L m)" for
+example], then we would have to put two variables in the part of
+the expression supplied with arguments. It should be pointed out
+that the names in the formal argument list [also known as the
+"lambda list"] are completely arbitrary. "L" and "M" might just as
+easily have been "LOVESICK" and "MOOSE", as long as we did the same
+in the function-expression also.</p>
+
+<p>As an example of a two-argument function, here is a function
+that concatenates two lists together. We are calling it MERGE:</p>
+
+<pre>
+:(DEFINE (MERGE (LAMBDA (L M)
+
+:       (CONC L M))))
+
+  MERGE
+
+:(MERGE '(A B C) '(D E F))
+
+  (A B C D E F )
+</pre>
+
+The first supplied argument would be bound [CONC is short for
+CONCatenate] to the first name "L" and the second would be bound to
+the name "m". 
+<pre>
+( (a b c) (d e f) )
+-------------------
+(    L       m    )
+</pre>
+
+<p>Let's try giving Lisp nothing to connect to the formal
+argument:</p>
+
+<pre>
+:(FIRST)
+
+    ** ERROR: TOO FEW ARGS **
+      FIRST :: NIL
+
++()
+
+  NIL
+</pre>
+
+Oops! Well, that should have been expected. FIRST had one formal
+argument and we supplied none, so it told us that we had too few.
+Now the error reports should be slightly more meaningful to you. 
+<p>Can you figure out what would happen if we had typed "(first '(a
+b c '(d e f))"? Try it.</p>
+
+<a name="bind"></a> 
+<p>The process of assigning the values of the supplied arguments to
+the formal arguments is called <em>Lambda-Binding</em>. The
+arguments in the "lambda-list" [the formal arguments] are called
+<em>locals</em>. They are "local" to the function in which they are
+bound in that when the function ends, the binding comes apart, and
+L [in the case of FIRST] no longer has the value it had inside the
+function. That is why we can't see the value in L after the
+function has ended.</p>
+
+<p>The process of Lambda Binding is an important concept in Lisp.
+We will discuss its mechanisms in detail later on. For the time
+being it is important that you understand what it appears to do to
+variables.</p>
+
+<p><a href="index.html">Contents</a> | <a href="8.html">How to Save
+the World</a> | <a href="10.html">The Conditional</a></p>
+</body>
+</html>
+

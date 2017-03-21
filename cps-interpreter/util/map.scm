@@ -17,25 +17,99 @@
 ;; map f3 xs ys zs
 
 
-;; initial mymap is SLURPY
+;; ;; initial mymap is SLURPY
+;; (define map
+;;   (lambda (f . vals)
+;;     (letrec ((mymap1   (lambda (f xs)
+;; 			 (cond
+;; 			  ((null? xs) '())
+;; 			  (else (cons (f (car xs))
+;; 				      (mymap1 f (cdr xs)))))))
+;; 	     (mymap-help
+;; 	      (lambda (f xs vals)
+;; 		(cond
+;; 		 ((null? xs) '())
+;; 		 (else (cons (apply f (mymap1 car vals))
+;; 			     (mymap-help f (cdr xs) (mymap1 cdr vals))))))))
+;;       (cond
+;;        ((pair? vals)
+;; 	(mymap-help f (car vals) vals))
+;;        (else
+;; 	(error "map "))))))
+
+
 (define map
-  (lambda (f . vals)
-    (letrec ((mymap1   (lambda (f xs)
-			 (cond
-			  ((null? xs) '())
-			  (else (cons (f (car xs))
-				      (mymap1 f (cdr xs)))))))
-	     (mymap-help
-	      (lambda (f xs vals)
-		(cond
-		 ((null? xs) '())
-		 (else (cons (apply f (mymap1 car vals))
-			     (mymap-help f (cdr xs) (mymap1 cdr vals))))))))
-      (cond
-       ((pair? vals)
-	(mymap-help f (car vals) vals))
-       (else
-	(error "map "))))))
+  (letrec ((all-cars (lambda (xs)
+                       (cond
+                        ((null? xs) xs)
+                        (else (cons (car (car xs))
+                                    (all-cars (cdr xs)))))))
+           (all-cdrs (lambda (xs)
+                       (cond
+                        ((null? xs) xs)
+                        (else (cons (cdr (car xs))
+                                    (all-cdrs (cdr xs)))))))
+           (mymap3 (lambda (f xs)
+                     (cond
+                      ((null? xs) '())
+                      ((null? (car xs)) '())
+                      (else 
+                       ;;(newline)
+                       (display "xs3 = ")
+                       (display xs)
+                       (newline)
+                       (cons (apply f (all-cars xs))
+                             (mymap3 f (all-cdrs xs)))))))
+           (mymap2 (lambda (f . xs)
+                     ;;(newline)
+                     (display "xs = ")
+                     (display xs)
+                     (newline)
+                     (cond
+                      ((null? xs) '())
+                      ((null? (car xs)) '())                      
+                      (else                        
+                       (mymap3 f xs))))))
+    mymap2))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+;; (define map
+;;   (letrec ((mymap2 (lambda (f . xs) (mymap3 f xs)))
+;;             (mymap3 (lambda (f xs)
+;;                      (newline)
+;;                      (display "xs = ")
+;;                      (display xs)
+;;                      (newline)
+;;                      (cond
+;;                       ((null? xs) xs)
+;;                       (else (cons (f (car xs))
+;;                                   (mymap3 f (cdr xs))))))))
+;;     mymap2))
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

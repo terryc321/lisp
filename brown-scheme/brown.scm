@@ -1,4 +1,5 @@
-#lang r5rs
+
+
 
 (define-syntax curry
   (syntax-rules () 
@@ -29,7 +30,12 @@
 ;;             ((theta (R-E-P n)) (loop (add1 n)))))))
 ;;     (loop 0)))
 
+(C 'a 'b)
+(C list 'a)
+1
 
+
+;; ---------- Y combinator ?? really?? -----
 (define Y
   (lambda (f)
     (let ((d (lambda (x)
@@ -39,6 +45,7 @@
 
 
 
+;; ----------- whats this mean ? ----------
 (define shift-up
   (lambda (theta)
     (lambda (mk)
@@ -126,8 +133,6 @@
      ((eq? (first e) 'lambda) (denotation-of-abstraction e))
      ;; assumed it is an application
      (else (denotation-of-application e)))))
-
-
 
 
 
@@ -368,8 +373,6 @@
 
 
 (define add +)
-
-
 
 (define first car)
 (define second cadr)

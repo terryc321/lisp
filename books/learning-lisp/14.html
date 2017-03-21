@@ -1,0 +1,139 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<html>
+<head>
+<meta name="generator" content=
+"HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org">
+<title>LEARNING LISP - Trees and Recursion</title>
+</head>
+<body bgcolor="white">
+<h1>LEARNING LISP</h1>
+
+<p><a href="index.html">Contents</a> | <a href="13.html">Lists as
+Trees</a> | <a href="15.html">A Style of Programming</a></p>
+
+<h2>Trees and Recursion</h2>
+
+We promised you that trees would help you understand recursion and
+it will. Most functions in Lisp, whether they are built-in or
+written by us, are designed to work on trees. All trees in Lisp
+[subtrees are trees also] look alike. Therefore, if we have a
+function that works on a tree, it will work on any tree. 
+<p>Our first version of RECITE removed the far left branch of the
+argument list [tree] with CAR and printed it. It then recursed [it
+called itself] passing the rest of the tree [the CDR] as the new
+tree. Unfortunately, if any of the branches were trees themselves,
+then they would simply be printed out as-is:</p>
+
+<pre>
+:(DEFINE (RECITE (LAMBDA (STUFF)
+
+:    (COND
+
+:       ((NULL STUFF) ())
+
+:       (T (PRINT (CAR STUFF))
+
+:          (RECITE (CDR STUFF)))))))
+
+
+:(RECITE '((WE THE PEOPLE) STAR (E PLENEBLA) TREK)
+
+  (WE THE PEOPLE)
+  STAR
+  (E PLENEBLA)
+  TREK
+
+  NIL
+</pre>
+
+How can we get around this? The thing that should come to mind is
+that RECITE will work on any tree. Thus, if before RECITing the CDR
+of the list we make sure that all the subtrees in the CAR of the
+list have been RECITEd, we should be home free. No matter how
+deeply nested the main tree is, we will eventually get to its
+leaves by calling RECITE over and over again on deeper and deeper
+subtrees until we hit one whose CAR is an atom. 
+<p>We will redefine RECITE with a COND as suggested by the previous
+description. We keep calling RECITE of the CAR [and the CDR] of the
+things that are entered until we hit an atom and then simply print
+out the atom! Would that give us the same result?</p>
+
+<pre>
+:(DEFINE (RECITE (LAMBDA (S)
+
+:  (COND ((ATOM S) (PRINT S))
+
+:        (T (RECITE (CAR S))
+
+:           (RECITE (CDR S)))))))
+
+  RECITE
+
+:(RECITE '(YOU (WALRUS (HURT THE) ONE)
+
+:((YOU) LOVE))))))
+  YOU
+  WALRUS
+  HURT
+  THE
+  NIL
+  ONE
+  NIL
+  YOU
+  NIL
+  LOVE
+  NIL
+  NIL
+
+  NIL
+</pre>
+
+What happened? There are extra NILs in the way. Let's look at the
+input tree. 
+<pre>
+<img src="imgs/tree11.png" width="353" height="216" alt=
+"(you (walrus (hurt the) one) ((you) love)) tree representation">
+
+(you (walrus (hurt the) one) ((you) love))
+</pre>
+
+When we finally print "the" [as indicated by the star ["*"] in the
+above picture], the CDR of STUFF is a NIL which qualifies as an
+atom, so it gets printed out also. Let's put in a test for NIL and
+simply do nothing when we encounter it: 
+<pre>
+:(DEFINE (RECITE (LAMBDA (THING)
+
+:  (COND ((NULL THING) NIL)
+
+:        ((ATOM THING) (PRINT THING))
+
+:        (T (RECITE (CAR THING))
+
+:             (RECITE (CDR THING)))))))
+
+  RECITE
+
+:(RECITE '(YOU (WALRUS (HURT THE) ONE)
+
+:((YOU) LOVE))))))))
+  YOU
+  WALRUS
+  HURT
+  THE
+  ONE
+  YOU
+  LOVE
+
+  NIL
+</pre>
+
+One of the important uses of recursion is tree searching. RECITE is
+an example of this method. By using the function recursively and
+passing smaller and smaller trees to the later calls, we can scan
+the entire main tree. 
+<p><a href="index.html">Contents</a> | <a href="13.html">Lists as
+Trees</a> | <a href="15.html">A Style of Programming</a></p>
+</body>
+</html>
+

@@ -1,0 +1,109 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<html>
+<head>
+<meta name="generator" content=
+"HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org">
+<title>LEARNING LISP - How to Save the World</title>
+</head>
+<body bgcolor="white">
+<h1>LEARNING LISP</h1>
+
+<p><a href="index.html">Contents</a> | <a href="7.html">Help
+Functions</a> | <a href="9.html">This Thing Called Lambda</a></p>
+
+<h2>How to Save the World</h2>
+
+Now that you are beginning to put your own functions into the
+system it would be useful to learn something about how to save them
+for use later on. This will become especially important when there
+are big functions that you won't want to retype. <a name="env"></a>
+
+<p>When you are using Lisp, everything that you do goes into a big
+pile called the environment. The environment holds all the
+functions that you've defined and all the atom values that you
+SETQed. As it turns out, the environment also contains any typos
+that you made, but we'll talk about these much later on. Normally,
+you should always save the whole environment together. That is, all
+the functions in a given environment are related, so you really
+want them all saved en masse.</p>
+<a name="save"></a>
+<p>The SAVE function takes everything in the environment and writes
+it out to a disk. You simply say,</p>
+
+<pre>
+:SAVE ENVNAME
+</pre>
+
+and Lisp will dump everything you've done since you started to run
+Lisp, onto a file on the disk called ENVNAME. Notice that you don't
+need quotes here. SAVE is special in this way [like the first
+argument in SETQ]. Note also that you don't need parentheses. This
+is true only for P-LISP and not for most other Lisps that you may
+encounter. 
+<a name="load"></a>
+<p>The disk will do a few moments worth of clicking. Restart Lisp
+and type:</p>
+
+<pre>
+:LOAD ENVNAME
+</pre>
+
+and sure enough everything is back exactly the way you left it!
+Both SAVE and LOAD have a lot of work to do, so you have to wait
+while they think about it. 
+<p>By the way, although we used ENVNAME in the above example, you
+can call your environment anything you like. Any atom name can also
+be the name of the environment.</p>
+
+<p>Microcomputers are not very reliable sometimes [nor are big
+computers]; so you might want to save your environment once in a
+while just for good measure. Then, if the computer dies for some
+reason, all you have lost is the work that you did between the last
+SAVE function and the time that it died. A LOAD command will
+restore you to exactly where you were at the last save.</p>
+
+<a name="altern"></a> 
+<p>Another technique that is handy in case of a problem is called
+<em>save alternation</em>. That is, don't keep saving into the same
+file. Suppose we were working along and decided that this was a
+good time to save the environment. We could start by saving into,
+for example, ENV-A. After a little while longer, we will want to
+save again, but this time we'll save into ENV-B. This leaves ENV-A
+intact in case there is a serious problem that could ruin ENV-B
+(for example, a cup of coffee is spilled on the disk), and we have
+ENV-A as a fallback. The next save, now our third, goes into ENV-A
+again, thus leaving ENV-B as the backup. Then back to ENV-B, and so
+on.</p>
+
+<p>By alternating the saved names in this way you can almost
+guarantee that you won't lose everything, especially if the two
+files are on different disks. Be sure not to lose track, however.
+You wouldn't want to load ENV-A when the last file that you saved
+into was ENV-B or vice versa.</p>
+<a name="vers"></a>
+<p>Another useful idea is to <em>time-date stamp</em> or
+<em>version stamp</em> the file names. That is, add some numbers to
+the environment name so that you can tell when it was saved. Here
+are some suggested forms:</p>
+
+<p>ENVNAME-JAN-16-2PM<br>
+ENVNAME-1, ENVNAME-2, and so on<br>
+ENVNAME-01-16-82*2PM</p>
+
+Don't make the format too hard to remember, and be sure to delete
+very old versions so the disks don't fill up with garbage. By doing
+this, you have the advantage of not having to remember what the
+most recent version was; the filename remembers it for you! 
+<p>Now that you know how to save your work, you might want to make
+a special "play" environment to keep everything that you have been
+playing with in. Also, you may want an environment for each major
+project that you write in Lisp. In a few more chapters we'll talk
+about how to manage the material inside the environment, but for
+now, managing the environments themselves is sufficient. Now back
+to more Lisp fun.</p>
+
+<p><a href="index.html">Contents</a> | <a href="7.html">Help
+Functions</a> | <a href="9.html">This Thing Called Lambda</a></p>
+</body>
+</html>
+

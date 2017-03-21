@@ -1,0 +1,331 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<html>
+<head>
+<meta name="generator" content=
+"HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org">
+<title>LEARNING LISP - The Lisp Editor ED</title>
+</head>
+<body bgcolor="white">
+<h1>LEARNING LISP</h1>
+
+<p><a href="index.html">Contents</a> | <a href="11.html">Simple
+Recursion</a> | <a href="13.html">Lists as Trees</a></p>
+
+<h2>The Lisp Editor ED</h2>
+
+In the previous chapters, you were at the mercy of your typing
+ability. If you could type your Lisp function in correctly the
+first time, then more power to you. However, for the rest of us,
+even if we do manage to get the parentheses balanced, our functions
+usually don't work perfectly from the outset. Provided with Lisp is
+a mechanism for manipulating user defined functions. It is called
+ED, and it is designed to edit functions. 
+<p>You get into the editor by typing</p>
+
+<pre>
+:(ed fun)
+</pre>
+
+<p>where FUN is the name of the function you want to edit. The
+editor will respond with a level indicator and a <em>point of
+view</em> [POV]. This will typically look something like this:</p>
+
+<pre>
+TOP: (LAMBDA &amp; &amp;)
+</pre>
+
+<a name="win"></a> 
+<p>The point of view is a window into the function. That is, you
+are always looking [through the eyes of the editor] at some
+particular part of the function body and the point of view is a
+picture of that part of the function.</p>
+
+<p>Let's define a little function in order to play with the editor.
+Here is the function EDITME:</p>
+
+<pre>
+:(DEFINE (EDITME (LAMBDA (L)
+
+:   (PRINT (CAR L))))))))
+
+  EDITME
+</pre>
+
+<a name="level"></a> Here is what happens when we try and edit the
+function. 
+<pre>
+:(ED EDITME)
+  TOP: (LAMBDA &amp; &amp; )
+</pre>
+
+The editor responds by displaying the top level of the LAMBDA list.
+<a name="amp"></a> Any atoms [in this case only LAMBDA] are fully
+spelled out, but any lists are represented by a &amp;. The reason
+for this is that many lists are quite large; you would not want to
+see the entire list, only enough to give you an idea of where you
+are. <a name="ppov"></a> 
+<p>The rule to remember in editing parts of lists is, "what you see
+is what you edit". Whenever you do anything in the editor, you are
+shown the current expression [the POV]. If you want to see the
+entire POV without the &amp;, type a P. This will invoke the
+pretty-printer on the current POV. The pretty-printer shows you
+what the entire window looks like and tries to indent its elements
+in some reasonable manner.</p>
+
+<pre>
+?P
+
+  ( LAMBDA (L )
+    (PRINT (CAR L ) )
+  )
+
+  TOP: (LAMBDA &amp; &amp; )
+</pre>
+
+<a name="number"></a> 
+<p>We can change our location in the list [that is, change the POV
+so that it indicates a different part of the list] by entering a
+number as the editor command. The number is the position in the
+current window to which you would like to move. Lists are numbered
+like this:</p>
+
+<pre>
+(LAMBDA (L) (PRINT (CAR L)))
+------- --- ----------------
+   1     2         3
+</pre>
+
+<p>If we want to make the first element the new current expression
+we can simply type</p>
+
+<pre>
+?2
+  TOP:2: (L )
+</pre>
+
+Use "0" to move back one level. 
+<pre>
+?0
+  TOP: (LAMBDA &amp; &amp; )
+</pre>
+
+We cannot go to 1, because the window isn't allowed to be just a
+lone atom. You can only go to a list, which shows up in the window
+as an &amp;. Notice that the numbering changes once we move to a
+new part of the list. 
+<pre>
+?-1
+   TOP:3:  (PRINT &amp;)
+</pre>
+
+Negative numbers can be used to move down into the function, but
+the elements are counted from the right end. Therefore, we can
+number the current expression as follows: 
+<pre>
+(PRINT  (CAR L))
+------  --------
+  -2       -1
+
+?-1
+   TOP:3:2:  (CAR L)
+?-3
+   INVALID ELEMENT.
+</pre>
+
+We cannot go to something that doesn't exist, and the editor will
+report this to you. Let's go back to the top. 
+<pre>
+?0
+   TOP:3:  (PRINT &amp;)
+?0
+   TOP:  (LAMBDA &amp; &amp;)
+?0
+   NO UP FROM HERE.
+</pre>
+
+If you also try to go past the top, of course the editor stops you.
+<a name="gobxnx"></a> 
+<p>There are also provisions for moving BACK one element and to the
+NEXT element. These commands are BX and NX respectively. The last
+movement command is GO (LEVEL INDICATOR). Regardless of where you
+are, this will move you to a completely new place. Make sure the
+argument to GO is a list. Let's see how these work.</p>
+
+<pre>
+?2
+   TOP:2:  (L)
+?NX
+   TOP:3:  (PRINT &amp;)
+?GO(2)
+   TOP:2:  (L)
+</pre>
+
+Something funny will happen if the NX or BK are asked to go to
+atoms. The editor won't let an atom be the only thing in the
+window, but by jumping NX or BK you might be asking it to make an
+atom the current window. Well, the editor is smarter than that. It
+will skip over atoms that are in the way when BK or NX are done. <a
+name="insert"></a> 
+<p>So far all we've done is move around within the function. Now,
+let's try and change something. To do this, we need to use the
+"insert" command. Remember that editing commands only modify the
+window. Make sure that what you want to modify is there. Move
+around until you are looking at the correct section of the
+function.</p>
+
+<pre>
+?0
+  TOP: (LAMBDA &amp; &amp; )
+
+?I NOT AFTER 2
+  TOP: (LAMBDA &amp; NOT &amp; )
+
+?I ONLY BEFORE -1
+  TOP: (LAMBDA &amp; NOT ONLY &amp; )
+
+?I WAS FOR 1
+  TOP: (WAS &amp; NOT ONLY &amp; )
+</pre>
+
+Note the three different forms of the insert ["I"] command. You can
+insert AFTER an element, BEFORE an element, or FOR an element.
+These three can all be abbreviated to a single letter each [A, B,
+or F]. You are also not restricted to inserting just atoms either.
+You can insert full lists. 
+<pre>
+?I (NOT) FOR 3
+  TOP: (WAS &amp; &amp; ONLY &amp; )
+</pre>
+
+<a name="delete"></a> There is also a delete command for removing
+items from a list. 
+<pre>
+'D -2
+  TOP: (WAS &amp; &amp; &amp; )
+</pre>
+
+Again, for the delete command, you can use either positive or
+negative numbers. <a name="abort"></a> 
+<p>Using the insert and delete commands we can perform any list
+surgery we want. Feeling very confident in our abilities, let's try
+to fix up a real function. First, we must leve the editor by typing
+ABORT. ABORT will completely ignore any changes we have made, but
+since we just made a wreck of EDITME, that's perfectly
+acceptable.</p>
+
+<pre>
+?ABORT
+
+  EDIT ABORTED.
+</pre>
+
+Now, we must enter the definition of the function. It may already
+be there, but you should re-enter it anyway. 
+<pre>
+:(DEFINE (ENDS (LAMBDA (L)
+
+:   (CONC (FIRST L) (LAST L))))))))
+
+  ENDS
+</pre>
+
+Now, let's go back into the editor. 
+<pre>
+:(ED ENDS)
+  TOP: (LAMBDA &amp; &amp; )
+</pre>
+
+We have loaded the function into the editor, so let's get started
+by looking at the whole function. 
+<pre>
+?P
+
+  ( LAMBDA (L )
+    (CONC (FIRST L ) (LAST L ) )
+  )
+
+  TOP: (LAMBDA &amp; &amp; )
+</pre>
+
+Great. Let's move down the function. 
+<pre>
+?3
+  TOP:3: (CONC &amp; &amp; )
+</pre>
+
+Now, remember what we have to do. We have to make (FIRST L) the new
+list (MAKELIST (FIRST L)), and the list (LAST L) the new list
+(MAKELIST (LAST L)). In English, we have to make a list out of an
+atom. 
+<pre>
+?I (MAKELIST (FIRST L) ) FOR 2
+  TOP:3: (CONC &amp; &amp; )
+</pre>
+
+OH NO! No visible change! Did it work? Why does it still say CONC
+&amp; &amp;? Yes, it worked. We can use the pretty-printer to
+verify this. 
+<pre>
+?P
+
+  (CONC (MAKELIST (FIRST L ) ) (LAST L ) )
+
+
+  TOP:3: (CONC &amp; &amp; )
+</pre>
+
+Okay. We still have one more to do, so let's do it. 
+<pre>
+?I (MAKELIST (LAST L)) F -1
+  TOP:3: (CONC &amp; &amp; )
+</pre>
+
+<a name="exit"></a> Note the use of the F for the "for" option. As
+we said, all three options can be abbreviated to just the first
+letter. Now, all that we have to do is leave the editor and save
+the modified function. EXIT will do both for us. 
+<pre>
+?EXIT
+
+  NIL
+</pre>
+
+Not that we don't trust our work, but why don't we test the
+function just to be sure. 
+<pre>
+:(ENDS '(AUNT EDNA IS A PICKY EATER)))
+
+  (AUNT EATER )
+:
+:(ENDS '(SO YOU THINK YOU ARE FUNNY)))
+
+  (SO FUNNY )
+</pre>
+
+<a name="pprint"></a> Looks like it worked. That sumps up the
+editor commands. Don't forget that the editor is written in Lisp,
+so you should feel free to look at it and play with it. The code
+for the whole editor is shown in an appendix to this text.
+Sometimes it's useful to just look at a function without having to
+go all the way into the editor. You can get to the pretty printer
+from outside ED by using the PPRINT function. Just say 
+<pre>
+:(pprint fun)
+</pre>
+
+where "fun" is the name of the function. It will display the
+function on your screen in a neat form. 
+<h3>THE EDITOR AS A LISP PROGRAM</h3>
+
+In the appendix we have included the entire text of the Lisp
+editor. It is all written in Lisp. After reading through the rest
+of the book, you should definitely try to understand how the editor
+functions. This will probably be the most valuable exercise that we
+offer in this book. The editor is a very complicated Lisp system
+and although it certainly isn't an artificial intelligence
+application of Lisp, it is a very useful one. 
+<p><a href="index.html">Contents</a> | <a href="11.html">Simple
+Recursion</a> | <a href="13.html">Lists as Trees</a></p>
+</body>
+</html>
+

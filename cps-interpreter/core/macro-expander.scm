@@ -3,6 +3,7 @@
 ;; simple macro expander
 ;; theres a cps-macro-expander floating around , see lisp in small pieces
 
+
 ;;--------------------------------------------------------------------------
 ;; hide actual expansion implementation inside a letrec if required
 ;;--------------------------------------------------------------------------
@@ -19,9 +20,9 @@
 
 
 (define (macro-expand expr)
-  ;; (display "macro expanding :")
-  ;; (display expr)
-  ;; (newline)  
+   ;;(display "macro expanding :")
+   ;;(display expr)
+   ;;(newline)  
   ;; symbol macros ?
   (if (not (pair? expr))
       expr

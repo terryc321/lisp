@@ -1,0 +1,253 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<html>
+<head>
+<meta name="generator" content=
+"HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org">
+<title>LEARNING LISP - A Style of Programming</title>
+</head>
+<body bgcolor="white">
+<h1>LEARNING LISP</h1>
+
+<p><a href="index.html">Contents</a> | <a href="14.html">Trees and
+Recursion</a> | <a href="16.html">Scope Considerations</a></p>
+
+<h2>A Style of Programming</h2>
+
+The result of a simple recursive function is that the value
+returned is the value of the last evaluated expression which does
+not involve a recursive call. Typically, this is a T or NIL or some
+atomic value. Since the function is stopped when a recursion is
+invoked, we can use the result of a call as the argument to some
+function. This section will deal with this type of complex
+recursion. 
+<a name="trace"></a>
+<p>Suspended evaluation is of primary importance here. When a
+function is evaluating its arguments, it is suspended until all
+those arguments are through evaluating. [We've been over this many
+times, once more can't hurt.] So, if in the process of evaluating
+arguments, a recursive function call is involved, that recursion
+takes place without disturbing the suspended evaluation even though
+the recursion may involve another occurrence of that expression.
+The only way to understand what we're driving at is to see it
+happen. TRACE is the fastest way to do this and it should be used
+freely in your examination of this chapter.</p>
+
+<p>The first example is a function to flatten a list. This function
+will return all of the atoms in a single list with no nested lists;
+that is, it will remove all the nesting parentheses. If we view a
+list as a tree, then this function will return a list of all of the
+"leaves." This function is similar to the RECITE function of the
+last few chapters. [We introduce the LIST function here. It is the
+built-in version of MAKELIST which we mentioned earlier.]</p>
+
+<p>Here is the function definition.</p>
+
+<pre>
+:(DEFINE (FLATTEN (LAMBDA (L))
+
+:    (COND
+
+:    ((NULL L) NIL)
+
+:    ((ATOM L) (LIST L))
+
+:    (T (CONC (FLATTEN (CAR L))
+
+:             (FLATTEN (CDR L))))))))
+
+  FLATTEN
+
+:(FLATTEN '(A B C))
+
+  (A B C )
+
+:(FLATTEN '((((YOUR))) (((FACE)))))
+
+  (YOUR FACE )
+
+:(FLATTEN '((TWEEDLEDUM) (((AND )))
+
+:(TWEEDLEDEE))))))
+
+  (TWEEDLEDUM AND TWEEDLEDEE )
+</pre>
+
+The first condition in the COND phrase handles the case where the
+list is NIL. The next case handles an atom by making it into a
+list. The last case causes a recursion if the argument L is neither
+a null list nor an atom. It flattens the CAR of L, flattens the CDR
+of L, and then CONCs the two results together. 
+<p>There is a certain style to these recursive functions, and now
+is the time to expand on this. We always use the same format. First
+handle the termination conditions, then deal with special cases,
+and finally, do the general case, assuming that the special cases
+are handled properly. This formula is the way of Lisp!</p>
+
+<p>Some care should be taken in setting up the special cases. We
+test for NULL before we test for ATOM. If you do not see why this
+is the case, scrutinize this next segment of output.</p>
+
+<pre>
+:(DEFINE (EVIL-FLATTEN (LAMBDA (L)
+
+:   (COND
+
+:     ((ATOM L) (LIST L))
+
+:     ((NULL L) NIL)
+
+:     (T (CONC (EVIL-FLATTEN (CAR L))
+
+:          (EVIL-FLATTEN (CDR L)))))))))
+
+:     (T (CONC (EVIL-FLATTEN (CAR L))
+
+:          (EVIL-FLATTEN (CDR L))))))))
+
+  EVIL-FLATTEN
+
+:(EVIL-FLATTEN ' (EINS ZWEI DREI))
+
+  (EINS ZWEI DREI NIL )
+
+:(EVIL-FLATTEN '(OOPS (BLOOPS) HOOPS))
+
+  (OOPS BLOOPS NIL HOOPS NIL )
+</pre>
+
+If you didn't figure it out, the reason is that NIL is an atom. So
+testing for ATOM of NIL will be T and the LIST of NIL will be
+returned. This is unacceptable, and underscores the necessity of
+correctly setting up the termination conditions of the recursion. 
+<p>On to the next example. Here, we are concerned with writing our
+own version of the REVERSE function. [Review the behavior of this
+function if you don't remember how it works.] The game plan has a
+little trick to it. But first, let's borrow the shell of the
+"standard" recursive function:</p>
+
+<pre>
+:(DEFINE (REV (LAMBDA (L)
+:        (COND
+:            ((NULL L) NIL)
+:            (T (-----------)) ) )))
+</pre>
+
+The hyphens indicate the general case of the function which we
+haven't written yet. How should we proceed? 
+<p>The trick is: Suppose that REV works! Then, (REV (CDR L)) is the
+reverse of the list without its CAR. If we put the CAR back on the
+right end of this expression then we have the reverse function.</p>
+
+<pre>
+:(DEFINE (REV (LAMBDA (L)
+
+:        (COND
+
+:        ((NULL L) NIL)
+
+:        (T (CONC (REV (CDR L))
+
+:           (LIST (CAR L))))))))
+
+  REV
+:
+:(REV '(TEST A IS THIS))
+
+  (THIS IS A TEST )
+
+:(REV '((PHOO BAR) (FOOD BAR) (POO BEAR)))
+
+  ((POO BEAR ) (FOOD BAR ) (PHOO BAR ) )
+</pre>
+
+While an "assume it works" strategy may seem a little bizarre, it
+is a very useful and quite valid method. Here is one more recursive
+example: the function RAC rewritten with recursion. What is the
+strategy here? The recursion phrase is easy. Keep taking the CAR of
+the list, removing the first element of the list, until we get to
+the end of the list. So far we have 
+<pre>
+(define (rac (lambda (L)
+        (cond
+            (------------)
+(t (rac (cdr L))) ) )))
+</pre>
+<a name="term"></a>
+The termination condition is a little slippery. If we make it
+"((null L)nil)", then the function will keep calling itself,
+dropping off the first elements, until it gets to a NIL list, and
+return the NIL. This isn't quite what we had in mind. What we want
+to do is to stop recurring just before we get to the end of the
+list. Try this termination phrase: "((null (cdr L)) (car L))". This
+will stop the recursion one call before the list becomes NIL. That
+is, if the CDR of the list is NIL, then the first element of the
+list is the last element. The whole function becomes 
+<pre>
+:(DEFINE  (RAC (LAMBDA (ALIST)
+
+:    (COND
+
+:     ((NULL (CDR ALIST)) (CAR ALIST))
+
+:      (T (RAC (CDR ALIST)))))))
+
+  RAC
+
+:(RAC '(BIRD (NEST))))
+
+  (NEST )
+</pre>
+
+<h3>Exercises</h3>
+
+<ol>
+<li>Write a recursive function to perform multiplication according
+to the following formula: 
+<pre>
+NxM=Nx(M-1)+N; Nx1=N;
+</pre>
+</li>
+
+<li>Write a recursive function to decide whether a list is
+palindromic. A palindromic list is one which reads the same
+backward or forward. Assume that NIL and a list with just one
+element are palindromic. Also, you may want to use a help function
+or two.</li>
+</ol>
+
+<h3>Answers</h3>
+
+<ol>
+<li>
+<pre>
+(DEFINE (FN (LAMBDA (N M)
+  (COND
+    ((EQUAL M 1) N)
+    (T (ADD N (FN N (SUB M 1))))
+  )
+)))
+</pre>
+
+Note that this function assumes M is always greater than or equal
+to 1; if M is less than 1 the function will recur forever.</li>
+
+<li>We can use the RDC function defined in <a href=
+"11.html">chapter 11</a> (exercise #2, Answer) and the RAC function
+defined in <a href="15.html">chapter 15</a>. 
+<pre>
+(DEFINE (PALEN (LAMBDA (L)
+   (COND
+     ((NULL L) T)
+     ((EQUAL (CAR L) (RAC L)) (PALEN (CDR (RDC L))))
+     (T NIL)
+   )
+)))
+</pre>
+</li>
+</ol>
+
+<p><a href="index.html">Contents</a> | <a href="14.html">Trees and
+Recursion</a> | <a href="16.html">Scope Considerations</a></p>
+</body>
+</html>
+

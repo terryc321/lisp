@@ -1,0 +1,393 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<html>
+<head>
+<meta name="generator" content=
+"HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org">
+<title>LEARNING LISP - Control Structures</title>
+</head>
+<body bgcolor="white">
+<h1>LEARNING LISP</h1>
+
+<p><a href="index.html">Contents</a> | <a href="19.html">FEXPRS:
+Unevaluating Functions</a> | <a href="21.html">Eval and
+Apply</a></p>
+
+<h2>Control Structures</h2>
+
+We claimed that Lisp was a programming language, and programming
+languages usually do complicated things. We did one fairly
+complicated operation but, hopefully, it wasn't too difficult (the
+pig Latin system). In order to do even more complicated work in
+Lisp, we need to be able to do some of the things that other
+languages do. <a name="control"></a> 
+<p><em>Control Structures</em> are something that most programming
+languages provide in order to help the programmer organize his or
+her thoughts and, thus, lend better organization to the program.
+They can be thought of as a frame into which you can shape your
+program. For example, we have been shaping our programs so far into
+the frame of CONDs and recursion. These are one type of control
+structure.</p>
+
+<p>This chapter will show you how certain useful control structures
+are implemented in Lisp. Programming with these structures is a
+matter of experience. You'll eventually learn structures that are
+not recursive, and then we will return to this chapter and point
+out alternate methods of programming.</p>
+
+<a name="cond"></a> 
+<p>One thing that other languages do which we've seen a lot of in
+Lisp is the COND. In Pascal, COND can be thought of as a CASE
+statement or a series of IF-THEN-ELSE clauses. Here is a COND
+written in a language called <em>pseudo code</em>.</p>
+
+<pre>
+:(DEFINE (MEMBER (LAMBDA (A L)
+   IF L is NULL THEN
+     NIL
+   ELSE IF (CAR L) equals A THEN
+     T
+   ELSE
+     (MEMBER A (CDR L)))))
+</pre>
+<a name="loop"></a>
+That's our old friend MEMBER. You might try writing MEMBER in your
+favorite language. (Use a list of numbers instead of atoms--that
+will make it simpler.) You'll find that your tendency in language
+other than Lisp is to write a loop. Here is MEMBER written as a
+loop. 
+<pre>
+:(DEFINE (MEMBER (LAMBDA (A L)
+
+:  (PROG ()
+
+:    TOP
+
+:    (COND
+
+:       ((NULL L)  (RETURN NIL))
+
+:       ((EQUAL (CAR L) A)  (RETURN T)))
+
+:    (SETQ L (CDR L))
+
+:    (GO TOP)))))
+
+  MEMBER
+</pre>
+<a name="prog"></a>
+What we have here is a special sort of control structure called a
+PROG. That is, obviously, short for "program". PROGs look like
+this. 
+<pre>
+(PROG (locals) obj1 obj2 obj3 . . .)
+</pre>
+<a name="func"></a>
+<p>Identify each part in the PROG above. Note that there are no
+locals and that obj1 is the atom TOP. The other objects are lists
+that have Lisp expressions in them. OBJ4 has an unusual function
+called GO in it. We'll explain all this now.</p>
+<a name="local"></a>
+<p>PROG works like this: Before it begins it sets all the locals to
+NIL. The old values of these locals are saved, and these new values
+[the local ones] are used only while Lisp is doing the PROG
+[Remember the scope chapter]. Thus, when the PROG is done, whatever
+old values were in the locals come back.</p>
+
+<p>PROG begins with the first object. If it is an atom [like TOP],
+then it simply ignores it. Why? You'll see. If the object is not an
+atom then it evaluates it and if it can, goes on to the next
+object. That's really all there is to a PROG! Simple!</p>
+<a name="return"></a>
+<p>We haven't answered some questions yet: What's TOP for? What
+does GO do? How does PROG return a value from its calculation? The
+answer to this last question will be obvious if you carefully study
+the COND in our PROG example. There is a special function called
+RETURN. The argument to RETURN is returned from the PROG that it is
+in, and that PROG stops!</p>
+<a name="go"></a>
+<p>GO and the atom TOP are used to implement looping. The reason
+that PROG evaluation ignores labels [which are just atoms by
+themselves] is that they are simply markers to name various places
+in the PROG. They are <em>labels!</em> TOP is a label that marks
+the top of the program [the place that we want to go back to each
+time]. The names of labels are arbitrary and there can be many in
+one PROG. When PROG evaluation encounters a GO expression, it hunts
+around in the PROG body for an atom object that has the same name
+as the argument of GO. Evaluation begins again there.</p>
+
+<p>This is quite simple but it's not clear what you would use it
+for. Let's do a complicated PROG example: Let's rewrite the pig
+Latin system as one giant PROG. That is, we're going to incorporate
+all of those help functions into the body of a single function.</p>
+
+<a name="comment"></a> 
+<p>Before we show you the function, let's talk about comments a
+little bit. Comments are <em>very</em> important in programming.
+Usually, when you write a program, you put in "comment lines" to
+tell others what's going on in various sections of the program, or
+to remind yourself. There are two reasons why we haven't discussed
+them yet. First, all the Lisp programs that we've written thus far
+have been very small. So small, in fact, that they <em>should</em>
+have been commented merely by virtue of having a good meaningful
+name!</p>
+
+<p>The second reason why we've avoided comments is rather poor.
+That is, that Lisp does not handle comments very well. You can get
+the Lisp language to simply ignore a line that you type, by
+preceding it with a semi-colon.</p>
+
+<pre>
+:;THIS IS A COMMENT
+
+:(CAR '(A
+
+:; THIS IS A COMMENT TOO!
+
+:B)))
+
+  A
+</pre>
+
+This is fine and lets us comment as we are entering things but
+exactly because Lisp literally ignores these lines, they don't stay
+around with the program. Therefore, they aren't very useful. If you
+enter a program and put in comment lines, they won't appear on the
+printed display because they have been ignored <em>on entry!</em> 
+<p>You may think it would be easy to make a COMMENT function that
+lets us put comments into the functions. Here's a possible function
+to do just that.</p>
+
+<pre>
+:(DEFINE  (COMMENT (FLAMBDA (S) ()))))))
+
+  COMMENT
+</pre>
+
+This function simply eats its arguments and returns (). This is
+similar to ignoring the comment. However, this won't work very
+well. 
+<pre>
+:(COMMENT THIS IS A COMMENT)
+
+  NIL
+
+:(PROG () (PRINT 'TESTING)
+
+:      (COMMENT THIS IS A COMMENT)
+
+:      (PRINT '(1 2 3)))))
+  TESTING
+  (1 2 3 )
+
+  NIL
+
+:(COND ((NULL 5) (PRINT 'NOPE))
+
+:    (COMMENT THIS IS A COMMENT)
+
+:    (PRINT '(1 1 1)))))
+
+    ** ERROR: UNDEFINED ATOM **
+      EVAL :: COMMENT
+
++()
+
+  NIL
+</pre>
+
+What happened? It looks like we can put comments into PROGs easily
+but only in specific places. Unfortunately, there's no simple
+solution to this problem, and the more complex you make it, the
+harder it gets. Therefore, because this particular function is so
+large, we will use comments, but if you type them in as we show you
+here, don't be surprised when they disappear! 
+<p>But back to the point. Here's the pig Latin function as a
+PROG.</p>
+
+<pre>
+(define (piglatin (lambda (s)
+;
+; The locals to the prog are:
+; result - will store the piglatin form as it is made.
+; word - holds the word that is being translated.
+; newword - gets the result of a translation from word.
+; holdchars - sabes up consonants while the word is being scanned.
+;
+(prog (result word newword holdchars)
+;
+; Come back here to see if we're done. If not then get the
+; next word from s and put it into word. Then set up everything
+; for a single word translation. Note that '(w) gets inserted
+; into the character list if the word starts out with a vowel.
+;
+  nextword
+     (cond ((null s) (return result)))
+     (setq word (explode (car s)))
+; Remove the word from the front of s.
+     (setq s (cdr s))
+     (setq holdchars '(w))
+     (setq newword ())
+;
+; This loop translates the word in word. Each character is
+; checked for vowelness (we actually still use ISAVOWEL here).
+;
+  wordloop
+     (cond
+      ((null word)
+       (setq result
+             (conc result
+              (list (implode (conc newword
+                                (conc holdchars '(a y))
+                                  )))
+             ))
+       (go nextword) ; This word is done so go get a new one.
+     ) ; This paren closes this condition of the COND.
+;
+; If the letter in front is a vowel then move the whole word
+; to newword and arrange for the loop to stop by killing word
+; to NIL.
+;
+      ((isavowel (car word))
+       (setq newword word)
+       (setq word ())
+      )
+;
+; The following two cases take care of the things to do when
+; there is a consonant in front of the word. If [w] is
+; still in holdchars we've got to kill it. Otherwise simply
+; put the letter from the front of the word into the holding
+; set and remove it from the word, then go on.
+;
+      ((equal '(w) holdchars)
+       (setq holdchars (list (car word)))
+       (setq word (cdr word))
+     )
+      (t (setq holdchars (conc holdchars (list (car word))))
+         (setq word (cdr word))
+       )
+     ) ; Close the COND sequence
+       (go wordloop)
+ ) ; Close the PROG
+))) ; Close off the whole function
+</pre>
+
+Whew! That was a lot of writing! Hopefully, you found that entirely
+counter intuitive. Wasn't the recursive, modular definition much
+simpler? We, of course, didn't have to put all that in one
+function, but that way we got to show you a lot of PROG utilization
+and a few ways that comments can come in handy when writing big
+programs. <a name="andor"></a> 
+<p>PROGs are pretty useful but there are a couple of other control
+structures that are simpler and sometimes equally useful. These are
+AND and OR. As their name implies, AND and OR work with true [T]
+and false [NIL] statements. Let's look at some examples.</p>
+
+<pre>
+:(AND T T)
+
+  T
+
+:(AND T ())
+
+  NIL
+
+:(AND () T T)
+
+  NIL
+
+:(OR () T () )
+
+  T
+
+:(OR () () () )
+
+  NIL
+</pre>
+<a name="t"></a>
+AND and OR take any number of arguments [yes, they are FEXPRs]. If
+<em>any</em> of the arguments of AND is false, then AND returns ().
+This is like saying "If Bill and Lester and Dave go to school then
+TRUE." Likewise, OR returns false only if <em>all</em> its
+arguments are NIL [if <em>any</em> of its arguments are T]. Look at
+the above examples and try some on the computer. 
+<p>By the way, the arguments don't have to be NILs and Ts:</p>
+
+<pre>
+:
+
+:(OR (GREATER 3 5) (EQUAL 2 2))
+
+  T
+
+:(AND (GREATER 5 3) (EQUAL '(YES) '(NO)))
+
+  NIL
+</pre>
+
+There can be any list of expressions in an AND or an OR. 
+<p>This is really very useful in COND predicates. It allows you to
+put many tests in one COND line.</p>
+
+<pre>
+(COND ((ORD (NULL L) (EQUAL 1 (LENGTH L))) blahblahblah))
+</pre>
+
+This does "blahblahblah" if either of the two conditions are true. 
+<p>Why is this chapter on control structures? Well, AND and OR
+control the evaluation of their arguments in an odd way. In order
+to determine the result of an OR, all we have to do is evaluate
+until the first expression returns T. If there is even one true
+expression, then the result of the whole OR is T. Thus, OR only
+evaluates until it finds a T. So the following expression will
+<em>never</em> get to do the printing. It never gets past the
+second equal because it has enough information by then to figure
+out what the result of the OR will be!</p>
+
+<pre>
+(OR (EQUAL 3 4) (EQUAL 4 4) (PRINT 'BOO!))
+</pre>
+
+This is how OR controls execution! It is very important to remember
+that in Lisp everything except a NIL means <em>true</em>.
+Therefore, it doesn't take just a T to stop OR. It will stop at any
+expression which returns anything other than NIL. In fact, when an
+OR stops short, the result it that value which caused it to stop. 
+<pre>
+:(OR (EQUAL 2 2) (SETQ Y 32))
+
+  T
+</pre>
+
+Y never gets set! 
+<p>What about AND? Well, same game except that AND works the other
+way around. In order to figure out whether the result of the AND is
+going to be false, it goes until it hits the first occurrence of a
+false expression. Then it has enough to determine that the result
+is false!</p>
+
+<p>AND is true until proven false. OR is false until proven true!
+These can be used for work while they're on trial.</p>
+
+<h3>Exercise Your PROGramming Facilities</h3>
+
+<ol>
+<li>Our PROG version of PIGLATIN also doesn't handle "nth" or
+"crwth". Try to alter it so that it does. Is it easier or harder to
+fix the PROG as compared with the modular, recursive system?</li>
+
+<li>Suppose you tried to fix the problem of using the COMMENT
+function in CONDs. You might try to give COMMENT a value, since
+that's what Lisp seemed to think was missing. What value would you
+give it so that CONDs like this worked correctly? Why is that still
+not correct? (Think about OR and AND.)</li>
+
+<li>Write your own versions of AND and OR as FEXPRs with
+PROGs.</li>
+</ol>
+
+<p><a href="index.html">Contents</a> | <a href="19.html">FEXPRS:
+Unevaluating Functions</a> | <a href="21.html">Eval and
+Apply</a></p>
+</body>
+</html>
+

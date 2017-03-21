@@ -1,11 +1,17 @@
 
 
 
+(define *traced-routines* '())
 
-;; guile specific stuff
-(use-modules (ice-9 pretty-print))
-;;(load "/home/terry/lisp/cps-interpreter/core/synclo.scm")
 
+
+;;;  guile specific stuff
+;;; (use-modules (ice-9 pretty-print))
+;;; (load "/home/terry/lisp/cps-interpreter/core/synclo.scm")
+
+(define gensym generate-uninterned-symbol)
+
+(define *debug-level* 0)
 
 
 
@@ -95,20 +101,29 @@
 
 
 
+
 ;;-----------------------------------------------------------------
+;;(define pprint (lambda (x) "...yep yep ..."))
+
 (define pprint
   (lambda (x)
     (cond
      ((cps-primitive-tagged? x) (display "<cps-primitive>"))
      ((continuation-tagged? x) (display "<continuation>"))
-     ((lambda-tagged? x) (display "<lambda>"))
-     ((fexpr-tagged? x) (display "<flambda>"))
+     ((lambda-tagged? x)
+      (display "<...lambda...> "))
+      ;;(display (car (cdr x)))      
+      ;;(display (car (cdr (cdr x)))))
+     ((fexpr-tagged? x) (display "<...flambda...>"))
      ((environment-tagged? x) (display "<environment>"))
      ((symbol? x) (display x))
      ((boolean? x) (display x))
      ((number? x) (display x))
      ((null? x) (display "()"))
-     ((string? x) (display x))
+     ((string? x) (write x))
+     ;; cps - function
+     ((cps-function? x) (display "<cps-function>"))
+     
      ((procedure? x) (display "<underlying-scheme-procedure>"))     
      ((pair? x)
       (pprint-list x))
@@ -116,7 +131,7 @@
 
 (define pprint-list
   (lambda (the-list)
-    (format #t "(")
+    (display "(")
     (letrec ((pprint-contents (lambda (xs)
 				(cond
 				 ;; nothing more to do
@@ -127,16 +142,73 @@
 				 ;; dotted pair -- and we are done
 				 ((not (pair? (cdr xs)))
 				  (pprint (car xs))
-				  (format #t " . ")
+				  (display " . ")
 				  (pprint (cdr xs)))
 				 (else
 				  (pprint (car xs))
-				  (format #t " ")
+				  (display " ")
 				  (pprint-contents (cdr xs)))))))
       (pprint-contents the-list))
-    (format #t ")")))
+    (display ")")))
+
 
 ;;-----------------------------------------------------------------
+(define (breakpoint exp env cont)
+  (newline)
+  (display "BREAKPOINT [??")
+  (display "] :> ")
+  (let ((form (read)))
+    (if (eof-object? form)
+	;; finish here , this will terminate cps loop
+	#f
+	(if (and (pair? form)
+		 (eq? (car form) 'continue))
+	    ;; continue with some value
+	    (base-eval (car (cdr form))
+		       env
+		       (lambda (v1)
+			 (cont v1)))
+	    ;; evaluate the form , but disgard result, loop
+	    (base-eval form
+		       env
+		       (lambda (v1)
+			 (newline)
+			 (display v1)			 
+			 (breakpoint #f env cont)))))))
+
+
+(define (debug exp env cont)
+  (newline)
+  (display "DEBUG [")
+  (display level)
+  (display "] :> ")
+  (let ((form (read)))
+    (if (eof-object? form)
+	;; finish here , this will terminate cps loop
+	#f
+	(if (and (pair? form)
+		 (eq? (car form) 'continue))
+	    ;; continue with some value
+	    (base-eval (car (cdr form))
+		       env
+		       (lambda (v1)
+			 (cont v1)))
+	    ;; evaluate the form , but disgard result, loop
+	    (base-eval form
+		       env
+		       (lambda (v1)
+			 (newline)
+			 (display v1)			 
+			 (debug #f env cont)))))))
+
+
+(define (debugger message exp env cont)
+  (newline)
+  (display "DEBUGGER ::")
+  (display message)
+  (newline)  
+  (debug exp env cont))
+
 
 ;; normal repl -- assumes everything ok.
 ;; debugger repl -- when something goes wrong.
@@ -158,29 +230,93 @@
   ;; is there a during hook ?
   ;; is there an after hook ?
   (cond
+   
+   ;; numbers
    ((number? exp) (cont exp))
+   
+   ;; booleans
    ((boolean? exp) (cont exp))
+   
+   ;; strings
    ((string? exp) (cont exp))
+   
+   ;; array
    ((vector? exp) (cont exp))
+   
    ;; underlying scheme procedure huh ?
    ((procedure? exp) (cont exp))
+
+   ;; cps-function are themselves
+   ((cps-function? exp) (cont exp))
+   
+   ;; symbols
    ((symbol? exp) (lookup-symbol exp env cont))
+   
    ;; continuations are just like lambd-as
    ((continuation-tagged? exp) (cont exp))
+   
    ;; underlying procedure --> huh ??
    ;;((procedure? exp) (cont exp))
    ;; cps-primitives are themselves -- like a lamb-da
    ((cps-primitive-tagged? exp)   (cont exp))
+   
    ;; ;; indirections -- not used yet
    ;; ((indirection-tagged? exp) 
    ;;  (base-eval (indirection-untag exp) env cont))
    ((lambda-tagged? exp) (cont exp))
+   
    ;; flambdas
    ((fexpr-tagged? exp) (cont exp))
-   ;;
+   
    ;; user defined data types are self evaluating in general.
    ((environment-tagged? exp) (cont exp))
-   ;; 
+   
+   ;; (primitive-apply ... ...)
+   ((and (pair? exp) (= (length exp) 3) (eq? (car exp) 'primitive-apply))
+    (eval-primitive-apply exp env cont))
+
+   
+   ;; (begin ... ...)
+   ((and (pair? exp) (eq? (car exp) 'begin))
+    (eval-begin exp env cont))
+   
+   ;; set! X Y
+   ((and (pair? exp)
+	 (= (length exp) 3)
+	 (eq? (car exp) 'set!))
+    (eval-set! exp env cont))
+
+   
+   ;; quote X
+   ((and (pair? exp) (= (length exp) 2) (eq? (car exp) 'quote))
+    (cont (car (cdr exp))))
+   
+   ;; if x y
+   ;; if x y z
+   ((and (pair? exp) (or (= (length exp) 3)
+			 (= (length exp) 4))
+	 (eq? (car exp) 'if))
+    (eval-if exp env cont))
+   
+   ;; (lambda ... ...)
+   ((and (pair? exp) (>= (length exp) 3) (eq? (car exp) 'lambda))
+    (eval-lambda exp env cont))
+
+   ;; (let ... ...)
+   ((and (pair? exp) (>= (length exp) 3) (eq? (car exp) 'let))
+    (eval-let exp env cont))
+   ;; let* in terms let
+   ;; letrec in terms of let
+   
+   ;; breakpoint
+   ((and (pair? exp) (eq? (car exp) 'breakpoint))
+    (breakpoint exp env cont))         
+
+   ;; trace
+   ((and (pair? exp) (eq? (car exp) 'trace))
+    (eval-trace exp env cont))         
+   
+   ;;       
    ((pair? exp) (base-eval-pair exp env cont))
    (else
     (error "base-eval unknown expr type" exp env cont))))
@@ -209,34 +345,34 @@
 	(cont (make-lambda lambda-params lambda-body env)))))
 
 
-
-
 ;; ---------------------- map --------------------------------------------
 ;; surprisingly difficult to get this right , really.
 ;; map f  xs
 ;; map f2 xs ys
 ;; map f3 xs ys zs
-(define (eval-map exp env cont)
-  (let ((fun-part (car (cdr exp)))
-	(vals-part  (cdr (cdr exp))))
-    (base-eval fun-part
-    	       env
-    	       (lambda (fun)
-    		 (eval-list-sequence vals-part
-    				     env
-    				     (lambda (vals)
-				       (base-eval 
-					(cons 'list (map-lots fun vals))
-					env
-					cont)))))))
+;; (define (eval-map exp env cont)
+;;   (let ((fun-part (car (cdr exp)))
+;; 	(vals-part  (cdr (cdr exp))))
+;;     (base-eval fun-part
+;;     	       env
+;;     	       (lambda (fun)
+;;     		 (eval-list-sequence vals-part
+;;     				     env
+;;     				     (lambda (vals)
+;; 				       (base-eval 
+;; 					(cons 'list (map-lots fun vals))
+;; 					env
+;; 					cont)))))))
 
-(define (map-lots f vals)
-  (cond
-   ((null? vals) '())
-   ;; bottom of vals ie ( () () () () )
-   ((null? (car vals)) '())
-   (else (cons (cons f (map car vals))
-	       (map-lots f (map cdr vals))))))
+;; (define (map-lots f vals)
+;;   (cond
+;;    ((null? vals) '())
+;;    ;; bottom of vals ie ( () () () () )
+;;    ((null? (car vals)) '())
+;;    (else (cons (cons f (map car vals))
+;; 	       (map-lots f (map cdr vals))))))
+
+
 ;; -------------------------------------------------------------------------
 
 
@@ -420,6 +556,21 @@
 
 ;; ;; not
 
+(define (eval-trace exp env cont)
+  (let ((the-routines (cdr exp)))
+    (cond
+     ((null? the-routines)
+      (set! *traced-routines* '())
+      (cont *traced-routines*))
+     (else 
+      (map (lambda (routine)
+	     (cond
+	      ((symbol? routine) (set! *traced-routines* (cons routine *traced-routines*)))
+	      (#t #f)))
+	   the-routines)
+      (cont *traced-routines*)))))
+
+
 
 
 (define (eval-symbol? exp env cont)
@@ -478,7 +629,7 @@
 
 
 (define (eval-cond-helper exp)
-  (format "eval cond helper : ~a ~%" exp)
+  ;;(format "eval cond helper : ~a ~%" exp)
   (cond
    ((null? exp) #f)
    ((eq? (car (car exp)) 'else) `(begin ,@(cdr (car exp))))
@@ -529,6 +680,7 @@
 
 
 
+
     
 
 
@@ -553,17 +705,6 @@
     (base-eval `(,the-lambda ',(make-continuation cont))
 	       env
 	       cont)))
-
-;;
-;; ---- this version below works but leaks <procedure> as the continuation which is not what
-;; we want at all.
-;;
-;; (define (eval-callcc exp env cont)
-;;   (let ((the-lambda (car (cdr exp))))
-;;     (base-eval `(,the-lambda ',cont)
-;; 	       env
-;; 	       cont)))
-
 
 
 ;; letrec
@@ -593,6 +734,9 @@
     (base-eval (eval-let-star-helper pairs body)
 	       env
 	       cont)))   
+
+;;
+;;
 ;;
 (define (eval-let-star-helper pairs body)
   (if (null? pairs)
@@ -602,8 +746,10 @@
       `(let (,(car pairs)) ,(eval-let-star-helper (cdr pairs) body))))
 
 
-
-;; let construct
+;;;
+;;;
+;;;
+;;; let construct
 (define (eval-let exp env cont)
   (let ((pairs (car (cdr exp)))
 	(body (cdr (cdr exp))))
@@ -612,8 +758,8 @@
 (define (eval-let-helper pairs body env cont)	 
   (let ((params (map car pairs))
 	(args (map (lambda (x) (car (cdr x))) pairs)))
-    (format #t "params = ~a ~%" params)
-    (format #t "args = ~a ~%" args)    
+    ;;(format #t "params = ~a ~%" params)
+    ;;(format #t "args = ~a ~%" args)    
     (eval-list-sequence args env
 		(lambda (operands)
 		  (eval-begin-sequence
@@ -655,19 +801,31 @@
 
    ((continuation-tagged? operator)
     (let ((location (continuation-untag operator)))
-      (format #t "scheme continuation : ~a ~%" operator)
-      (format #t "scheme location     : ~a ~%" location)      
-      (format #t "scheme operands     : ~a ~%" operands)
-      (format #t "passing continuation a result of : ~a ~%" (car operands))    
+      ;;(format #t "scheme continuation : ~a ~%" operator)
+      ;;(format #t "scheme location     : ~a ~%" location)      
+      ;;(format #t "scheme operands     : ~a ~%" operands)
+      ;;(format #t "passing continuation a result of : ~a ~%" (car operands))    
       (location (car operands))))
-          
-   ;; ((procedure? operator)
-   ;;  (format #t "underlying scheme procedure : ~a ~%" operator)
-   ;;  (format #t "           scheme operands  : ~a ~%" operands)    
-   ;;  (operator (car operands)))
+
+   ((cps-function? operator)    
+    (cont (apply (cps-function-obj operator) operands)))
    
+   ((procedure? operator)
+    (newline)
+    (display " operator = ")
+    (display operator)
+    (newline)
+    (display " operands = ")
+    (display operands)
+    (newline)
+    ;;(format #t "underlying scheme procedure : ~a ~%" operator)
+    ;;(format #t "           scheme operands  : ~a ~%" operands)    
+    (cont (apply operator operands)))   
    (else
     (error "not a function: " operator env cont))))
+
+
+
 
 
 
@@ -739,14 +897,16 @@
 		   (eval-list-sequence args env
 				       ;; evaluated args eargs
 				       (lambda (eargs)
-					 ;;(format #t " primitive [eproc] ~a : [args] ~a ~%" eproc eargs)
+					 ;;(format #t " primitive [eproc] ~a " eproc)
+					 ;;(format #t " : [args] ~a ~%" eargs)
 					 (cond
 					  ((lambda-tagged? eproc)
 					   ;; user defined procedure from e.g fib.scm
 
 					   ;; hook associated with this particular lambda list
 					   ;; might want lambda id , in addition to lambda tag ,
-					   ;; so we can uniquely identify that lambda expression globally
+					   ;; so we can uniquely identify that lambda expression
+					   ;; globally
 					   ;; use eq? for now					   
 					   (let ((lambda-params        (car (cdr eproc)))
 						 (lambda-body     (car (cdr (cdr eproc))))
@@ -755,9 +915,19 @@
 					      lambda-body
 					      (extend-environment lambda-params eargs lambda-env)
 					      #f
-					      cont)))
+					      (lambda (result)
+						(cond
+						 ((member proc *traced-routines*)
+						  (newline)
+						  (display (cons proc eargs))
+						  (display "==>")
+						  (display result)
+						  (cont result))
+						 (else
+						  (cont result)))))))
 					  (else
 					   (base-apply eproc eargs env cont)))))))))))
+
 
 					 ;; (cont (cons eproc eargs))
 					 ;; ))))))))
@@ -866,6 +1036,7 @@
 					     (cons old-car old-cdr)))
 			 (cont val)))))
 
+
 (define (env-define-helper var val env cont fail)
   (cond
    ;; no more levels to traverse -- symbol not found -- fail
@@ -966,42 +1137,67 @@
 
 
 ;; --------------------- add --------------------------------
-(define (eval-add exp env cont)
-  (cond
-   ;; (+)  = 0
-   ((null? (cdr exp)) (cont 0))
-   ;; (+ x) = x 
-   ((null? (cdr (cdr exp)))
-    (base-eval (car (cdr exp))
-	       env
-	       cont))
-   ((null? (cdr (cdr (cdr exp))))
-    (base-eval (car (cdr exp))
-	       env
-	       (lambda (v1)
-		 (base-eval (car (cdr (cdr exp)))
-			    env
-			    (lambda (v2)
-			      (cont (+ v1 v2)))))))
-   (else 
-   ;; (+ x y)
-   ;; (+ x y z)
-   ;; (+ x y z a)
-    ;; (+ x y z a b)
-    (let ((expansion (eval-add-helper (cdr exp))))
-      (format #t "[+ expander] : ~a ~%" expansion)
-      (base-eval expansion
-		 env
-		 cont)))))
+(define eval-add-helper
+  (lambda (xs sum)
+    (cond
+     ((null? xs) sum)
+     (else (eval-add-helper (cdr xs) (+ sum (car xs)))))))
 
-(define (eval-add-helper vals)
-  (cond
-   ((null? vals) '())
-   ((null? (cdr vals)) vals)
-   ((null? (cdr (cdr vals))) (cons '+ vals))   
-   (else (list '+
-	       (car vals)
-	       (eval-add-helper (cdr vals))))))
+(define eval-add
+  (lambda eargs
+    
+    ;; (newline)
+    ;; (display "+ EARGS : ")
+    ;; (display eargs)
+    ;; (newline)
+    
+    ;; (display "+ EARGS.LENGTH : ")    
+    ;; (display (length eargs))
+    ;; (newline)    
+    (eval-add-helper eargs 0)))
+
+
+
+
+;; (define (eval-add exp env cont)
+;;   (cond
+;;    ;; (+)  = 0
+;;    ((null? (cdr exp)) (cont 0))
+;;    ;; (+ x) = x 
+;;    ((null? (cdr (cdr exp)))
+;;     (base-eval (car (cdr exp))
+;; 	       env
+;; 	       cont))
+;;    ((null? (cdr (cdr (cdr exp))))
+;;     (base-eval (car (cdr exp))
+;; 	       env
+;; 	       (lambda (v1)
+;; 		 (base-eval (car (cdr (cdr exp)))
+;; 			    env
+;; 			    (lambda (v2)
+;; 			      (cont (+ v1 v2)))))))
+;;    (else 
+;;    ;; (+ x y)
+;;    ;; (+ x y z)
+;;    ;; (+ x y z a)
+;;     ;; (+ x y z a b)
+;;     (let ((expansion (eval-add-helper (cdr exp))))
+;;       ;;(format #t "[+ expander] : ~a ~%" expansion)
+;;       (base-eval expansion
+;; 		 env
+;; 		 cont)))))
+
+;; (define (eval-add-helper vals)
+;;   (cond
+;;    ((null? vals) '())
+;;    ((null? (cdr vals)) vals)
+;;    ((null? (cdr (cdr vals))) (cons '+ vals))   
+;;    (else (list '+
+;; 	       (car vals)
+;; 	       (eval-add-helper (cdr vals))))))
+
+
+
 ;; ---------------------------------------------------
 
 (define (eval-sub exp env cont)
@@ -1038,7 +1234,7 @@
     ;; (* x y z a)
     ;; (* x y z a b)
     (let ((expansion (eval-mul-helper (cdr exp))))
-      (format #t "[* expander] : ~a ~%" expansion)
+      ;;(format #t "[* expander] : ~a ~%" expansion)
       (base-eval expansion
 		 env
 		 cont)))))
@@ -1058,15 +1254,27 @@
 
 
 
+;; (/)
+;; (/ X)
+;; (/ X Y)
+;; (/ X Y ...) multiple args ...
 (define (eval-div exp env cont)
   (let ((a-part (car (cdr exp)))
 	(b-part (car (cdr (cdr exp)))))
     (base-eval a-part env
 	       (lambda (v1)
+		 
 		 (base-eval b-part env
 			    (lambda (v2)
 			      (cont (/ v1 v2))))))))
 
+
+
+
+;; (eq?)
+;; (eq? X)
+;; (eq? X Y)
+;; (eq? X Y ...) .... multiple arguments ??
 (define (eval-eq? exp env cont)
   (let ((a-part (car (cdr exp)))
 	(b-part (car (cdr (cdr exp)))))
@@ -1076,6 +1284,12 @@
 			    (lambda (v2)
 			      (cont (eq? v1 v2))))))))
 
+
+
+;;(eqv?)
+;;(eqv? X)
+;;(eqv? X Y)
+;;(eqv? X Y Z) ... multiple
 (define (eval-eqv? exp env cont)
   (let ((a-part (car (cdr exp)))
 	(b-part (car (cdr (cdr exp)))))
@@ -1088,22 +1302,28 @@
 
 
 
-;; lambda with symbol as params
-;; (lambda args ...)
+;;; lambda with symbol as params
+;;; (lambda args ...)
 
-;; lambda with list params
-;; (lambda (x y z) ...)
+;;; lambda with list params
+;;; (lambda (x y z) ...)
 
-;; dotted lambda 
-;; (lambda (x y . z) ...) 
+;;; dotted lambda 
+;;; (lambda (x y . z) ...) 
 
 
-
+;;; (quote) .... malformed
+;;; (quote X) .... ok
+;;; (quote X ...) .... malformed - too many args
 (define (eval-quote exp env cont)
    (cont (car (cdr exp))))
 
 
-
+;;; (if) ..... malformed
+;;; (if X) .... malformed
+;;; (if X Y) .... ok
+;;; (if X Y Z) ... ok
+;;; (if X Y Z ...) ... malformed
 (define (eval-if exp env cont)
   (let ((pred-part (car (cdr exp)))
 	(then-part (car (cdr (cdr exp))))
@@ -1115,6 +1335,9 @@
 		      (else
 		       (base-eval (car else-part) env cont)))))))
 
+
+
+;; (cons X Y) 
 (define (eval-cons exp env cont)
   (let ((car-part (car (cdr exp)))
 	(cdr-part (car (cdr (cdr exp)))))
@@ -1124,24 +1347,45 @@
 			    (lambda (v2)
 			      (cont (cons v1 v2))))))))
 
+
+
+;; (car X) , expect X is a pair
 (define (eval-car exp env cont)
   (let ((cons-part (car (cdr exp))))
     (base-eval cons-part env
 	       (lambda (v1)
-		 (cont (car v1))))))
+		 (if (pair? v1)
+		     (begin
+		       (cont (car v1)))
+		     (begin
+		       (debugger "CAR expected a pair" exp env cont)))))))
 
+
+;; (cdr X) , expect X is a pair
 (define (eval-cdr exp env cont)
   (let ((cons-part (car (cdr exp))))
     (base-eval cons-part env
 	       (lambda (v1)
-		 (cont (cdr v1))))))
+		 (if (pair? v1)
+		     (begin
+		       (cont (cdr v1)))
+		     (begin
+		       (debugger "CDR expects a pair" exp env cont)))))))
+
+
+
+
 
 
 
 ;; expose current environment to interpreter
-;; pass underlying system objects up to interpreter , need to package these objects appropriately.
+;; pass underlying system objects up to interpreter
+;; need to package these objects appropriately.
 (define (eval-current-environment exp env cont)
   (cont (make-environment env)))
+
+
+
 
 (define (eval-environment? exp env cont)
   (let ((env-part (car (cdr exp))))
@@ -1164,16 +1408,40 @@
 			      (cont v2)))))))
 
 
-(define (eval-apply exp env cont)
+;; multi-argument version is 
+;; apply f x => (f x)
+(define (eval-primitive-apply exp env cont)
   (let ((fun-part (car (cdr exp)))
 	(arg-part (car (cdr (cdr exp)))))
-    (base-eval fun-part env
-	       (lambda (v1)
-		 (base-eval arg-part env
+    (base-eval fun-part
+    	       env
+    	       (lambda (v1)
+		 (base-eval arg-part
+			    env
 			    (lambda (v2)
 			      (base-eval (cons v1 v2)
 					 env
 					 cont)))))))
+
+
+		 ;; (eval-apply-helper args-part
+		 ;; 		    env
+		 ;; 		    (lambda (v2)
+				      
+		 ;; 		      (newline)
+		 ;; 		      (display "APPLY : v1 = ")
+		 ;; 		      ;;(display v1)
+		 ;; 		      (newline)
+		 ;; 		      (display "APPLY : v2 = ")
+		 ;; 		      ;;(display v2)
+		 ;; 		      (newline)
+		 ;; 		      ;;(display "APPLY-EXP : v1 . v2 = ")
+		 ;; 		      ;;(display (cons v1 v2))
+		 ;; 		      (newline)
+		 ;; 		      (base-eval (cons v1 v2)
+		 ;; 				 env
+		 ;; 				 cont)))))))
+
 
 
 
@@ -1189,7 +1457,6 @@
 
 
 
-
 ;; (macro-expand x)
 (define (eval-macro-expand exp env cont)
   (let ((macro-part (car (cdr exp))))
@@ -1200,114 +1467,33 @@
 
 
 
-
-
-
 ;; helper so multiple bindings to the same thing
-(define callcc-singleton (cps-primitive eval-callcc))
+;;(define callcc-singleton (cps-primitive eval-callcc))
+
+
+(define cps-function-obj
+  (lambda (x)
+    (cdr x)))
+
+(define cps-function
+  (lambda (obj)
+    (cons (cons 'function 'tag) obj)))
+
+(define cps-function?
+  (lambda (x)
+    (and (pair? x)
+	 (equal? (car x) (cons 'function 'tag)))))
+
+     
+
+
 
 ;; some primitives
-(define environment
-  (list
-   
-   'a 1
-   'b 2
-   'c 3
+(define environment '())
 
-   ;; give system access to macro-expander
-   ;;'defmacro  (cps-primitive eval-defmacro)
-   
-   'macro-expand  (cps-primitive eval-macro-expand)
-   
-   'cps-primitive  cps-primitive
-
-   ;; eval using current environment
-   'eval (cps-primitive eval-eval)
-   
-   ;; fexprs -- like runtime macros -- call by text
-   'fexpr (cps-primitive eval-fexpr)
-   
-   ;; the very same environment
-   'current-environment (cps-primitive eval-current-environment)
-   'environment? (cps-primitive eval-environment?)    
-   
-   ;; repl continuation 
-   'repl-cont   #t
-
-   ;; map is no longer a primitive
-   ;; 'map  (cps-primitive eval-map)
-
-   'apply  (cps-primitive eval-apply)
-  
-   
-   ;;'and  (cps-primitive eval-and)  
-   ;;'or  (cps-primitive eval-or)
-   
-   'begin  (cps-primitive eval-begin)
-   
-
-  ;; cond is now a macro !!
-  ;;'cond  (cps-primitive eval-cond)
-    
-  'callcc callcc-singleton 
-  'call/cc  callcc-singleton 
-  'call-with-current-continuation  callcc-singleton 
-
-  ;; quasiquote and macro expander
-
-  
-  ;; quote is a useful primitive to have
-  'quote  (cps-primitive eval-quote)
-
-  
-  'if (cps-primitive eval-if)
-  'lambda (cps-primitive eval-lambda)
-   
-  'let (cps-primitive eval-let)
-  ;;'let*  (cps-primitive eval-let-star)
-  ;;'letrec (cps-primitive eval-letrec)
-
-  'assoc (cps-primitive eval-assoc)
-  'set! (cps-primitive eval-set!)
-  
-  'newline (cps-primitive eval-newline)
-  'define (cps-primitive eval-define)    
-
-  'cons (cps-primitive eval-cons)    
-  'car (cps-primitive eval-car)    
-  'cdr (cps-primitive eval-cdr)    
-
-  '+ (cps-primitive eval-add)    
-  '- (cps-primitive eval-sub)    
-  '* (cps-primitive eval-mul)    
-  '/ (cps-primitive eval-div)
-
-  'eq? (cps-primitive eval-eq?)    
-  'eqv? (cps-primitive eval-eqv?)
-
-  '> (cps-primitive eval-greater-than)    
-  '< (cps-primitive eval-less-than)
-  '= (cps-primitive eval-num-eq)
-  
-  ;;'list (cps-primitive eval-list)
-  'read (cps-primitive eval-read)    
-  'display (cps-primitive eval-display)
-  
-  'set-car! (cps-primitive eval-set-car!)
-  'set-cdr! (cps-primitive eval-set-cdr!)
-
-  'gensym (cps-primitive eval-gensym)
-  
-  'load (cps-primitive eval-load)
-
-  'vector? (cps-primitive eval-vector?)    
-  'boolean? (cps-primitive eval-boolean?)
-  'string? (cps-primitive eval-string?)    
-  'symbol? (cps-primitive eval-symbol?)
-  'number? (cps-primitive eval-number?)    
-  'null? (cps-primitive eval-null?)
-  'pair? (cps-primitive eval-pair?)
-  ))
+(define install-procedure
+  (lambda (name obj)
+    (set! environment (cons name (cons obj environment)))))
 
 
 
@@ -1334,8 +1520,100 @@
 			     (newline)
 			     (repl))))))))
 
+
+;;------------------------------------------
+
+;;   'cps-primitive  cps-primitive
+;;  'defmacro  (cps-primitive eval-defmacro)
+
+(install-procedure 'eof-object? eof-object?)
+(install-procedure 'primitive-procedure? procedure?)
+
+(install-procedure 'macro-expand  (cps-primitive eval-macro-expand))
+
+(install-procedure 'eval   (cps-primitive eval-eval))
+
+
+;;(install-procedure 'apply  (cps-primitive eval-apply))
+;;(install-procedure 'begin  (cps-primitive eval-begin))
+
+(let ((cc (cps-primitive eval-callcc)))
+  (install-procedure 'call/cc  cc)
+  (install-procedure 'call-with-current-continuation  cc))
+
+;;(install-procedure 'quote  (cps-primitive eval-quote))
+;;(install-procedure 'if (cps-primitive eval-if))
+;;(install-procedure 'lambda (cps-primitive eval-lambda))
+
+;;(install-procedure 'let (cps-primitive eval-let))
+;;(install-procedure 'let*  (cps-primitive eval-let-star))
+;;(install-procedure 'letrec (cps-primitive eval-letrec))
+
+;;(install-procedure  'assoc (cps-primitive eval-assoc))
+;;(install-procedure  'set! (cps-primitive eval-set!))  
+
+(install-procedure  'newline (cps-primitive eval-newline))
+(install-procedure  'define (cps-primitive eval-define))
+
+(install-procedure  'cons (cps-primitive eval-cons))
+(install-procedure  'car (cps-primitive eval-car))
+(install-procedure  'cdr (cps-primitive eval-cdr))
+
+(install-procedure  '+ (cps-function eval-add))
+
+(install-procedure  '- (cps-primitive eval-sub))
+(install-procedure  '* (cps-primitive eval-mul))
+(install-procedure  '/ (cps-primitive eval-div))
+(install-procedure  'eq? (cps-primitive eval-eq?))
+(install-procedure  'eqv? (cps-primitive eval-eqv?))
+(install-procedure  '> (cps-primitive eval-greater-than))
+(install-procedure  '< (cps-primitive eval-less-than))
+(install-procedure  '= (cps-primitive eval-num-eq))
+(install-procedure  'read (cps-primitive eval-read))
+(install-procedure  'display (cps-primitive eval-display))
+(install-procedure  'set-car! (cps-primitive eval-set-car!))
+(install-procedure  'set-cdr! (cps-primitive eval-set-cdr!))
+(install-procedure  'gensym (cps-primitive eval-gensym)) 
+(install-procedure  'load (cps-primitive eval-load))
+(install-procedure  'vector? (cps-primitive eval-vector?))
+(install-procedure  'boolean? (cps-primitive eval-boolean?))
+(install-procedure  'string? (cps-primitive eval-string?))
+(install-procedure  'symbol? (cps-primitive eval-symbol?))
+(install-procedure  'number? (cps-primitive eval-number?))
+(install-procedure  'null? (cps-primitive eval-null?))
+(install-procedure  'pair? (cps-primitive eval-pair?))
+
+
+ 
+
+   ;; fexprs -- like runtime macros -- call by text
+   ;; 
+;;   'fexpr (cps-primitive eval-fexpr)
+   
+   ;; the very same environment
+;;   'current-environment (cps-primitive eval-current-environment)
+;;   'environment? (cps-primitive eval-environment?)    
+   
+   ;; repl continuation 
+;;   'repl-cont   #t
+
+   ;; map is no longer a primitive
+   ;; 'map  (cps-primitive eval-map)
+   
+   ;;'and  (cps-primitive eval-and)  
+   ;;'or  (cps-primitive eval-or)
+
+  ;; cond is now a macro !!
+  ;;'cond  (cps-primitive eval-cond)
+
+  ;; quasiquote and macro expander  
+  ;; quote is a useful primitive to have
+
+
+
 ;; ----------- SECTION 1 -----------------
 ;; section 1 should be
+
 
 
 (define library
@@ -1345,7 +1623,7 @@
 ;;quasiquotation
 (load  	  "/home/terry/lisp/cps-interpreter/core/quasiquote.scm")
 
-;; macro expander
+;; non hygienic macro expander
 (load 	  "/home/terry/lisp/cps-interpreter/core/macro-expander.scm")
 
 ;; quasiquote expander
@@ -1354,8 +1632,8 @@
 ;; cond is nested ifs
 (load 	  "/home/terry/lisp/cps-interpreter/macros/cond.scm")
 
-;; let is just applied lambda
-(load 	  "/home/terry/lisp/cps-interpreter/macros/let.scm")
+;; let is just applied lambda, but visual appearances easier keep as let
+;;(load 	  "/home/terry/lisp/cps-interpreter/macros/let.scm")
 
 ;; letrec requires lets and sets
 (load 	  "/home/terry/lisp/cps-interpreter/macros/letrec.scm")
@@ -1388,12 +1666,22 @@
 	      (load "/home/terry/lisp/cps-interpreter/util/append.scm")
 	      (load "/home/terry/lisp/cps-interpreter/util/length.scm")
 	      (load "/home/terry/lisp/cps-interpreter/util/reverse.scm")
+	      
+	      (load "/home/terry/lisp/cps-interpreter/util/apply.scm")
+	      
 	      (load "/home/terry/lisp/cps-interpreter/util/map.scm")
+
 	      (load "/home/terry/lisp/cps-interpreter/util/fac.scm")
 	      (load "/home/terry/lisp/cps-interpreter/util/fib.scm")
+	      (load "/home/terry/lisp/cps-interpreter/util/assoc.scm")
+	      
 	      ;; -- run the tests --
-	      (load "/home/terry/lisp/cps-interpreter/tests/apply.scm")
-	      (load "/home/terry/lisp/cps-interpreter/tests/fib.scm")
+	      (load "/home/terry/lisp/cps-interpreter/tests/apply.scm")	      
+	      (load "/home/terry/lisp/cps-interpreter/tests/map.scm")	      
+	      ;;(load "/home/terry/lisp/cps-interpreter/tests/fib.scm")
+
+	      (display "!! ALL LIBRARIES LOADED OKAY !!")
+	      (newline)
 	      )
 	   environment
 	   (lambda (k)
@@ -1402,6 +1690,8 @@
 	     (repl)))
 
 ;; ------ run the tests ----------
+
+
 
 
 

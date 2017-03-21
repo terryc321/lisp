@@ -1,0 +1,233 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<html>
+<head>
+<meta name="generator" content=
+"HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org">
+<title>LEARNING LISP - FEXPRS: Unevaluating Functions</title>
+</head>
+<body bgcolor="white">
+<h1>LEARNING LISP</h1>
+
+<p><a href="index.html">Contents</a> | <a href="18.html">Isplay
+Ogrammingpray</a> | <a href="20.html">Control Structures</a></p>
+
+<h2>FEXPRS: Unevaluating Functions</h2>
+
+<a name="args"></a> Most of the functions that we've used thus far
+are called "EXPRs" [short for EXPRession]. An EXPR is a function
+that evaluates its arguments when it is called. ADD, MULT, CAR,
+CONS, and many others are all EXPRs. <a name="fexpr"></a> 
+<p>It is often useful to be able to write a function whose
+arguments will not be evaluated but rather, passed as is to the
+function. A function that does not evaluate its arguments is called
+a "FEXPR".</p>
+
+<p>The first flexibility that this offers us is that we can type
+things in without quotes. The pig Latin example could have been
+simplified with a FEXPR. We could have typed</p>
+
+<pre>
+(PIGLATIN THIS IS A TEST SENTENCE)
+</pre>
+
+instead of 
+<pre>
+(PIGLATIN '(THIS IS A TEST SENTENCE))
+</pre>
+
+<a name="flambda"></a> 
+<p>A FEXPR has a slightly different DEFINE syntax than an EXPR. The
+word LAMBDA is replaced by the word FLAMBDA. There is exactly one
+formal argument, never more, never less:</p>
+
+<pre>
+:(DEFINE (PRINTME (FLAMBDA (INPUT)
+
+:        INPUT))))
+
+  PRINTME
+</pre>
+
+We have defined a trivial function in order to return the value
+that gets bound to its formal argument. This will enable us to see
+what a FEXPR does with the arguments: 
+<pre>
+:(PRINTME I HAVE BUT ONE LIST FOR YOU)
+
+  (I HAVE BUT ONE LIST FOR YOU )
+</pre>
+
+The FEXPR simply makes a list of the unevaluated arguments and
+binds this to the single formal argument. 
+<pre>
+:(PRINTME (CAR (BUS)) (CDR (CADDR CDDAR)))
+
+  ((CAR (BUS ) ) (CDR (CADDR CDDAR ) ) )
+</pre>
+
+The CAR and CDR functions above are not evaluated. As far as the
+FEXPR is concerned they are simply names exactly like "bus",
+"truck", "caddr", etc. 
+<p>Now let's do something less trivial. Notice that PRINTME always
+puts an extra set of parentheses around its argument.</p>
+
+<pre>
+:(PRINTME LIBERTY)
+
+  (LIBERTY )
+
+:(PRINTME (OR DEATH))
+
+  (OR DEATH ) )
+</pre>
+
+Here's a version of PRINTME that doesn't do that. 
+<pre>
+:(DEFINE (PRINTME2 (FLAMBDA (INPUT)
+
+:   (CAR INPUT)))))))
+
+  PRINTME2
+</pre>
+<a name="quote"></a>
+Now PRINTME2 acts exactly like the QUOTE function that we have
+encountered in our Lisp studies. In fact, this is exactly what the
+quote (') sign does. When we put a quote before a list or an atom,
+it is interpreted as if we had typed "(QUOTE . . .)". QUOTE is a
+FEXPR that returns the name of its argument unevaluated. 
+<pre>
+:'(CAR (DONT EVALUATE THIS))
+
+  (CAR (DONT EVALUATE THIS ) )
+
+:(PRINTME2 (CAR (DONT EVEN TRY)))
+
+  (CAR (DONT EVEN TRY ) )
+
+:(QUOTE (CAR (DONT EVALUATE THIS)))
+
+  (CAR (DONT EVALUATE THIS ) )
+</pre>
+
+Knowing this might be of some relief to those of you who have
+noticed that when an error occurs, Lisp has expanded the
+apostrophes into the word QUOTE. 
+<a name="setq"></a>
+<p>So, there has been at least one FEXPR with us since the
+beginning. Can you think of others? How about SETQ? Why doesn't the
+first argument in SETQ need a quote? [Why do you think that they
+call it SETQ?!] Wherever it seems as though something should be
+quoted but is actually not necessary, there's probably a FEXPR in
+the works someplace.</p>
+
+<p>A good rule of thumb is that a FEXPR should always call an EXPR
+to do the work. It can typically do this by using MAPCAR to scan
+the list of input elements. Using this rule we can rewrite PIGLATIN
+as,</p>
+
+<pre>
+:(DEFINE (PIGLATIN (FLAMBDA (SENT)
+
+:   (MAPCAR 'PIGWORD SENT)))))))
+
+  PIGLATIN
+</pre>
+
+You should try this and verify that it works as expected. You
+should be able to type in the sentence to be translated, without
+parentheses or the quote. 
+<p>The other advantage that FEXPR gives us is the ability to write
+functions that take an unspecified number of arguments. For
+example, we might want to write a function that takes a list of
+paired names and phone numbers, and returns each pair in list
+form.</p>
+
+<pre>
+:(DEFINE (PAIRWISE (FLAMBDA (IN)
+
+:    (SEGMENT IN)))))))))
+
+  PAIRWISE
+
+:(DEFINE (SEGMENT (LAMBDA (L)
+
+: (COND ((NULL L) ())
+
+:  (T (CONS (LIST (CAR L) (CAR (CDR L)))
+
+:    (SEGMENT (CDR (CDR L)))))))))
+
+  SEGMENT
+
+:(PAIRWISE A 1 B 2 C 3 D 4)
+
+  ((A 1 ) (B 2 ) (C 3 ) (D 4 ) )
+</pre>
+
+There is another important rule of FEXPR's: Never recur with a
+FEXPR, and avoid calling them from within other functions. Why is
+that? Consider what the result of calling a FEXPR recursively will
+do. Let's define a recursive FEXPR. 
+<pre>
+:(DEFINE (REVLIST (FLAMBDA (L)
+
+:  (COND ((NULL L) ())
+
+:  (T (CONS (REVERSE (CAR L))
+
+:            (REVLIST (CDR L))))))))
+
+  REVLIST
+</pre>
+
+This should reverse each element of the input list. Thus, we should
+be able to type 
+<pre>
+(revlist (him rebuild) (was he than better))
+</pre>
+
+and get 
+<pre>
+((rebuild him) (better than he was))
+</pre>
+
+in response.
+<a name="trace"></a>
+<p>It would be nice to be able to TRACE FEXPRs but P-Lisp can't.
+Other versions of Lisp may or may not allow this. However, for this
+example, we'll imagine that it can and imagine that it will
+print.</p>
+
+<pre>
+:(revlist (him rebuild) (was he than better))
+  --&gt;&gt; REVLIST :: ((HIM REBUILD) (WAS HE THAN BETTER))
+  --&gt;&gt; REVLIST :: ((CDR L))
+  --&gt;&gt; REVLIST :: ((CDR L))
+  --&gt;&gt; REVLIST :: ((CDR L))
++()
+</pre>
+
+The first list went in okay, but it looks like the recursive steps
+didn't work correctly. Since the FEXPR doesn't evaluate its
+arguments, the "(cdr L)" wasn't evaluated, and the next iteration
+simply tried to do REVLIST on "(cdr L)" as opposed to the CDR of
+"L". This would have gone on forever if we hadn't interrupted.
+Actually, Lisp has a large but finite recursion limit. You will
+undoubtedly encounter RECURSION CHECK errors eventually. That's
+what really happens if you let a recursive function run away. 
+<h3>Exercises Not to Be Evaluated</h3>
+
+<ol>
+<li>Write REVLIST correctly. You'll probably want to use a help
+function.</li>
+
+<li>Is DEFINE a FEXPR? Of course, it is, otherwise we wouldn't have
+asked the question. Convince yourself with the argument just
+presented.</li>
+</ol>
+
+<p><a href="index.html">Contents</a> | <a href="18.html">Isplay
+Ogrammingpray</a> | <a href="20.html">Control Structures</a></p>
+</body>
+</html>
+

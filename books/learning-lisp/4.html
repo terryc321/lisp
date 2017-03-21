@@ -1,0 +1,376 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<html>
+<head>
+<meta name="generator" content=
+"HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org">
+<title>LEARNING LISP - Atoms and Values</title>
+</head>
+<body bgcolor="white">
+<h1>LEARNING LISP</h1>
+
+<p><a href="index.html">Contents</a> | <a href="3.html">More
+Lists</a> | <a href="5.html">Bag of Predicates</a></p>
+
+<h2>Atoms and Values</h2>
+
+<a name="atom"></a> In the previous chapters we discussed lists of
+objects. These objects could have been either atoms or lists. The
+exact meaning of atom was sidestepped. Here we will look a little
+deeper into what an atom is and how they hold information. 
+<p>Let's go back and repeat the definition of an atom given in <a
+href="2.html">chapter 2</a>: An atom is a word or a number or the
+pair of parentheses "()" which we will call "NIL". So, by that
+description, all of the following are atoms:</p>
+
+<pre>
+hello
+31415
+()
+car
+axe
+0
+stephen
+anatom
+12345
+</pre>
+
+<p>In fact, there are a few more things that we can use as atoms
+also. The rules for creating atoms are, to be exact, as
+follows.</p>
+
+<a name="alphafloat"></a> 
+<ul>
+<li>An atom can be any number the computer understands. This is
+called a numeric atom. These are <em>integers</em> like: 145, -15,
+0, etc., or <em>floating point numbers</em> [ones with fractional
+parts] like: 1.4, -56.3, etc.</li>
+
+<li>A non-numeric atom can be any name made up of letters and/or
+numbers. There is no limit on the length of this. The only
+restriction is that the first character must be a letter, not a
+number. This is called an alphanumeric atom.</li>
+
+<li><a name="nil"></a>The form of NIL "()" can be an atom.</li>
+
+<li>Alphanumeric atoms can have some funny characters in them [such
+as "*" and "+"] but special Lisp characters cannot be used in atom
+names. This should be clear by now. The characters "(", ")", and
+"'", would simply confuse Lisp if you tried to use them in atom
+names. In general, we avoid using anything other than the letters
+"A" through "Z" and the numbers "0" through "9" in atom names.</li>
+</ul>
+
+Using the above rules, these are not atoms: 
+<pre>
+456test
+a sentence like this is not an atom
+some'stuff
+this(isn't(one(either
+(1 2 3 4)   [this one's a list, remember?]
+</pre>
+
+<a name="atomval"></a> 
+<p>As we usually do, we'll see what happens when atoms are given to
+Lisp to evaluate.</p>
+<a name="undef"></a>
+<pre>
+:ANATOM
+
+    ** ERROR: UNDEFINED ATOM **
+      EVAL :: ANATOM
+
++()
+
+  NIL
+
+:T
+
+  T
+
+:NIL
+
+  NIL
+
+:()
+
+  NIL
+
+:567
+
+  567
+</pre>
+
+That seemed to work alright, except for the first one. What
+happened? It looks like some atoms are defined according to Lisp
+and some aren't. 
+<a name="value"></a>
+<p>Atoms have values. Some atoms have values that are automatically
+set by Lisp when you start it. Others need to be given values by
+you, the user, when you want to do something. When an atom is typed
+into Lisp it is evaluated just like a list except that instead of
+executing a function, the result of the evaluation is the value of
+that atom.</p>
+<a name="nil2"></a>
+<p>We can see the types of atoms mentioned in the previous
+paragraph used in the example above. The atoms "T" and "NIL" seem
+to already have values in Lisp. The value of "T" is "T". The value
+of "NIL" is "NIL" or "()" which, as we've said over and over, is
+the same thing. The atom 567 also has a value. In fact, all numeric
+atoms have values that are the numbers they represent. Numbers and
+those special atoms are called <em>self-defining</em> atoms.</p>
+
+<p>Okay, then how do we define those atoms that aren't
+self-defining? There's a way to do that too! [There's a way to do
+most everything in Lisp.]</p>
+
+<a name="setq"></a>
+<p>Watch this:</p>
+<pre>
+:LOVE
+
+    ** ERROR: UNDEFINED ATOM **
+      EVAL :: LOVE
+
++()
+
+  NIL
+
+:(SETQ LOVE 5)
+
+  5
+
+:LOVE
+
+  5
+
+:(SETQ HAPPINESS LOVE)
+
+  5
+
+:HAPPINESS
+
+  5
+
+:(SETQ POWER FREEDOM)
+
+    ** ERROR: UNDEFINED ATOM **
+      EVAL :: FREEDOM
+
++()
+
+  NIL
+</pre>
+
+The first example just shows that, in fact, the value of love is
+undefined. Let's define it. 
+<p>The SETQ function takes the name of an atom and the value to
+"assign" to that atom. It puts that value into the named atom and
+then, voila, instant definition! Note that the value returned by
+SETQ is the same as the value of the second argument. You will find
+that all Lisp expressions return a value of some kind.</p>
+
+<p>Note that, in the fourth example, the atom now properly defined
+has a value that can be used to assign to other atoms. An error
+will occur if you try to assign the value of an undefined atom in a
+SETQ operation.</p>
+
+<p>As with a list, if we want to tell Lisp not to try to evaluate
+an atom, you can simply put a single quote before it:</p>
+
+<pre>
+:THE-VALUE
+
+    ** ERROR: UNDEFINED ATOM **
+      EVAL :: THE-VALUE
+
++()
+
+  NIL
+
+:(SETQ ATOM1 'THE-VALUE)
+
+  THE-VALUE
+
+:(CONS ATOM1 '(IS THE VALUE OF ATOM1))
+
+  (THE-VALUE IS THE VALUE OF ATOM1 )
+
+:(SETQ ATOM2 (CONS ATOM1 '(IS THE VALUE
+
+: OF ATOM1))))
+
+  (THE-VALUE IS THE VALUE OF ATOM1 )
+</pre>
+
+Above, we have used the value of ATOM1 and the CONS function to
+create a list made up of the value of ATOM1 and some other atoms.
+You should be very careful about the placement of quotes at all
+times. A quote is used when you mean the <em>expression</em> itself
+rather than the result of evaluation of the expression. 
+<p>In the last example, the result of the CONS operation is SETQed
+into a new atom: ATOM2.</p>
+
+<p>You will find that one of the best uses of SETQ is to save you
+from having to type the same list over and over again. We can use
+atom values in our examples to save our typing also. This is one of
+the examples from <a href="2.html">chapter 2</a> redone with value
+atoms and SETQ's:</p>
+
+<pre>
+:(SETQ SANDWITCH '(SAND WITCH))
+
+  (SAND WITCH)
+
+:(CDR SANDWITCH)
+
+  (WITCH )
+
+:(CDR (CDR (CDR  SANDWITCH)))))
+
+  NIL
+
+:(CAR (CDR SANDWITCH))
+
+  WITCH
+
+:(CAR (CAR (CDR (SETQ CLOWNY ' (() ((BOZO
+
+:) (NO NO))))))))
+  (BOZO )
+
+:(CDR (CAR (CDR CLOWNY)))
+
+  ((NO NO ) )
+
+:(CAR (CAR (CDR (CAR (CDR CLOWNY)))))))
+</pre>
+
+You should go back to the example in the previous chapter and
+carefully study what was done in order to use value-atoms. Let's
+not lose sight of the evaluation process in all thiss mumbo-jumbo.
+Remember that the arguments of a function are evaluated first and
+the results are replaced for that position in the expression. Using
+this rule, let's go through the evaluation of the last expression
+above. 
+<p>We start out with:</p>
+
+<pre>
+:(CAR (CAR (CDR (CAR (CDR CLOWNY)))))
+
+  NO
+</pre>
+
+First, "clowny" is evaluated as a list that was SETQed to it
+previously, giving us: 
+<pre>
+(car (car (cdr (car (cdr '<u>(()  ((bozo) (no no))))))))</u>
+</pre>
+
+[The underlined portion is the SETQed text]. The various CARs and
+CDRs are evaluated giving: 
+<pre>
+(car (car (cdr (car  '<u>(((bozo) (no no))))))))</u>
+(car (car (cdr  '<u>((bozo) (no no)))))</u>
+(car (car  '<u>((no no))))</u>
+(car  '<u>(no no))</u>
+no
+</pre>
+
+This process is the most important thing that you need to know and
+it is assumed in all our discussions. <a name="dquote"></a> 
+<p>One last thing before we move on. It is often useful to be able
+to put funny characters [like spaces and open or close parens] into
+atom names. The most obvious use of this is to print things out.
+Even though it's technically against the rules to use spaces, etc.,
+in atom names, Lisp provides a way to do so. The quotation
+character ["] can be used to enclose <em>atom</em> names. Don't
+confuse this with the quote that stops evaluation. For example:</p>
+
+<pre>
+:(SETQ "A LONG ATOM NAME" 5)
+
+  5
+
+:"A LONG ATOM NAME"
+
+  5
+
+:(SETQ "ANOTHER NAME" '"A MESSAGE")
+
+  A MESSAGE
+
+:"ANOTHER NAME"
+
+  A MESSAGE
+
+:
+</pre>
+
+In the second example above, we quoted an enclosed atom in order to
+put a message with spaces in as the value of the atom: A LONG ATOM
+NAME<br>
+Note that Lisp doesn't print out the quotation marks around
+enclosed names. This is convenient because it permits us to use
+them as messages. You'll see this used if you look over the code
+for the Lisp editor that is included in an appendix. Don't look
+now, though. You'll need to know more of the language first. 
+<h3>Exercises</h3>
+
+<ol>
+<li>Indicate what you think Lisp would respond with if you type in
+the following: 
+<ol type="a">
+<li>:(setq apple 'fruit)</li>
+
+<li>:(setq pear apple)</li>
+
+<li>:(setq iq 140)</li>
+
+<li>:(setq 15 12)</li>
+
+<li>:'apple</li>
+
+<li>:apple</li>
+
+<li>:"apple"</li>
+
+<li>:'"()"</li>
+</ol>
+</li>
+
+<li>Remember all the recopying that we did in the most recent set
+of exercises. Well, now you should be able to figure out how to set
+the phone list as the value of some variable, and just use that
+variable. Try it.</li>
+</ol>
+
+<h3>Answers</h3>
+
+<ol type="a">
+<li>FRUIT</li>
+
+<li>FRUIT</li>
+
+<li>140</li>
+
+<li>You should expect this to cause an error; since numeric atoms
+are self-defining, you shouldn't be able to change their
+values.</li>
+
+<li>APPLE</li>
+
+<li>FRUIT</li>
+
+<li>FRUIT. Note that APPLE and "APPLE" denote the same atom, since
+the atom names are the same (double quotes enclose atom names, but
+are not part of the name).</li>
+
+<li>(). This creates an atom whose name is the characters "(" and
+")". It is NOT the same as the atom NIL.</li>
+</ol>
+
+<p><a href="index.html">Contents</a> | <a href="3.html">More
+Lists</a> | <a href="5.html">Bag of Predicates</a></p>
+</body>
+</html>
+

@@ -1,0 +1,151 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<html>
+<head>
+<meta name="generator" content=
+"HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org">
+<title>LEARNING LISP - Lists as Trees</title>
+</head>
+<body bgcolor="white">
+<h1>LEARNING LISP</h1>
+
+<p><a href="index.html">Contents</a> | <a href="12.html">The Lisp
+Editor ED</a> | <a href="14.html">Trees and Recursion</a></p>
+
+<h2>Lists as Trees</h2>
+
+<a name="branch"></a> There is a way of thinking about recursive
+functions that may help to clarify the method. This brief chapter
+will try to explain the simple Lisp functions in terms of trees. We
+will then use the tree representation in later chapters to describe
+the action of recursive functions. 
+<a name="leave"></a>
+<p>A useful way to see what a deeply embedded list looks like is to
+think of it as a tree. A tree, as the name implies, is a structure
+with a root, branches and leaves. This is a tree.</p>
+
+<p><img src="imgs/tree1.png" width="277" height="216" alt=
+"picture representation of ((Mary had a) (little (lambda)))"></p>
+
+The above tree is the representation of the list 
+<pre>
+((Mary had a) (little (lambda)))
+</pre>
+
+Each node of the tree indicates the starting point of a pair of
+elements. The root [first node] indicates the starting point of the
+main list. The leaves of the tree are the atoms in the list. <a
+name="bintree"></a> 
+<p>Notice that each node of the tree branches two ways. This type
+of tree is called a binary tree because of the two way
+branching.</p>
+<a name="nil"></a>
+<p>Let's take a look at a simpler tree.</p>
+
+<pre>
+(a list)
+
+<img src="imgs/tree2.png" width="86" height="117" alt=
+"(a list) tree representation">
+</pre>
+
+This tree has two nodes and four branches. There are atoms at the
+ends of the lowest branches [NIL is an atom too!]. 
+<pre>
+(new stuff)
+
+<img src="imgs/tree3.png" width="86" height="117" alt=
+"(new stuff) tree representation">
+</pre>
+
+It looks the same. Now, let's insert the second tree into the
+first, replacing "(new stuff)" for "a". The resulting tree looks
+like the following diagram. 
+<pre>
+((new stuff) list)
+
+<img src="imgs/tree4.png" width="224" height="166" alt=
+"((new stuff) list) tree representation">
+</pre>
+
+When we look at the CAR of the above tree we are looking at 
+<pre>
+(new stuff)
+</pre>
+
+CAR can be thought of as returning all the material hanging on the
+left branch. CDR, as you might expect, returns the material on the
+right branch. 
+<pre>
+(list)
+
+<img src="imgs/tree5.png" width="114" height="90" alt=
+"(list) representation">
+</pre>
+
+This is why there are still a set of parentheses around it. Note
+that all the trees eventually terminate in NIL ["()"]. Recall that
+if you keep taking the CDR of a list you will eventually hit a NIL.
+The reason for this should now be apparent. If we were to insert a
+NIL into the end of the list, we would get: 
+<pre>
+((new stuff) list ())
+
+<img src="imgs/tree6.png" width="350" height="166" alt=
+"((new stuff) list ()) representation">
+</pre>
+
+This is the CDR of the above list. 
+<pre>
+(list ())
+
+<img src="imgs/tree7.png" width="150" height="126" alt=
+"(list ()) representation">
+</pre>
+
+The CDR of that is 
+<pre>
+(())
+
+<img src="imgs/tree8.png" width="104" height="82" alt=
+"(()) representation">
+</pre>
+
+CAR of that is 
+<pre>
+()   [that is: NIL]
+
+<img src="imgs/nil.png" width="32" height="20" alt="NIL">
+</pre>
+
+So is CDR. 
+<p>Both the CAR and CDR of NIL are NIL. Thus, we can't change the
+list from here on without CONSing stuff onto it. Let's do so
+now.</p>
+
+<pre>
+(setq worktree ())
+
+<img src="imgs/nil.png" width="32" height="20" alt="NIL">
+</pre>
+
+<pre>
+(setq worktree (cons 'stuff worktree))
+
+<img src="imgs/tree9.png" width="114" height="90" alt=
+"(setq worktree (cons 'stuff worktree)) representation">
+</pre>
+
+<pre>
+(setq worktree (cons '(more) worktree))
+
+<img src="imgs/tree10.png" width="223" height="122" alt=
+"(setq worktree (cons '(more) worktree)) representation">
+</pre>
+
+You should be able to draw and analyze the functions of CONC and
+various other simple Lisp functions. 
+<p><a href="index.html">Contents</a> | <a href="12.html">The Lisp
+Editor ED</a> | <a href="14.html">Trees and Recursion</a></p>
+</body>
+</html>
+

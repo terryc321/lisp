@@ -1,0 +1,186 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<html>
+<head>
+<meta name="generator" content=
+"HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org">
+<title>LEARNING LISP - Bag of Predicates</title>
+</head>
+<body bgcolor="white">
+<h1>LEARNING LISP</h1>
+
+<p><a href="index.html">Contents</a> | <a href="4.html">Atoms and
+Values</a> | <a href="6.html">Defining Your Own Functions</a></p>
+
+<h2>Bag of Predicates</h2>
+Congratulations. You have now mastered the basic concepts of atoms
+and lists. It is the purpose of this chapter to add to your
+"vocabulary" of Lisp functions. You will need a few more in order
+to do any real work. All of the new functions will be predicates.
+<a name="t"></a>
+Remember that predicates ask questions about data and always return
+T for true or NIL for false. <a name="atompred"></a> 
+<p>The first function is a predicate that asks if an expression is
+an atom.</p>
+
+<pre>
+:(ATOM 'BOMB)
+
+  T
+
+:(SETQ BOMB 'KYAG)
+
+  KYAG
+
+:(ATOM BOMB)
+
+  T
+
+:(SETQ NIXON '(I AM NOT A COOK))
+
+  (I AM NOT A COOK )
+
+:(ATOM NIXON)
+
+  NIL
+
+:(ATOM '((AND) (EVE)))
+
+  NIL
+
+:(ATOM (CAR NIXON))
+
+  T
+
+:(ATOM ())
+
+  T
+</pre>
+
+As you will later see, testing for atom-icity is very important.
+[Is atom-icity a word? Probably not, but it is an atom.] 
+<a name="nilnull"></a>
+<p>Another nice testing function is NULL. NULL says T if, and only
+if its argument is NIL. Now we have a way to test for NIL-icity
+[sorry].</p>
+
+<pre>
+:(NULL BOMB)
+
+  NIL
+
+:(NULL (SETQ ALIST '(LET THEM EAT CAKE)))
+
+  NIL
+
+:(NULL NIL)
+
+  T
+
+:(NULL ())
+
+  T
+
+:(NULL T)
+
+  NIL
+
+:(NULL (NULL T))
+
+  T
+
+:(NULL (NULL NIL))
+
+  NIL
+
+:(NULL (CAR ()))
+
+  T
+
+:(NULL (CDR ()))
+
+  T
+
+:(NULL BERRY-BUSH)
+
+    ** ERROR: UNDEFINED ATOM **
+      EVAL :: BERRY-BUSH
+
++()
+
+  NIL
+</pre>
+
+That last one is just to see if you're still awake. <a name=
+"equal"></a> 
+<p>It would be reasonable if you could test for the equality of two
+expressions. Since Lisp is always in a reasonable mood, there is
+such a predicate: EQUAL. EQUAL returns a T if and only if its
+arguments represent the same Lisp expression; the arguments may be
+atoms or lists, but there may only be two such expressions.</p>
+
+<pre>
+:(EQUAL '(A) '(A))
+
+  T
+
+:(EQUAL 1 (ADD 1 1)))
+
+  NIL
+
+:
+:(EQUAL (CAR '((A DEEP)LIST)) '(A DEEP))
+
+  T
+</pre>
+<a name="not"></a>
+Using the NULL and EQUAL predicates, we can make our own
+"not-equal" function. 
+<pre>
+:(NULL (EQUAL 1 (ADD 1 1)))
+
+  T
+</pre>
+
+That is, 1 does not equal 1 plus 1. Lisp has a function called NOT
+which does exactly the same thing as NULL. It would be preferable
+to use NOT here because it makes a little more sense if you read it
+out loud. 
+<p>More equality:</p>
+
+<pre>
+:(EQUAL 'HEAD (CAR '(HEAD FOR THE NILS)))
+
+  T
+
+:(EQUAL 'SOLIPSIST)
+
+    ** ERROR: TOO FEW ARGS **
+      EQUAL :: ((QUOTE SOLIPSIST ) )
+
++()
+
+  NIL
+
+:(EQUAL 'THREE 'FOR 'ALL)
+
+    ** ERROR: TOO MANY ARGS **
+      EQUAL :: ((QUOTE THREE ) (QUOTE
+      FOR ) (QUOTE ALL ) )
+
++()
+
+  NIL
+
+:(EQUAL T (EQUAL 4 (SUB 11 7))))
+
+  T
+</pre>
+<a name="sub"></a>
+We pulled a fast one in that last example. SUB is a new function.
+No problem, really, SUB does subtraction a la grade school. Play
+with it to make sure it does its homework. 
+<p><a href="index.html">Contents</a> | <a href="4.html">Atoms and
+Values</a> | <a href="6.html">Defining Your Own Functions</a></p>
+</body>
+</html>
+

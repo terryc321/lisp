@@ -1,0 +1,284 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<html>
+<head>
+<meta name="generator" content=
+"HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org">
+<title>LEARNING LISP - Getting Started</title>
+</head>
+<body bgcolor="white">
+<h1>LEARNING LISP</h1>
+
+<p><a href="index.html">Contents</a> | <a href=
+"preface.html">Preface</a> | <a href="2.html">Lists, CAR and
+CDR</a></p>
+
+<h2>Getting Started</h2>
+
+This chapter will provide you with some experience in using the
+P-Lisp system. Its purpose is to help you become familiar with the
+basic operation of the language. 
+<p>We assume that you are sitting in front of your computer, with
+Lisp up and running [see the explanation of how to do this in the
+<em>P-Lisp Manual</em>]. You should see the following at the top of
+the screen:</p>
+
+<pre>
+          GNOSIS INC.
+      P-LISP   VER. 3.1.2
+      -------------------
+
+COPYRIGHT 1982 BY STEVEN CHERRY
+      ALL RIGHTS RESERVED
+</pre>
+<a name="retkey"></a>
+When you see this display it means that you have successfully
+entered Lisp. The ":" prompt that you see on the last line typed by
+the computer means that Lisp is waiting for you to type something
+in. You may type in what you wish. After you hit the RETURN key
+Lisp will evaluate your command and display the result. This
+process of "read-evaluate-print" result constitutes the core of the
+interactive Lisp system. We will see more or READ-EVALUATE-PRINT
+much later on. 
+<p>Note that if you hit RETURN several times, each time Lisp will
+respond with the ":". You told it to do nothing, so it did nothing
+and then asked for another line of input.</p>
+
+<p>If we type a number, then Lisp will echo the number back. All of
+our inputs follow the ":" prompt; all of Lisp's responses are
+preceded by two spaces.</p>
+
+<pre>
+:3
+
+  3
+
+:0
+
+  0
+
+:-2
+
+  -2
+</pre>
+
+<a name="add"></a> Let's try an example: adding up some numbers. To
+add numbers in Lisp we use the ADD function. We add 1 and 2 by
+typing: 
+<pre>
+:(ADD 1 2)
+
+  3
+</pre>
+
+Yeah! Lisp can add. What actually happened? Lisp typed the ":" and
+then we typed "(add 1 2)". Note several things: 
+<ul>
+<li>The word ADD and the numbers "1" and "2" are separated by
+spaces [blanks].</li>
+
+<li>We surrounded the expression with parentheses. Parentheses are
+an integral part of the Lisp language, so you will soon learn to
+love parentheses [we hope].</li>
+
+<li>Lisp responded immediately with the answer. Lisp is an
+interactive system, and it will always display the answer
+immediately, unless you tell it otherwise. Later we will see how to
+tell it otherwise.</li>
+</ul>
+
+Let's try some more addition. 
+<pre>
+:(ADD 12 3
+
+:)
+
+  15
+
+:(ADD 1)
+
+    ** ERROR: TOO FEW ARGS **
+      ADD :: (1 )
+
++()
+
+  NIL
+
+:(ADD 11 8 3)
+
+    ** ERROR: TOO MANY ARGS **
+      ADD :: (11 8 3 )
+
++()
+
+  NIL
+</pre>
+
+Here we first try the same example but we have forgotten the
+closing parenthesis. Lisp is waiting for that closing parenthesis
+so it comes back with a ":" prompt. We enter the closing
+parentheses, and now Lisp is happy, so it performs the addition. In
+general, you may spread the input across as many lines as you like.
+Later this will be quite useful. 
+<p>The next line shows something a little funny. We asked Lisp to
+add up one number. Because adding up just one number is not
+particularly meaningful or useful, Lisp returns an error message
+that there are too few numbers to add. This is quite reasonable,
+since you usually want to add up at least two numbers.</p>
+
+<p>Note that Lisp now gives us a "+" instead of the usual ":".
+Don't worry about this for now, simply type "()". We will deal with
+this mode of operation later.</p>
+
+<p>The last line shows what happens if you try to add up three
+numbers--the same sort of error! Well, there is no penalty for
+mistakes [we won't tell]. It makes a little more sense to add up
+more than two numbers than it did to add up just one number. We'll
+see much later that we can actually fix ADD ourselves to do this
+[or any other sort of behavior that we like].</p>
+
+<a name="argsname"></a> 
+<p>The first thing in a pair of parentheses is the
+<em>function</em> name and the things after that are the
+<em>arguments</em> [thus the statement "TOO FEW ARGS" in the above
+error report]. This is very important, and these two words will be
+used throughout this book. In the first example above the function
+name is ADD and its arguments are "1" and "2". ADD is said to have
+two arguments in this example.</p>
+<a name="mult"></a>
+<p>Besides addition, Lisp can also perform multiplication. The name
+of the multiplication function is MULT. Let's try it out!</p>
+
+<pre>
+:(MULT 2 3)
+
+  6
+
+:(MULT 9 2)
+
+  18
+
+:(MULT 1 2 3 4)
+
+    ** ERROR: TOO MANY ARGS **
+      MULT :: (1 2 3 4 )
+
++()
+
+  NIL
+
+:(MULT 1.2 4)
+
+  4.8
+
+:(MULT 2 (ADD 1 2))
+
+  6
+</pre>
+
+The first two examples reassure us that Lisp can, in fact,
+multiply. 
+<p>Lisp can, however, multiply only two values. If you try and
+multiply more than two values, you will get a TOO MANY ARGS error.
+By the way, if you try and use MULT with zero or one argument, you
+will get a TOO FEW ARGS error. Again, we type "()"" to get back to
+the normal colon prompt.</p>
+
+<p>The next example shows that Lisp will deal with non-integers.
+Floating point math is nice, but not critical because, as we will
+soon see, Lisp's strength does not lie in arithmetic.</p>
+<a name="subexpr"></a>
+<p>The last of the above lines is the most interesting. Lisp tries
+to perform the MULT function but finds that in place of the second
+argument is a <em>subexpression</em>. The value of the
+subexpression "(add 1 2)" is, of course, 3. There is now a number
+to take the place of the subexpression so the multiplication can
+continue. Lisp now effectively sees "(mult 2 3)" which it
+performs.</p>
+
+<p>Since this type of operation is very common in Lisp work, we are
+going to try some more examples like the last one. See if you can
+figure out what is happening in each expression.</p>
+
+<pre>
+:(ADD (MULT 3 4) (MULT 2 6))
+
+  24
+
+:(MULT (MULT (ADD 1 0) (ADD 1 1)) (MULT (ADD 2 1) (ADD 1 3)))
+
+  24
+
+:(MULT 1 (MULT 2 (MULT 3 (MULT 4 1)))))))))))
+
+  24
+</pre>
+
+One important thing to notice about these examples is that in the
+last one there were too many closing parentheses. This is fine and,
+in fact is very handy sometimes when you lose count. All you need
+to do is keep typing lots of closing parentheses and eventually
+you'll get back to the colon prompt. 
+<a name="pred"></a>
+<p>Now for one more concept: <em>predicates</em>. A predicate is a
+special kind of function that returns an answer of either true or
+false. In Lisp, true is represented as "T" and false is represented
+as "NIL". So, let's ask some questions.</p>
+
+<a name="greaternumber"></a> 
+<pre>
+:(GREATER 3 4)
+
+  NIL
+
+:(GREATER 4 3)
+
+  T
+
+:(GREATER 100 -100)
+
+  T
+
+:(NUMBER 47)
+
+  T
+
+:(NUMBER 'LETTERS)
+
+  NIL
+
+:(NUMBER 'SEVEN')
+
+  NIL
+<a name="zero"></a>
+:(ZERO 0)
+
+  T
+
+:(ZERO (ADD 2 -1))
+
+  NIL
+
+:(ZERO (ADD 2 -2))
+
+  T
+</pre>
+
+The predicate GREATER returns a true "T" if the numbers are in a
+strictly decreasing order; false, "NIL", otherwise. The predicate
+NUMBER says "T" if the argument is a number, "NIL", otherwise.
+Obviously the word "seven" is characters [more on what that quote
+in front of it means later] and is not a number. ZERO returns "T"
+if the argument evaluates to zero. 
+<h3>Finger Exercises</h3>
+
+Practice starting Lisp and typing in expressions. You might
+actually take the time to do all of the examples in this chapter.
+Also, do some math and make sure that Lisp can do math as well as
+you can. See if you can come up with a way of changing algebraic
+expressions into the equivalent Lisp mathematical expressions. 
+<p><a href="index.html">Contents</a> | <a href=
+"preface.html">Preface</a> | <a href="2.html">Lists, CAR and
+CDR</a></p>
+</body>
+</html>
+

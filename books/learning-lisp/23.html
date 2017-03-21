@@ -1,0 +1,219 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<html>
+<head>
+<meta name="generator" content=
+"HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org">
+<title>LEARNING LISP - Differentiating Polynomials</title>
+</head>
+<body bgcolor="white">
+<h1>LEARNING LISP</h1>
+
+<p><a href="index.html">Contents</a> | <a href="22.html">Properties
+and Lambda Expressions</a> | <a href="24.html">Simplifying
+Polynomials</a></p>
+
+<h2>Differentiating Polynomials</h2>
+
+We are now going to travel back in time to the days of freshman
+calculus. We are going to write a system which will perform
+symbolic differentiation of polynomials. 
+<p>Here are the rules for differentiation which will use.</p>
+
+<pre>
+D[0,x]=0
+D[x,x]=1
+D[(u+v),x]=D[u,x]+D[v,x]
+D[(u-v),x]=D[u,x]-D[v,x]
+D[(uv),x]=uD[v,x]+vD[u,x]
+D[(u<sup>n</sup>),x]=nu<sup>n-1</sup>D[u,x]
+</pre>
+
+<p>We are using the capital letter "D" to indicate the
+differentiation operator. Also, we specify the variable with which
+the differentiation is being done. Notice that some of these rules
+are recursive. For example, in order to differentiate (u+v) we need
+to differentiate <em>u</em> and <em>v</em>. So much for the
+specification problem. <a name="polypre"></a>Let's recall the
+representation of polynomials in Lisp from previous chapters, where
+polynomials were transformed into Lisp lists. Thus, "2x" translates
+to "(MULT 2 X)", etc. We are going to write some help functions
+which return the different parts of the polynomials for use in our
+derivative function. We will need the outermost [or highest level]
+function in a polynomial. Here is a picture.</p>
+
+<pre>
+(ADD (MULT 2 X) 3)
+
+             second term
+     first term
+top-level function
+</pre>
+
+<p>Here are some of our help functions. The "function" in a
+polynomial is the CAR of the polynomial represented in Lisp. The
+first and second terms of a polynomial are the CADR and the CADDR
+of the Lisp representations, respectively.</p>
+
+<pre>
+:(define (function (lambda (poly)
+:        (car poly) )))
+  FUNCTION
+:(define (firstterm (lambda (poly)
+:        (cadr poly) )))
+  FIRSTTERM
+:(define (secondterm (lambda (poly)
+:        (caddr poly) )))
+  SECONDTERM
+:(setq p '(add (sub x 2) 12))
+  (ADD (SUB X 2) 12)
+:(function p)
+  ADD
+:(firstterm p)
+  (SUB X 2)
+:(secondterm p)
+  12
+</pre>
+
+<p>Note that none of these functions are strictly necessary.
+However, if we were to change the underlying Lisp representation
+then it would only be necessary to change these three functions. If
+we didn't use them, then any change in the representation would
+require changing every access of the representation in all of the
+functions we write.</p>
+
+<p>Let's write the main function first. It will be called DERV and
+take two arguments: a polynomial, and the variable with which the
+polynomial is to be differentiated. Here is some sample
+behavior.</p>
+
+<pre>
+:(derv '(add x 2) 'x)
+  (ADD 1 0)
+:(derv '(mult x 2) 'x)
+  (ADD (MULT X 0) (MULT 2 1))
+:(derv '(exp x 2) 'x)
+  (MULT (MULT 2 (EXP X 1)) 1)
+</pre>
+
+We now exhibit the function DERV. 
+<pre>
+:(define (derv (lambda (poly var)
+:        (cond
+:             ((atom poly) (dervatom poly var))
+:             ((equal 'add (function poly))
+:                        (dervsum poly var))
+:             ((equal 'sub (function poly))
+:                          (dervminus poly var))
+:             ((equal 'mult (function poly))
+:                        (dervprod poly var))
+:             ((equal 'exp (function poly))
+:                          (dervexp poly var))
+:        ))))
+  DERV
+</pre>
+
+<p>If the polynomial is an atom then we call a help function,
+DERVATOM, which will properly differentiate an atom. We will write
+DERVATOM shortly. The next four conditions compare the main
+function in the polynomial with the different functions we are
+using: ADD, SUB, MULT, and EXP. If one of those four are found, the
+appropriate help function is called.</p>
+
+<p>Let's write DERVATOM. The derivative of an atom is equal to 1 if
+the atom is the variable with which the differentiation is being
+performed. The derivative is a 0 in all other cases. This function
+is quite simple to write.</p>
+
+<pre>
+:(define (dervatom (lambda (poly var)
+:       (cond
+:            ((equal poly var) 1)
+:            (t 0)))))
+  DERVATOM
+:(derv '1 'x)
+  0
+:(derv 'x 'x)
+  1
+</pre>
+
+<p>We will now write the function for differentiating a sum of two
+polynomials.</p>
+
+<pre>
+:(define (dervsum (lambda (poly var)
+:        (list 'add
+:        (derv (firstterm poly) var)
+:        (derv (secondterm poly) var) ))))
+  DERVSUM
+:(dervsum '(add x 3) 'x)
+  (ADD 1 0)
+</pre>
+
+<p>Notice that DERVSUM, which is called by DERV, also calls DERV.
+Therefore, we have a PAIR of recursive functions.</p>
+
+<p>Similarly, here is the function for differentiating a difference
+of two polynomials.</p>
+
+<pre>
+:(define (dervminus (lambda (poly var)
+:        (list 'sub
+:              (derv (firstterm poly) var)
+:              (derv (secondterm poly) var)))))
+  DERVMINUS
+</pre>
+
+<p>The functions for multiplication and exponentiation are only
+slightly more difficult.</p>
+
+<pre>
+:(define (dervprod (lambda (poly var)
+:        (list 'add
+:              (list 'mult
+:                    (firstterm poly)
+:                    (derv (secondterm poly) var) )
+:              (list 'mult
+:                    (secondterm poly)
+:                    (derv (firstterm poly) var)) ))))
+  DERVPROD
+:(define (dervexp (lambda (poly var)
+:        (list 'mult
+:              (list 'mult
+:                    (secondterm poly)
+:                    (list 'exp
+:                          (firstterm poly)
+:                          (sub (secondterm poly) 1)) )
+:                    (derv (firstterm poly) var) ) )))
+  DERVEXP
+:(dervprod '(mult x 2) 'x)
+  (ADD (MULT X 0) (MULT 2 1))
+:(dervexp '(exp x 2) 'x)
+  (MULT (MULT 2 (EXP X 1)) 1)
+</pre>
+
+<p>We now have the entire system, so let's try some difficult
+stuff.</p>
+
+<pre>
+:(derv '(add (mult 3 (exp x 2)) 15 'x)
+  (ADD (ADD (MULT 3 (MULT (MULT 2 (EXP X 1)) 1))
+  (MULT (EXP X 2) 0)) 0)
+:(derv '(add (add (mult a (exp x 2)) (mult b x)) c) 'x)
+  (ADD (ADD (ADD (MULT A (MULT (MULT 2 (EXP X 1)) 1))
+  (MULT (EXP X 2) 0)) (ADD (MULT B 1) (MULT X 0))
+  0) 0)
+:(setq a (derv '(mult (add x 1) (sub 1 x)) 'x))
+  (ADD (MULT (ADD X 1) (SUB 0 1)) (MULT (SUB 1 X)
+  (ADD 1 0)))
+:(setq x 3)
+  3
+:(eval a)
+  -6
+</pre>
+
+<p><a href="index.html">Contents</a> | <a href="22.html">Properties
+and Lambda Expressions</a> | <a href="24.html">Simplifying
+Polynomials</a></p>
+</body>
+</html>
+

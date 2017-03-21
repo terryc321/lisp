@@ -1,0 +1,403 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<html>
+<head>
+<meta name="generator" content=
+"HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org">
+<title>LEARNING LISP - Properties and Lambda Expressions</title>
+</head>
+<body bgcolor="white">
+<h1>LEARNING LISP</h1>
+
+<p><a href="index.html">Contents</a> | <a href="21.html">Eval and
+Apply</a> | <a href="23.html">Differentiating Polynomials</a></p>
+
+<h2>Properties and Lambda Expressions</h2>
+
+We have seen several ways to attach "meanings" to names [atoms].
+The SETQ function gives a value to an atom. There is one other way
+of connecting values to atoms. 
+<a name="prop"></a>
+<p>A <em>property</em> is a name associated with a particular value
+of an atom. As an analogy, think of an atom as a chest of drawers.
+The top drawer would contain something, the second would contain
+something different, and so on. Each thing in the drawers, however,
+is still associated with the chest [the atom].</p>
+
+<p>Let's construct our chest of drawers.</p>
+
+<pre>
+:(PUT 'CHEST 'TOP '(SOX))
+
+  (SOX )
+
+:(PUT 'CHEST 'SECOND '(UNDERWEAR (SHORT
+
+:SHIRTS))))
+
+  (UNDERWEAR (SHORT SHIRTS ) )
+
+:(PUT 'CHEST 'THIRD '(T-SHIRTS JEANS)))
+
+  (T-SHIRTS JEANS )
+
+:(PUT 'CHEST 'BOTTOM '(PAJAMAS)))
+
+  (PAJAMAS )
+</pre>
+
+<a name="atomvalget"></a> The PUT function takes three arguments. The
+first is the name of the atom that we are attaching properties to
+["chest"]. The next is the name of the property ["top", "bottom",
+etc.], and the third is the value to attach to the atom at that
+property. This value can be anything at all [lists, names,
+numbers]. The GET function looks at properties on an atom. 
+<pre>
+:(GET 'CHEST 'SECOND)
+
+  (UNDERWEAR (SHORT SHIRTS ) )
+
+:(GET 'CHEST 'TOP)
+
+  (SOX )
+
+:(SETQ PLACE 'CHEST)
+
+  CHEST
+
+:(PUT PLACE 'TOP (CONS (GET PLACE 'TOP)
+
+:(GET PLACE 'SECOND)))))
+
+  ((SOX ) UNDERWEAR (SHORT SHIRTS ) )
+
+:(REM PLACE 'SECOND)
+
+  NIL
+
+:(GET PLACE 'SECOND)
+
+  NIL
+</pre>
+<a name="rem"></a>
+In case you hadn't figured it out, REM removes a property from the
+property list. It's similar to pulling out a drawer. We can't GET
+the value of that property after it has been REMed. 
+<p>We said previously that you couldn't take the CDR of an atom.
+That isn't quite true. The CDR of a name [a quoted atom] returns
+all the properties associated with that atom in the form:</p>
+
+<pre>
+:(CDR PLACE)
+
+  (TOP ((SOX ) UNDERWEAR (SHORT SHIRTS ) )
+  THIRD (T-SHIRTS JEANS ) BOTTOM (
+  PAJAMAS ) )
+
+:(CDR 'CHEST)
+
+  (TOP ((SOX ) UNDERWEAR (SHORT SHIRTS ) )
+  THIRD (T-SHIRTS JEANS ) BOTTOM (
+  PAJAMAS ) )
+</pre>
+
+The value set by SETQ and the properties associated with the name
+are completely separate. 
+<pre>
+:
+:(SETQ CHEST 5)
+
+  5
+
+:(CDR 'CHEST)
+
+  (TOP ((SOX ) UNDERWEAR (SHORT SHIRTS ) )
+  THIRD (T-SHIRTS JEANS ) BOTTOM (
+  PAJAMAS ) )
+
+:CHEST
+
+  5
+</pre>
+<a name="phone"></a>
+What are properties used for? Why are they in Lisp? 
+<p>For a simple example we might arrange our phonebook according to
+our friends' names. Each name has associated with it a property
+"number" and a property "address". This isn't much different than
+just having the names, numbers, and addresses arranged as a list of
+triplets. The advantage of using the properties is that the process
+of finding someone's phone number or address is simply a matter of
+getting the right property from the atom which is the person's
+name.</p>
+
+<pre>
+:
+
+:(PUT 'MARY 'ADDRESS '(123 FRONT ROAD))
+
+  (123 FRONT ROAD )
+
+:(PUT 'MARY 'PHONE '(345 6789))
+
+  (345 6789 )
+
+:(CDR 'MARY)
+
+  (ADDRESS (123 FRONT ROADD ) PHONE (
+  345 6789 ) )
+
+:(PUT 'DAVE 'ADDRESS '(321 TRONF STREET))
+
+  (321 TRONF STREET )
+
+:(PUT 'DAVE 'PHONE '(WE7 1212))
+
+  (WE7 1212 )
+
+:(GET 'DAVE 'ADDRESS)
+
+  (321 TRONF STREET )
+</pre>
+
+But this is useless because we are restricted to using address
+parts and phone numbers that are Lisp atoms. Anyway we could have
+done the whole program with recursion and gotten the same result.
+However, as an exercise it can't hurt. 
+<p>Another possible use of properties is to "tag" names. For
+example, let's imagine that we were going to type in a dictionary
+and wanted to tag each word that we typed with its part of speech.
+We also might want to include some other identifications like
+number [for nouns] or transitivity [for verbs]. By using PUT and
+GET to attach properties to the atom whose name is the word, we can
+accomplish this tagging quite simply.</p>
+
+<pre>
+:(PUT 'AARDVARK 'SPEECHPART 'NOUN)
+
+  NOUN
+
+:(PUT 'AARDVARK 'NUMBER 'SINGULAR)
+
+  SINGULAR
+
+:(PUT 'EAT 'SPEECHPART 'VERB)
+
+  VERB
+
+:(PUT 'EAT 'VERBTYPE 'TRANSITIVE)
+
+  TRANSITIVE
+
+:(PUT 'SOUPS 'SPEECHPART 'NOUN)
+
+  NOUN
+
+:(PUT 'SOUPS 'NUMBER 'PLURAL)
+
+  PLURAL
+</pre>
+<a name="mapcar"></a>
+If we want to retrieve all parts of speech from a list of words, we
+could use MAPCAR with a function which will return the speechpart
+property from a word. Here is the function PARTS which does just
+that. 
+<pre>
+:(DEFINE (PARTS (FLAMBDA (SENTENCE)
+
+:  (MAPCAR '(LAMBDA (WORD) (GET WORD 'SPEECHPART))
+
+:          SENTENCE)))))
+
+  PARTS
+
+:(PARTS EAT AARDVARK SOUPS)
+
+  (VERB NOUN NOUN)
+</pre>
+
+What, you may ask, was all that about? It looks like we half-wrote
+a function in the middle of another one! The expression "(LAMBDA
+(WORD) . . . 'SPEECHPART))" is typical of what we type for the
+definition of a function using DEFINE. 
+<p>Let's look at some simpler examples:</p>
+
+<pre>
+:(SETQ FN '(LAMBDA (X) (REVERSE X))))
+
+  (LAMBDA (X ) (REVERSE X ) )
+
+:(FN '(THE VALUE OF FN IS A LAMBDA))
+
+  (LAMBDA A IS FN OF VALUE THE )
+
+:('(LAMBDA (X) (REVERSE X)) '(THIS ONE
+
+:IS RIGHT HERE)))
+
+  (HERE RIGHT IS ONE THIS )
+</pre>
+
+LAMBDA expressions, variables whose values are LAMBDA expressions,
+or expressions which evaluate to LAMBDA expressions, can be used in
+a Lisp expression in any place a function name would normally
+occur. A LAMBDA expression is like a temporary function. The
+appropriate values of its arguments are bound during evaluation,
+but after the result is returned, the function, and the argument
+values, go away. <a name="define"></a> 
+<p>When we use DEFINE to establish a function definition, it puts
+the LAMBDA expression forming the body of the function as a
+property of the function name. The property where this function is
+stored is called EXPR.</p>
+
+<pre>
+:(CDR 'PARTS)
+
+  (EXPR (FLAMBDA (SENTENCE ) (MAPCAR (
+  QUOTE (LAMBDA (WORD ) (GET WORD (QUOTE S
+  PEECHPART ) ) ) ) SENTENCE ) ) )
+
+:(GET 'PARTS 'EXPR)
+
+  (FLAMBDA (SENTENCE ) (MAPCAR (QUOTE (
+  LAMBDA (WORD ) (GET WORD (QUOTE
+  SPEECHPART ) ) ) ) SENTENCE ) )
+</pre>
+
+In general, LISP looks at the world as follows: 
+<ol>
+<li>Everything is an expression [that is, has a CAR and a CDR or is
+an atom].</li>
+
+<li>If the expression is an atom then return its value.</li>
+
+<li>If the expression is a list then apply rule 4 to the CAR and
+use the CDR as the arguments to the function referred to in rule
+4.</li>
+
+<li>If the CAR is an atom then either its value is a LAMBDA
+expression [as example 3 above] or it has an EXPR on its property
+list whose value [i.e., (GET (CAR expression) 'EXPR)] is a LAMBDA
+expression [as in all the functions created by DEFINE]. Evaluate
+the LAMBDA expression!</li>
+
+<li>If the CAR is a list, evaluate it and go to rule 4.</li>
+</ol>
+
+<p>That's all a bit complicated. Perhaps a few examples would help
+out. First, let's suppose that the variable [atom] X has the value
+"(lambda (f) (reverse f))".</p>
+
+<p>We enter:</p>
+
+<pre>
+((CAR '(X Y Z)) '(LIST TO BE REVERSED))
+</pre>
+
+X [the result of CAR . . .] evals to the form: 
+<pre>
+((LAMBDA (F) (REVERSE '(F)) '(LIST TO BE REVERSED))
+</pre>
+
+The F binds to the argument. The new expression is: 
+<pre>
+(REVERSE '(LIST TO BE REVERSED))
+</pre>
+
+which returns: 
+<pre>
+(REVERSED BE TO LIST)
+</pre>
+<a name="lambda"></a>
+<p>We could have equivalently used DEFINE to jam the LAMBDA
+expression into the EXPR property of the atom X. The evaluation
+would have worked in the same way. In a previous chapter we asked
+whether DEFINE was an EXPR or a FEXPR. Since we know what DEFINE
+really does, we can define it. This seems a bit redundant, and it
+is, but it is a good exercise.</p>
+
+<p>DEFINE is of the form:</p>
+
+<pre>
+(DEFINE (name (LAMBDA-expression)))
+</pre>
+
+<p>Since (name (LAMBDA-expression)) can't be evaluated [especially
+before the name is defined] we have to use a FEXPR in order to keep
+Lisp from trying to evaluate it. Our first line must be:</p>
+
+<pre>
+(DEFINE (DEFINE (FLAMBDA (function-form)
+</pre>
+
+The function-form will have the form: 
+<pre>
+(name (LAMBDA-expression))
+</pre>
+
+<p>Now, our task is easy. Let's redefine DEFINE in real Lisp and
+see if it works as expected. If you try to do this, it is a good
+idea to call it something other than DEFINE [like DEFINA], to avoid
+making catastrophic mistakes.</p>
+
+<pre>
+:
+:(DEFINE (DEFINA (FLAMBDA (FUNCFORM)
+
+: (PUT (CAAR FUNCFORM) 'EXPR (CADAR
+
+:    FUNCFORM)))))
+
+  DEFINE
+
+:(DEFINA (ENDOF (LAMBDA (S)
+
+:        (CAR (REVERSE S))))))))
+
+  (LAMBDA (S ) (CAR (REVERSE S ) ) )
+
+:(CDR 'ENDOF)
+
+  (EXPR (LAMBDA (S ) (CAR (REVERSE S ) ) )
+  )
+
+:(ENDOF '(A S D F))
+
+  F
+
+:(CDR 'DEFINA)
+
+  (EXPR (FLAMBDA (FUNCFORM ) (PUT (CAAR
+  FUNCFORM ) (QUOTE EXPR ) (CADAR FUNCFORM
+  ) ) ) )
+
+:(REM 'DEFINA 'EXPR)
+
+  NIL
+
+:(CDR 'DEFINA)
+
+  NIL
+
+:(CDR 'DEFINE)
+
+  (SUBR * )
+</pre>
+<a name="subr"></a>
+Note that when we redefined DEFINE we are using only the value of
+DEFINA. The property that you see in the last line above [SUBR]
+holds the real value of DEFINE. When we REM our EXPR definition
+from DEFINE's property list the old value [SUBR] comes back [IF YOU
+USE DEFINE INSTEAD OF DEFINA, DON'T FORGET TO DO THIS]! Don't worry
+about what a SUBR really is, we will discuss that on the chapter
+about internals. 
+<p>Lisp functions exist as properties of atoms with the name of the
+atom being the name of the function. Since Lisp functions are only
+Lisp expressions, you can see how being able to manipulate these
+expressions can be useful. For one thing, it means we can write our
+own editor in Lisp. It means that we can write functions which
+generate other functions during their evaluation.</p>
+
+<p><a href="index.html">Contents</a> | <a href="21.html">Eval and
+Apply</a> | <a href="23.html">Differentiating Polynomials</a></p>
+</body>
+</html>
+

@@ -1,0 +1,200 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<html>
+<head>
+<meta name="generator" content=
+"HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org">
+<title>LEARNING LISP - Help Functions</title>
+</head>
+<body bgcolor="white">
+<h1>LEARNING LISP</h1>
+
+<p><a href="index.html">Contents</a> | <a href="6.html">Defining
+Your Own Functions</a> | <a href="8.html">How to Save the
+World</a></p>
+
+<h2>Help Functions</h2>
+
+<a name="builtin"></a> The functions we defined in preceding
+chapters used functions such as CAR and CDR. These functions are
+called built-ins. A built-in function is nothing mysterious. All
+the built-in functions are just the same as your own functions
+[like FIRST]. In fact, once you define a function, it becomes
+built-in until you leave Lisp. The only difference between
+built-ins that you build in and those that are built in by Lisp is
+that the latter are defined automatically each time you enter Lisp.
+<a name="help"></a> 
+<p>A built-in that you build into Lisp [like FIRST] is called a
+<em>help function</em>. We call these help-functions because we can
+use them to write other functions that do bigger and better things.
+[We could use them to do smaller and worse things, but that isn't
+any fun.]</p>
+
+<p>Let's write a function called ENDS which takes the first and
+last elements from a list and returns them as a new list. To begin
+with, let's redefine FIRST and LAST, since, unless you saved your
+workspace the last time, they are not there any more.</p>
+
+<pre>
+:(DEFINE (FIRST (LAMBDA (L)
+
+:      (CAR L))))))
+
+  FIRST
+
+:(DEFINE (LAST (LAMBDA (L)
+
+:        (CAR (REVERSE L)))))
+
+  LAST
+</pre>
+
+Okay, now we define ENDS which uses FIRST and LAST as
+help-functions. 
+<pre>
+:(DEFINE (ENDS (LAMBDA (L)
+
+:        (CONC (FIRST L) (LAST L))))))
+
+  ENDS
+</pre>
+
+We'll try it out. 
+<pre>
+:(SETQ INPUTLIST '(GRATEFUL ARE THOSE WHO
+
+:ARE NOT DEAD))
+
+  (GRATEFUL ARE THOSE WHO ARE NOT DEAD )
+
+:(ENDS INPUTLIST)
+
+    ** ERROR: BAD LIST ARG **
+      CONC :: ((FIRST L ) (LAST L ) )
+
++L
+
+  (GRATEFUL ARE THOSE WHO ARE NOT DEAD )
+
++(FIRST L)
+
+  GRATEFUL
+
++(LAST L)
+
+  DEAD
+
++()
+
+  NIL
+
+:(FIRST L)
+
+    ** ERROR: UNDEFINED ATOM **
+      EVAL :: L
+
++()
+
+  NIL
+</pre>
+
+<a name="errsusp"></a> When Lisp comes back with the "+" prompt, then
+the function we are executing [which was ENDS] is
+<em>suspended</em>. This means that it has been stopped in
+mid-evaluation due to some error. At this time, the formal argument
+"L" has the value intact. We can look at its value and also use it
+in other functions while ENDS is still suspended. You know ENDS is
+still suspended because you still get the "+" prompt. After you
+type the "()", the suspension is cleared, and the formal argument
+is gone. Let's look at the error report to see if we can find the
+problem with ENDS. Both FIRST and LAST successfully return values,
+so they are not the problem. Aha!! CONC takes as arguments two
+lists, not two atoms! The following is an example: 
+<pre>
+:(CONC 'GRATEFUL 'DEAD)
+
+    ** ERROR: BAD LIST ARG **
+      CONC :: ((QUOTE GRATEFUL ) (QUOTE
+      DEAD ) )
+
++()
+
+  NIL
+</pre>
+
+It looks like we'll have to figure out some way of making a list
+with the results of FIRST and LAST. 
+<p>How can we make an atom into a list? Think about what CONC does
+to the parentheses and about what we want the result to look like.
+Given "anatom" we want to see "(anatom)". We learned that the CONS
+function puts something into the beginning of a list. We can simply
+use CONS to put the atom into a NIL list. Do you see that this will
+give us the result that we need? If not, try it in Lisp.</p>
+
+<p>Now that we have figured out what the problem was, how do we fix
+up poor old ENDS? Why not write another help-function called
+MAKELIST that puts parentheses around the result of FIRST and LAST
+for us.</p>
+
+<pre>
+:(DEFINE (MAKELIST (LAMBDA (ATOM)
+
+:        (CONS ATOM NIL))))
+
+  MAKELIST
+</pre>
+
+Try it out. 
+<pre>
+:(MAKELIST 'DEADHEAD)
+
+  (DEADHEAD )
+</pre>
+
+Okay, that looks good. Now all we have to do is change ENDS to use
+MAKELIST as a help-function. [Note the proliferation of
+help-functions. It's better to have a lot of help-functions than
+not enough.] 
+<a name="list"></a>
+<pre>
+:(DEFINE (ENDS (LAMBDA (L)
+
+:   (CONC (MAKELIST (FIRST L)) (MAKELIST
+
+:(LAST L))))))))
+
+  ENDS
+
+:(ENDS '( I CANT BELIEVE I ATE THE WHOLE
+
+:THINK)))
+
+  (I THINK )
+
+:(ENDS INPUTLIST)
+
+  (GRATEFUL DEAD )
+</pre>
+
+How about that! It worked! It should be pointed out that Lisp
+already has a function called LIST which does exactly what MAKELIST
+does. We did it ourselves just for practise. 
+<p>A suggestion: Go back through what we just did. Type it all into
+the computer and carefully follow every step. We'll talk more about
+figuring out what happens when a function goes wrong [a process
+called <em>debugging</em>], and about changing help-functions [a
+process called <em>editing</em>] in later chapters. For now, just
+understand what went wrong and how we fixed it.</p>
+
+<p>The important concept in this chapter was the use of
+help-functions to make the job of other functions easier. Never be
+afraid to write a help function to perform some little task for
+you. As with the simple function definition in the last chapter,
+they can help you to organize your thoughts by naming mental jobs
+into understandable parts.</p>
+
+<p><a href="index.html">Contents</a> | <a href="6.html">Defining
+Your Own Functions</a> | <a href="8.html">How to Save the
+World</a></p>
+</body>
+</html>
+

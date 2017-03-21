@@ -1,0 +1,323 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<html>
+<head>
+<meta name="generator" content=
+"HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org">
+<title>LEARNING LISP - The P-Lisp Interpreter</title>
+</head>
+<body bgcolor="white">
+<h1>LEARNING LISP</h1>
+
+<p><a href="index.html">Contents</a> | <a href="26.html">ELIZA</a>
+| <a href="appendix.html">Appendix: The Lisp Editor</a></p>
+
+<h2>The P-Lisp Interpreter</h2>
+
+This chapter is intended for those who are curious about how a Lisp
+interpreter manages to do all the wonderful things described in the
+previous chapters. The chapter is a bit technical in nature and
+assumes the reader has a basic knowledge of bits, bytes, and
+similar aspects of computer internals. Although written
+specifically about the P-Lisp system, many of the concepts and
+methods employed here are used in many different Lisp systems. 
+<p>On its most fundamental level, a Lisp interpreter consists of
+little more than a set of routines to handle some fancy pointer
+manipulation (a pointer being an address of some location in
+memory). This simplicity is a direct result of the uniformity of
+Lisp data structures. As described below, the primary data
+structure, the list, maps quite easily onto an equivalent internal
+representation. The interpreter's simplicity is further enhanced by
+the non-necessity of a sophisticated parser, due to Lisp's rather
+simple syntax. Moreover, because Lisp is by definition a recursive
+language, the interpreter may be defined recursively as well,
+substantially reducing its complexity.</p>
+
+<a name="cell"></a> 
+<p>The P-Lisp workspace is divided into four-byte units called
+"cells." The first two bytes of a cell are called (naturally
+enough) the CAR of the cell, and the last two bytes are the cell's
+CDR. The cells are aligned on contiguous four-byte boundaries, so
+that the last two bits of a cell's address are always zero (see
+below). This is necessary because the last two bits may then be
+used as status flags or to describe a cell's contents.</p>
+
+<pre>
+       Cell 0       Cell 1       Cell 2       Cell 3
+   --------------------------------------------------------
+   ||     |     ||     |     ||     |     ||     |     ||
+   || CAR | CDR || CAR | CDR || CAR | CDR || CAR | CDR ||...
+   ||     |     ||     |     ||     |     ||     |     ||
+   --------------------------------------------------------
+Byte 0  1  2  3   4  5  6  7   8  9  A  B   C  D  E  F   10
+
+</pre>
+
+Figure 27.1. Memory Cells 
+<p>For example, the CAR or CDR of a cell will typically contain the
+address of another cell. Bit 1 of such a pointer is used to
+indicate the type of data it is pointing at. If the bit is set, the
+pointer (with the bit reset) points to an atom; if the bit is
+reset, the pointer points to a list. A list is represented as a
+linked list of cells. For example, the list (A B C) is represented
+simply as</p>
+
+<pre>
+---------     ---------     ---------
+|   |   |     |   |   |     |   |   |
+|   |  -----&gt; |   |  -----&gt; |   |NIL|
+| | |   |     | | |   |     | | |   |
+--|------     --|------     --|------
+  |             |             |
+  v             v             v
+Pointer       Pointer       Pointer
+to A          to B          to C
+</pre>
+
+Figure 27.2. List Representation 
+<a name="zero"></a>
+<p>The CDR of the last box is a pointer to the atom NIL. To make
+life easy for the interpreter, NIL is predefined to live at a
+location in memory where the hi-byte of its address is guaranteed
+to be zero (such an address is said to reside in "page zero" of
+memory). So, if the first byte of a pointer is zero, the
+interpreter assumes that the pointer points to NIL, regardless of
+the value of the second byte.</p>
+
+<p>Note in Figure 27.2 how the list (A B C) maps directly onto its
+internal representation. The CAR of (A B C) is A, and the CAR of
+the first cell of the list points to the atom A. The CDR of (A B C)
+is (B C), and the CDR of the first cell points to the internal
+representation of (B C). You should be able to see already that to
+evaluate (CAR '(A B C)), for example, the CAR subroutine simply
+returns the CAR of the first cell of (A B C).</p>
+
+<a name="literalatom"></a> 
+<p>P-Lisp supports three types of atoms: literal atoms, integer
+atoms, and floating-point atoms. Literal atoms are stored with the
+following format:</p>
+
+<pre>
+---------     ---------
+|   |   |     |   |   |
+|   |  -----&gt; |   |  -----&gt; Pointer to
+| | |   |     | | |   |     property list
+--|------     --|------     (could be NIL)
+  |             |
+  v             v
+Pointer to    Pointer to
+value         print-name list
+</pre>
+
+Figure 27.3. Literal Atom<br>
+<br>
+A literal atom's print name (the sequence of characters comprising
+the name of the atom) is stored in a linked list. The CAR of each
+cell in this list contains two characters of the atom's name, while
+the CDR points to the next cell in the list. The CAR of an atom's
+first cell points to the atom's value; if the atom has no value,
+this pointer is zero. Note that in the latter case both bytes are
+zero; this is necessary to distinguish the no-value case from the
+NIL-value case, which has only the hi-byte zero. 
+<p>As an example, the atom APPLE with the value FRUIT and the
+property list (COLOR RED) would have the following format:</p>
+
+<pre>
+---------     ---------     ---------     ---------
+|   |   |     |   |   |     |   |   |     |   |   |
+|   |  -----&gt; |   |  -----&gt; |   |  -----&gt; |   |NIL|
+| | |   |     | | |   |     | | |   |     | | |   |
+--|------     --|------     --|------     --|------
+  |             |             |             |
+  v             |             v             v
+                |
+Pointer to      |           Pointer to    Pointer to
+FRUIT           |           COLOR         RED
+                v
+              ---------     ---------     ---------
+              |   |   |     |   |   |     |   |   |
+              |A P|  -----&gt; |P L|  -----&gt; |E  |NIL|
+              |   |   |     |   |   |     |   |   |
+              ---------     ---------     ---------
+</pre>
+
+FIgure 27.4. Literal Atom<br>
+<br>
+Numeric atoms are distinguished from literal atoms by having the
+CDR of the first cell NIL, with the CAR pointing to the remainder
+of the atom. An integer atom has the following format: 
+<pre>
+---------
+|   |   |
+|   |NIL|
+| | |   |
+--|------     ---------
+  |           |   |   |
+  ----------&gt; |   |NIL|
+              |   |   |
+              ---------
+                ^
+                |
+                |
+                --- 16-bit value
+</pre>
+
+Figure 27.5. Integer Atom<br>
+<br>
+The 16-bit value is in two's-complement form. The NIL in the CDR of
+the second cell distinguishes integer atoms from floating-point
+atoms. A floating-point atom has the following format: 
+<pre>
+---------
+|   |   |
+|   |NIL|
+| | |   |
+--|------      ---------     ---------
+  |            | : |   |     |     : |
+  -----------&gt; | : |  -----&gt; |     : |
+               | : |   |     |     : |
+               ---------     ---------
+                 ^               ^
+                 |               |
+                 |               |
+               Exponent &amp;     Mantissa &amp;
+               mantissa       sign byte
+</pre>
+
+Figure 27.6. Floating-point Atom<br>
+<br>
+Floating-point atoms are stored in unpacked normalized exponential
+form. The mantissa is four bytes in length, providing ten
+significant digits. 
+<a name="oblist"></a>
+<p>All literal atoms, including the built-in atoms (T, NIL, and the
+built-in functions), are organized into a single list within the
+workspace, called the OBLIST. Literal atoms are always unique; for
+some atom A, there can be only one instance of A in the workspace.
+All references to this atom are pointers to the single location
+where A resides. Numeric atoms, however, are not unique; there can
+be any number of instances of a given numeric value.</p>
+<a name="read"></a>
+<p>When the Lisp READ routine reads a s-expr, the s-expr is parsed
+and an internal representation of the s-expr is built. For every
+literal atom, the interpreter scans the OBLIST for that atom,
+comparing the atom's print name to those of the atom on the OBLIST.
+If the atom is found, the pointer to the atom (with the atom bit
+set) is returned; otherwise, an internal representation of the new
+atom is built and added to the end of the OBLIST, and a pointer to
+the new atom is returned. If READ reads a numeric atom, it simply
+builds a new atom (integerized, if possible) and returns its
+pointer. Although unique numeric atoms would provide a substantial
+memory savings, vital for any microcomputer implementation, the
+result would be a severe degradation of performance in any
+application involving extensive calculations (consider that, if
+numeric atoms were unique, the OBLIST would have to be scanned
+after every calculation to determine if the result already lives on
+the OBLIST).</p>
+
+<p>After READ builds the linked list of cells representing the
+just-read s-expr, a pointer to the list is passed on to the
+evaluator, EVAL. EVAL determines if the s-expr is an atom or a list
+by the status of the atom bit. If the bit is set, the s-expr is an
+atom, and EVAL evaluates it in the following way: If the atom is
+numeric (indicated by the CDR of the first cell being NIL), EVAL
+just returns the pointer to the atom as the result. In the case of
+a literal atom, EVAL first scans the environment chain (see
+discussion on environment chain below) for the atom, and returns
+the corresponding value if found. If the atom is not on the chain,
+EVAL uses the atom's OBLIST entry, returning the CAR of the first
+cell as its value.</p>
+
+<p>If EVAL is handed a list to evaluate, the CAR of the first cell
+is used to determine the function to be applied. If the pointer
+points to an atom, EVAL scans the property list of the atom for the
+EXPR property. If found, the corresponding property value, the
+function definition, is evaluated, with the CDR of the first cell
+handed to EVAL used as the pointer to the argument list. If EVAL
+does not find the EXPR property, the property list is scanned
+again, this time searching for the SUBR property. If this property
+is found, the corresponding property value is used as the address
+of the interpreter subroutine that evaluates this SUBR. This
+routine is called, passing to it the pointer to the argument list.
+If the CAR of the first cell handed to EVAL points to a list, EVAL
+calls itself to evaluate this list, applying the end result of this
+evaluation (which must be an EXPR or SUBR) to the argument
+list.</p>
+
+<p>The SUBR routines themselves consist primarily of building new
+cells, deleting old cells, and moving pointers around. Consider,
+for example, the function CONS. Recall that (CONS 'A '(B)) creates
+a new list (A B), the CAR of which is A, and the CDR of which is
+(B). This is accomplished in the interpreter by simply getting a
+new cell and storing the pointer to A in the CAR and the pointer to
+(B) in the CDR. The pointer to the new cell now points to the
+result, the list (A B).</p>
+
+<p>The environment chain contains the active LAMBDA-bindings during
+a given evaluation. LAMBDA-bindings are stored as cell pairs; the
+CAR of the first cell points to the formal argument, and the CAR of
+the second cell points to the value bound to the formal argument.
+The end of the environment is marked by a NIL formal argument, with
+the CDR of that cell pointing to the next environment on the chain.
+Below is a sample environment chain.</p>
+
+<pre>
+---------     ---------     ---------     ---------     ---------
+|   |   |     |   |   |     |   |   |     |   |   |     |   |   |
+|   |  -----&gt; |   |  -----&gt; |   |  -----&gt; |   |  -----&gt; |NIL|   |
+| | |   |     | | |   |     | | |   |     | | |   |     |   | | |
+--|------     --|------     --|------     --|------     ------|--
+  |             |             |             |                 |
+  v             v             v             v                 v
+Formal X      Value bound   Formal Y      Value bound      Pointer
+              to X                        to Y             to next
+                                                           environment
+</pre>
+
+Figure 27.7. Environment Chain<br>
+<br>
+Whenever an environment is exited (for example, leaving a PROG or a
+LAMBDA-expression), the cells in the environment are discarded and
+the environment chain pointer is set to point to the next
+environment on the chain. Whenever a new environment is entered (a
+new invocation of a LAMBDA-expression or PROG), a new environment
+is built and attached to the head of the environment chain. <a
+name="garbage"></a> 
+<p>During the course of an evaluation, cells are constantly being
+used and discarded as required by the interpreter, for example, by
+building and discarding environments. Initially, all free cells in
+a workspace are organized into a linked list called the free-space
+list. New cells are taken from this list as needed by the
+interpreter. When the interpreter runs out of new cells, a routine
+called the Garbage Collector is invoked. The Garbage Collector
+scans the entire workspace, collecting all discarded cells into a
+new free-space list. This collection is accomplished in two phases,
+the Mark phase and the Sweep phase. During the Mark phase, all
+cells that are currently "active," that is, those cells that are
+attached to the OBLIST or those that are part of the environment or
+the recursion stack, are marked as active. This is done by setting
+the garbage collector bit, bit 0, of the CDR of each cell. Cells
+that are not marked at the end of the Mark phase cannot be reached
+via a pointer path either through the OBLIST, the environment
+chain, or the recursion stack; these cells are considered free and
+reusable. During the Sweep phase of garbage collection, the free
+cells are collected into a new free-spacelist. This is accomplished
+by scanning the workspace from top to bottom. All cells that are
+marked are simply unmarked, while cells that are initially unmarked
+are added to the freespace list. After this phase is completed, the
+interpreter continues processing where it left off when the Garbage
+Collector was invoked.</p>
+
+<h3>SUMMARY</h3>
+
+In very broad terms we have described the basic workings of the
+P-Lisp interpreter. A more detailed examination would probably be
+beyond the scope of this book. However, you should now be able to
+reread the tutorial with a better understanding of how and why
+things work the way they do. If you wish to know more about the
+design of Lisp interpreters in general, John Allen's "Anatomy of
+Lisp" is an excellent source for such information. 
+<p><a href="index.html">Contents</a> | <a href="26.html">ELIZA</a>
+| <a href="appendix.html">Appendix: The Lisp Editor</a></p>
+</body>
+</html>
+

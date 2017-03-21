@@ -1,0 +1,214 @@
+
+*****************************************************************
+
+(trace fib)	;; trace fibonacci routine
+(fib 10)
+
+(trace)		;; untraces everything
+
+*****************************************************************
+did a rewrite on cps-function +
+other routines still using fexpr like approach
+
+weird interaction with apply and map , its really weird
+
+how can i trace compiled routine ??
+
+what if we want to extend + operator to handle rectangles ??
+
+
+
+
+*****************************************************************
+*****************************************************************
+          (load "repl.scm")
+
+file paths are absolute
+
+*****************************************************************
+*****************************************************************
+
+core/quasiquote.scm		bawden system
+
+core/macro-expander.scm		defmacro like macro expander
+				fine as long as not trying to redefine primitives
+
+
+macros/				directory contains common macros
+macros/and
+macros/or
+
+
+util/				directory contains common utility functions 
+util/not			negation 
+util/list			list
+util/append
+util/map			map
+
+
+
+********************************************************************
+
+1 : printing circular linked lists
+
+2 : unique datatypes that are seperate to primitives
+
+3 : hygienic macros
+
+4 : 
+
+
+***** Outline ********
+CPS evaluator
+
+what if error occurs ?
+example 
+  (car 5)
+this will crash ordinary procedure , since 5 is not a pair.
+cause us to end up in the debugger.
+
+eval-car
+(car X) , expects X is a pair .
+
+ 
+(procedure? X) : is X a procedure ? 
+
+(eof-object? X) : is X an end of file object ?
+
+
+
+
+********************************************************************
+
+
+
+fexprs
+-----------------------
+fexprs do not evaluate their arguments on entry to the body of fexpr
+
+(define myquote (fexpr (n) n))
+
+(myquote non-existent-symbol)
+> non-existent-symbol
+
+fexprs are like a runtime macro
+fexprs are unreliable so far... something do with wrong environment ...
+
+
+types and car cdr
+-------------------
+if make new type say APOLLO type
+i dont want to be able to go in and alter 
+
+
+types
+----------
+ability to construct new types that are distinct from all other types is
+very important.
+this is achieved using a simple mechanism.
+
+every object in the system has a header - currently this is just a CONS
+every object is assigned a type by attaching a type-unique label
+the main idea is that the LABEL tells the system , this THING is of this TYPE
+and not any other type.
+a value has a TYPE , and that TYPE is unique.
+a variable can be bound to a value , and then it is said to have type TYPE.
+
+(environment? (current-environment))
+
+
+
+environment
+-----------
+environment is represented as a flat list
+for example
+env = (a 1 b 2 c 3 d 4)
+
+search environment
+otherwise look at next binding (cdr (cdr env))
+to move to next binding we need to take two steps.
+
+the advantage of the flat environment is that set-car! can easily change a binding.
+
+printing the environment is problematic due to circular lists , printing incurs infinite loops.
+
+
+define
+------
+define allows us to define bindings of unlimited extent.
+
+(define f 5)
+(define (f x) (+ x x))
+
+if environment does not yet contain a binding , then the environment needs to be altered.
+
+case 1 : toplevel define
+here we want to 
+
+case 2 : nested define -- this is really letrec , as common nested defines want to see
+each other in scope.
+here we do not want the nested define to pollute outer environment when nested scope is exited.
+this is important.
+
+extended destructively but only at the head of the environment.
+
+this allows for nested defines to act like a letrec
+nested defines act like set! instead of letrecs , this is not correct.
+
+f1: (define f 1)
+f2: (define f 2)
+does f1 clobber f2 define ?
+
+parameter lists
+---------------
+flat parameter list
+ > (define (f x y z) (list 'x x 'y y 'z z))
+ > (f 1 2 3)
+ ==>  (x 1 y 2 z 3)
+
+dotted pair parameter list
+::> (define (f x y . z) (list 'x x 'y y 'z z))
+==> <lambda>
+::> (f 1 2 3 4 5)
+ ==> (x 1 y 2 z (3 4 5))
+
+symbol parameter list
+   : (define f (lambda args (list 'args args)))
+   : (f 1 2 3 4 5)
+   > (args 1 2 3 4 5)
+
+lambda
+-------
+save typing by calling it fn instead
+     (define twice (fn (x) (+ x x)))
+
+if we let code is data , i see twice function as (lambda (x) (+ x x))
+but then i should be able to just put it together and get the same result      
+   (list 'lambda '(x) '(+ x x))
+in this sense , there is nothing magical about lambda
+
+ (lambda? '(lambda (x) (+ x x)))
+> #t
+
+if we allow this it becomes hard to detect when using programming in the large.
+so build mechanism on top of this.
+
+dynamic variables
+-----------------
+dynamic variables denoted by ears *..var..*
+dynamic variables are looked up in the dynamic environment rather than in the environment ?
+
+letrecs are macros let and set!
+let* are macros let
+let can be just lambda , but less efficient like that
+
+trying to see how can get flexible system
+
+the sicp way of describing execution is nice
+
+figured out callcc eventually.
+
+going to bed.
+
+
+

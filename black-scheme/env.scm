@@ -2,19 +2,24 @@
 ; Environment
 ;
 (define empty-env '(()))
+
 (define (make-pairs params args)
   (cond ((null? params) '())
 	((symbol? params) (list (cons params args)))
 	(else
 	 (cons (cons (car params) (car args))
 	       (make-pairs (cdr params) (cdr args))))))
+
 (define (extend env params args)
   (cons (make-pairs params args) env))
+
 (define (can-receive? params args)
   (cond ((null? params) (null? args))
 	((not (pair? params)) #t)
 	((pair? args) (can-receive? (cdr params) (cdr args)))
 	(else #f)))
+
+
 (define (get var env)
   (if (null? env)
       '()
@@ -22,16 +27,19 @@
 	(if (pair? pair)
 	    pair
 	    (get var (cdr env))))))
+
 (define (set-value! var value env)
   (let ((pair (get var env)))
     (if (pair? pair)
 	(set-cdr! pair value)
 	(error 'set-value!: var 'is 'unbound))))
+
 (define (define-value var value env)
   (let ((pair (assq var (car env))))
     (if (pair? pair)
 	(set-cdr! pair value)
 	(set-car! env (cons (cons var value) (car env))))))
+
 (define (search value env)
   (define (reverse-assq value env)
     (cond ((null? env) '())
@@ -43,6 +51,7 @@
 	(if (pair? pair)
 	    pair
 	    (search value (cdr env))))))
+
 (define (copy env)
   (define (copy-local env)
     (if (null? env)
@@ -54,6 +63,8 @@
       '()
       (cons (copy-local (car env))
 	    (copy (cdr env)))))
+
+
 (define (get-global-env env)
   (define (get-global-env-local env)
     (if (null? (cdr env))

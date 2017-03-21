@@ -1,0 +1,111 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<html>
+<head>
+<meta name="generator" content=
+"HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org">
+<title>LEARNING LISP - Maps</title>
+</head>
+<body bgcolor="white">
+<h1>LEARNING LISP</h1>
+
+<p><a href="index.html">Contents</a> | <a href="16.html">Scope
+Considerations</a> | <a href="18.html">Isplay Ogrammingpray</a></p>
+
+<h2>Maps</h2>
+
+We are going to make life with Lisp much simpler. The careful
+reader may have noticed some patterns in the recursive Lisp
+functions that we have been defining. Lisp provides built-in
+functions to perform a number of these patterns. 
+<a name="mapcar"></a>
+<p>Suppose that we want to perform the same operation on each
+element of a list in succession. There is a Lisp function to do
+this: MAPCAR. Let's first try an example.</p>
+
+<pre>
+:(MAPCAR 'PRINT'(ALL THE NEWS THAT FITS))
+  ALL
+  THE
+  NEWS
+  THAT
+  FITS
+
+  (ALL THE NEWS THAT FITS )
+</pre>
+
+What happened? Well, we used the PRINT on each element of the list.
+This caused the first five lines of the result. [Each PRINT took up
+one line.] Lisp then collected all of the results of the PRINTs
+into a list and returned this collection as the result of the
+expression. We normally won't want to use the PRINT function on
+each element of a list; let's try some more interesting examples.
+<a name="int"></a> INT is a new Lisp function that returns the
+value of its argument preceding the decimal point, if any. For
+example, (INT 33.89) is 33. Now for EVEN. It is a predicate that
+works by dividing the argument by two and determining whether that
+result is the same as the integer part of the number divided by 2.
+Here's EVEN: 
+<pre>
+:(DEFINE (EVEN (LAMBDA (N)
+
+: (EQUAL (DIV N 2) (INT (DIV N 2)))))))
+
+  EVEN
+</pre>
+
+Now we can use MAPCAR to apply EVEN to all the members of a list. 
+<pre>
+:(MAPCAR 'EVEN '(0 1 2 3 4 ))
+
+  (T NIL T NIL T )
+
+:(MAPCAR 'LENGTH '(() (A) (B B) (C D E)))
+
+  (0 1 2 3 )
+
+:(MAPCAR 'REVERSE '((ARE WE) (IN NOT)
+
+:(TOTO KANSAS)))))
+
+  ((WE ARE ) (NOT IN ) (KANSAS TOTO ) )
+</pre>
+
+The exact definition for MAPCAR is as follows: As its arguments
+MAPCAR takes a function name and a list. First, use the given
+function on the CAR of the list. Then continue using the same
+function with the CDR of the list. When finished, make a list of
+all the individual results. 
+<p>In the first example above, Lisp applied the function EVEN to
+each element of the list: "(0 1 2 3 4)". In the second example,
+LENGTH was used on each element of its associated list. In the last
+example, we used the REVERSE function on each element. Note that
+this is sort of the complement of the regular use of the REVERSE
+function which REVERSEs all of the top level elements of a list.
+Here we REVERSEd the elements of each sublist but left the order of
+sublists intact.</p>
+
+<p>A recursive Lisp function equivalent to the first example is
+presented below.</p>
+
+<pre>
+:(DEFINE (EVENMAP (LAMBDA (L)
+
+:  (COND
+
+:  (( NULL L) NIL)
+
+:   (T (CONS (EVEN (CAR L))
+
+:   (EVENMAP (CDR L))))))))
+  EVENMAP
+:(EVENMAP '(0 1 2 3 4 5 6 7 8)
+:))
+
+  (T NIL T NIL T NIL T NIL T )
+</pre>
+
+<p><a href="index.html">Contents</a> | <a href="16.html">Scope
+Considerations</a> | <a href="18.html">Isplay Ogrammingpray</a></p>
+</body>
+</html>
+

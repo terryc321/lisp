@@ -1,0 +1,250 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<html>
+<head>
+<meta name="generator" content=
+"HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org">
+<title>LEARNING LISP - More Lists</title>
+</head>
+<body bgcolor="white">
+<h1>LEARNING LISP</h1>
+
+<p><a href="index.html">Contents</a> | <a href="2.html">Lists, CAR
+and CDR</a> | <a href="4.html">Atoms and Values</a></p>
+
+<h2>More Lists</h2>
+
+In the previous chapter we learned all about taking lists apart. We
+will now explore the domain of joining and extending lists. The
+most important Lisp functions for joining lists are CONS and CONC.
+[These names stand for CONStruct and CONCatenate. These names are a
+little more reasonable than CAR and CDR, but not much.] <a name=
+"cons"></a> 
+<p>Let's first play with the CONS function.</p>
+
+<pre>
+:(CONS 'A '(B C))
+
+   (A B C)
+
+:(CONS '(A) '(B C))
+
+   ((A) B C)
+
+:(CONS '() '(B C))
+
+   (NIL B C)
+
+:(CONS '(B C) '())
+
+   ((B C))
+
+:(CONS '(A B) '(C D))
+
+   ((A B) C D)
+
+:(CONS 'BACON '((LETTUCE) ((GAZELLE))))
+
+   (BACON (LETTUCE) ((GAZELLE)))
+
+:(CONS 'BACON '())
+
+   (BACON)
+</pre>
+
+The explanation of CONS is a little tricky, so hang on. CONS takes
+its first argument [which may be either an atom or a list] and
+inserts it just after the first left parenthesis in the second
+argument. This second argument should be a list. CONS will actually
+connect things onto atoms as: "(cons 'a 'b)", but this creates a
+special form of list called a dotted pair. Don't worry about dotted
+pairs for now; Lisp will print them, but they are not used very
+often, nor are they very important. 
+<p>If you have a list of atoms, then you can use CONS to add
+another atom on the front of the list [as in the first example].
+You can see that if we try to add an empty list [NIL or ()] to the
+front of the list, CONS will do it. If we try to add a list onto
+the front of a "()", then the "()" is treated as a list [just a set
+of balanced parentheses].</p>
+
+<p>Here is a visualization of exactly what CONS will try to do:</p>
+
+<p><img src="imgs/3cons.png" width="391" height="121" alt=
+"an illustration of the CONS function"></p>
+
+CONS is very important. You should make sure that you throughly
+understand how it works before proceeding. <a name="conc"></a> 
+<p>Good. Well, the next magical function is called CONC. Again,
+let's just play around with CONC before discussing it.</p>
+
+<pre>
+:(CONC '(IMA LIST) '(URA LIST))
+
+  (IMA LIST URA LIST )
+
+:(CONC '((NUMBER ONE)) '(((NUMBER TWO))))
+
+  ((NUMBER ONE ) ((NUMBER TWO ) ) )
+
+:(CONC '(READY SET GO) '())
+
+  (READY SET GO )
+
+:(CONC '() '(GO SET DOWN))
+
+  (GO SET DOWN)
+
+:(CONC '() '())
+
+  NIL
+</pre>
+
+What does CONC do? [Can you answer that question now?] The CONC
+function joins two lists by sticking the first one onto the front
+of the second one and then removing one, and only one, pair of ")("
+from the middle. CONCing "(a)" with "(b)" will first form "(a)(b)".
+You then remove the ")(" from the middle and you are left with the
+result "(a b)". Note that putting the lists together does not join
+"a" and "b". In other words, you don't get "(ab)". Both the
+arguments to and the result of a CONC are lists. The following
+shows what happens when you try to CONC atoms. 
+<pre>
+:(CONC 'A '(B C))
+
+    ** ERROR: BAD LIST ARG **
+      CONC :: ((QUOTE A ) (QUOTE (B C ) )
+      )
+
++()
+
+  NIL
+
+:(CON '(B C) 'A)
+
+    ** ERROR: BAD LIST ARG **
+      CONC :: ((QUOTE (B C ) ) (QUOTE A )
+      )
+
++()
+
+  NIL
+</pre>
+
+Moral of the story: CONS can deal with atoms, CONC can't. CONS is
+the opposite of a CAR and a CDR. 
+<pre>
+:(cons (car ' (i wanna go home)) (cdr '(i wanna go home)))
+  (i wanna go home)
+</pre>
+
+Amazing! We took a list apart using CAR and CDR and then turned
+right around and put the list back together with CONS! Make sure
+you understand what is going on in the above example, and be sure
+you can account for all the parentheses. Let's try using a CONC and
+a CDR for the CONS and the CAR. Note that we do not get back the
+list we started with: 
+<pre>
+:(conc (cdr ' (humpty dumpty)) (cdr ' (humpty dumpty)))
+  (dumpty dumpty)
+</pre>
+
+Using two CDR's we cannot put "(humpty dumpty)" back together
+again. This shouldn't be much of a surprise since we threw out the
+CAR of the list. 
+<a name="levelelementnested"></a>
+<p>A quick note on the structure of lists: if a list contains
+another list as an element, then the inner list is said to be
+nested in the outer one. Also, it is often necessary to discuss
+top-level elements and levels of nesting. Here is a list with its
+top-level elements numbered:</p>
+
+<pre>
+(aka (googoo dada) waka)
+---- ------------- -----
+  1        2         3
+</pre>
+
+Thus, there are 3 top level elements. The atoms "googoo" and "dada"
+are said to be more deeply nested: they are not on the top level. 
+<p>What good are lists? Why would you want to use these CAR'S,
+CDR's, CONS's and CONC's on lists? Answer: We can use lists to
+store data and the list provides us with a very flexible data
+structure. Let's spend some time investigating how lists can
+represent different kinds of things.</p>
+
+<p>Suppose you have a bunch of friends and their phone numbers and
+you want to organize them. What is the important concept here? Each
+person will usually have just one phone number associated with
+him/her. Let's represent the pair (person, number) as a two element
+list: (person number). Your phone book then becomes a list of two
+element lists. It might look like this:</p>
+
+<pre>
+((bill 1234567) (simon 5551212) (jane 2019999))
+</pre>
+
+As a numerical example of data structure, consider a polynomial:
+12(x+2)+17. 
+<p>How can we represent this in Lisp? There are lots of ways. We
+might use the built-in Lisp functions for arithmetic operations to
+form an equivalent expression. The above polynomial is represented
+as</p>
+
+<pre>
+(ADD (MULT 12 (ADD x 2) ) 17)
+</pre>
+
+We are going to return to polynomials of this type in later
+chapters and show you how to manipulate them in meaningful ways.
+Before that, however, we are going to have to see some more of the
+Lisp language. 
+<h3>Exercises</h3>
+
+Aha! Now we know enough to do something of interest: 
+<ol>
+<li>Given the phonebook data structure mentioned above, write an
+expression which will make a list with those name/number pairs in
+reverse order. That is: ((jane 2019999) (simon 5551212) (bill
+1234567)). Remember to quote things correctly. You'll have to
+repeat the list a lot, so you may want to try a smaller
+example.</li>
+
+<li>Do the same thing as the previous exercise. Make it come out
+the same way but with the names and numbers exchanged.</li>
+</ol>
+
+<h3>Answers</h3>
+
+<ol>
+<li>Let L represent the phone list 
+<pre>
+((BILL 1234567) (SIMON 5551212) (JANE 2019999))
+</pre>
+
+An expression to reverse this list is 
+<pre>
+(CONS (CADDR L) (CONS (CADR L) (CONS (CAR L) '())))
+</pre>
+</li>
+
+<li>We want to do the same thing we did for (1) except reverse each
+entry. The expression to reverse all three entries and the entire
+list is: 
+<pre>
+(CONS
+  (CONS (CADR (CADDR L)) (CONS (CAR (CADDRL)) '()))
+  (CONS
+        (CONS (CADR (CADR L)) (CONS (CAR (CADR L)) '()))
+        (CONS
+              (CONS (CADR (CAR L)) (CONS (CAR (CAR L)) '()))
+              '())
+        )
+  )
+</pre>
+</li>
+</ol>
+
+<p><a href="index.html">Contents</a> | <a href="2.html">Lists, CAR
+and CDR</a> | <a href="4.html">Atoms and Values</a></p>
+</body>
+</html>
+

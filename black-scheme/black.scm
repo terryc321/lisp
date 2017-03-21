@@ -33,16 +33,23 @@
 	((eq? (car exp) 'cons-stream)
 				 (meta-apply 'eval-cons-stream exp env cont))
 	(else (meta-apply 'eval-application exp env cont))))
+
 (define (eval-application exp env cont)
   (meta-apply 'eval-list exp env
 	      (lambda (l) (meta-apply 'base-apply (car l) (cdr l) env cont))))
+
 (define (eval-var exp env cont)
   (let ((pair (get exp env)))
     (if (pair? pair)
 	(meta-apply cont (cdr pair))
 	(meta-apply 'my-error
 		    (list 'eval-var: 'unbound 'variable: exp) env cont))))
-(define (eval-quote exp env cont) (meta-apply cont (car (cdr exp))))
+
+
+(define (eval-quote exp env cont)
+  (meta-apply cont (car (cdr exp))))
+
+
 (define (eval-if exp env cont)
   (let ((pred-part (car (cdr exp)))
 	(then-part (car (cdr (cdr exp))))
@@ -67,6 +74,8 @@
 				       env cont)
 			   (meta-apply 'eval-cond (cdr clauses)
 				       env cont)))))))
+
+
 (define (eval-define exp env cont)
   (if (pair? (car (cdr exp)))
       (let ((var (car (car (cdr exp))))
@@ -83,6 +92,8 @@
 		    (lambda (data)
 		      (define-value var data env)
 		      (meta-apply cont var))))))
+
+
 (define (eval-set! exp env cont)
   (let ((var (car (cdr exp)))
 	(body (car (cdr (cdr exp)))))
@@ -95,11 +106,17 @@
 			(meta-apply 'my-error
 				    (list 'eval-set!: 'unbound 'variable var)
 				    env cont)))))))
+
+
 (define lambda-tag (cons 'lambda 'tag))
+
+
 (define (eval-lambda exp env cont)
   (let ((lambda-body (cdr (cdr exp)))
 	(lambda-params (car (cdr exp))))
     (meta-apply cont (list lambda-tag lambda-params lambda-body env))))
+
+
 (define (eval-begin body env cont)
   (define (eval-begin-local body)
     (if (null? (cdr body))
@@ -109,6 +126,8 @@
   (if (null? body)
       (meta-apply 'my-error '(eval-begin: null body) env cont)
       (eval-begin-local body)))
+
+
 (define (eval-let pairs body env cont)
   (let ((params (map car pairs))
 	(args (map (lambda (x) (car (cdr x))) pairs)))
@@ -117,6 +136,7 @@
 		  (meta-apply 'eval-begin body
 			      (extend env params operand)
 			      cont)))))
+
 (define (eval-let* pairs body env cont)
   (if (null? pairs)
       (meta-apply 'eval-begin body env cont)
@@ -124,6 +144,7 @@
 		  (meta-apply 'eval-let* (cdr pairs) body
 			      (extend env (list (car (car pairs))) (list arg))
 			      cont)))))
+
 (define (eval-letrec pairs body env cont)
   (define (set-value-list! params operand env)
     (if (null? params)
@@ -137,6 +158,30 @@
 		  (lambda (operand)
 		    (set-value-list! params operand letrec-env)
 		    (meta-apply 'eval-begin body letrec-env cont))))))
+
+
+(define (eval-and body env cont)
+  (cond ((null? body) (meta-apply cont #t))
+	((null? (cdr body))
+	 (meta-apply 'base-eval (car body) env cont))
+	(else
+	 (meta-apply 'base-eval (car body) env
+		     (lambda (result)
+		       (if result
+			   (meta-apply 'eval-and (cdr body) env cont)
+			   (meta-apply cont result)))))))
+
+(define (eval-or body env cont)
+  (if (null? body)
+      (meta-apply cont #f)
+      (meta-apply 'base-eval (car body) env
+		  (lambda (result)
+		    (if result
+			(meta-apply cont result)
+			(meta-apply 'eval-or (cdr body) env cont))))))
+
+
+
 (define (eval-EM exp env cont)
   (lambda (Mcont)
     (let ((meta-env (car (head Mcont)))
@@ -149,12 +194,19 @@
 		     ((meta-apply cont ans)
 		      (cons-stream (head Mcont) Mcont2)))))
 	 meta-Mcont))))
+
+;; (
 (define (eval-primitive-EM exp env cont)
   (meta-apply 'base-eval (car (cdr exp)) env
 	      (lambda (body) (meta-apply 'eval-EM (list 'EM body) env cont))))
+
+
+;; (exit A) --> (my-error ev_A env cont)
 (define (eval-exit exp env cont)
   (meta-apply 'base-eval (car (cdr exp)) env
 	      (lambda (x) (meta-apply 'my-error x env cont))))
+
+
 (define (eval-list exp env cont)
   (if (null? exp)
       (meta-apply cont '())
@@ -163,6 +215,22 @@
 		    (meta-apply 'eval-list (cdr exp) env
 				(lambda (val2)
 				  (meta-apply cont (cons val1 val2))))))))
+
+
+
+
+(define (eval-load exp env cont)
+  (define port (open-input-file (car (cdr exp))))
+  (define (load-local)
+    (let ((input (read port)))
+      (if (eof-object? input)
+	  (begin (close-input-port port)
+		 (meta-apply cont 'done))
+	  (meta-apply 'base-eval input env
+		      (lambda (value) (load-local))))))
+  (load-local))
+
+
 (define (base-apply operator operand env cont)
   (cond ((procedure? operator)
 	 (cond ((eq? operator map)
@@ -207,8 +275,13 @@
 			   env cont))))
 	(else
 	 (meta-apply 'my-error (list 'Not 'a 'function: operator) env cont))))
+
+
 (define old-env 0)
 (define old-cont 0)
+
+
+;; Mcont is a meta continuation
 (define (my-error exp env cont)
   (lambda (Mcont)
     (let ((meta-env (car (head Mcont)))
@@ -217,43 +290,23 @@
       (set-value! 'old-env env meta-env)
       (set-value! 'old-cont cont meta-env)
       ((meta-apply meta-cont exp) meta-Mcont))))
-(define (eval-load exp env cont)
-  (define port (open-input-file (car (cdr exp))))
-  (define (load-local)
-    (let ((input (read port)))
-      (if (eof-object? input)
-	  (begin (close-input-port port)
-		 (meta-apply cont 'done))
-	  (meta-apply 'base-eval input env
-		      (lambda (value) (load-local))))))
-  (load-local))
-(define (eval-and body env cont)
-  (cond ((null? body) (meta-apply cont #t))
-	((null? (cdr body))
-	 (meta-apply 'base-eval (car body) env cont))
-	(else
-	 (meta-apply 'base-eval (car body) env
-		     (lambda (result)
-		       (if result
-			   (meta-apply 'eval-and (cdr body) env cont)
-			   (meta-apply cont result)))))))
-(define (eval-or body env cont)
-  (if (null? body)
-      (meta-apply cont #f)
-      (meta-apply 'base-eval (car body) env
-		  (lambda (result)
-		    (if result
-			(meta-apply cont result)
-			(meta-apply 'eval-or (cdr body) env cont))))))
+
+
+
 (define delay-tag (cons 'delay 'tag))
+
 (define (eval-delay exp env cont)
   (let ((delay-body (car (cdr exp))))
     (meta-apply cont (list delay-tag delay-body env))))
+
 (define (eval-cons-stream exp env cont)
   (let ((car-part (car (cdr exp)))
 	(cdr-part (car (cdr (cdr exp)))))
     (meta-apply 'base-eval (list 'cons car-part (list 'delay cdr-part))
 			   env cont)))
+
+
+
 
 ;;
 ;; Primitives
@@ -264,11 +317,15 @@
       (meta-apply 'base-apply fun (list (car lst)) env
 		  (lambda (x) (meta-apply 'eval-map fun (cdr lst) env
 		  (lambda (y) (meta-apply cont (cons x y))))))))
+
+
 (define (primitive-procedure? . operand)
   (let ((arg (car operand)))
     (or (procedure? arg)
 	(and (pair? arg)
 	     (eq? (car arg) lambda-tag)))))
+
+
 (define (filter arg)
   (if (pair? arg)
       (cond ((eq? (car arg) lambda-tag)
@@ -282,12 +339,16 @@
 	     (cons (filter (car arg))
 		   (filter (cdr arg)))))
       arg))
+
 (define (primitive-display . args)
   (display (filter (car args))))
+
 (define (primitive-write . args)
   (write (filter (car args))))
+
 (define (primitive-pp . args)
   (pp (filter (car args))))
+
 (define (primitive-print lst depth length)
   (define (print-sub lst d l top?)
     (cond ((pair? lst)
@@ -307,6 +368,8 @@
 				(display ")")))))))
 	  (else (display lst))))
   (print-sub lst depth length #t))
+
+
 ;;
 ;; Meta-apply
 ;;
@@ -327,6 +390,8 @@
 	    (else
 	     ((meta-apply 'base-apply operator operand meta-env meta-cont)
 	      meta-Mcont))))))
+
+
 ;;
 ;; Initial Continuation
 ;;
@@ -342,9 +407,12 @@
 		    (meta-apply 'init-cont env level (+ turn 1)
 				(lambda (cont) (meta-apply cont ans))))))))
 
+
 (define (run env level answer)
   (meta-apply 'init-cont env level 0
 	      (lambda (cont) (meta-apply cont answer))))
+
+
 ;;
 ;; Environment
 ;;
@@ -364,6 +432,8 @@
 	make-pairs extend can-receive? get set-value! define-value
 	search copy
 ))
+
+
 ;;
 ;; Initial Environment
 ;;
@@ -458,6 +528,8 @@
   (cons 'old-env		old-env)
   (cons 'old-cont		old-cont)
 )))
+
+
 ;;
 ;; Meta-level Initial Continuation
 ;;
@@ -466,6 +538,7 @@
   (display "New level loaded.") (newline)
   (lambda (result)
     (meta-apply 'run env level result)))
+
 ;;
 ;; Initial Meta-Continuation
 ;;
@@ -473,6 +546,7 @@
   (let ((env (copy init-env)))
     (cons-stream (list env (meta-init-cont env level supplied-env))
 		 (init-Mcont (+ level 1) env))))
+
 ;;
 ;; Start up
 ;;
@@ -482,4 +556,6 @@
 	 (cont (car (cdr (head base-Mcont))))
 	 (Mcont (tail base-Mcont)))
     ((cont 'start) Mcont)))
+
+
 

@@ -1,0 +1,408 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<html>
+<head>
+<meta name="generator" content=
+"HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org">
+<title>LEARNING LISP - Isplay Ogrammingpray</title>
+</head>
+<body bgcolor="white">
+<h1>LEARNING LISP</h1>
+
+<p><a href="index.html">Contents</a> | <a href="17.html">Maps</a> |
+<a href="19.html">FEXPRS: Unevaluating Functions</a></p>
+
+<h2>Isplay Ogrammingpray</h2>
+
+You now have all the tools needed to solve some reasonably large
+problems in Lisp. [You've actually had most of them for a while.]
+This chapter demonstrates the steps that can be taken to solve such
+problems. These steps are, of course, dependent upon the exact
+problem specified, but there are some general rules which we will
+emphasize. 
+<a name="system"></a>
+<p>The problems we will attack are those of a pig Latin translator.
+The system [a collection of functions and help functions all
+intented to solve one problem] will take a sentence in English and
+return the sentence in pig Latin. It will do this:</p>
+
+<pre>
+:(PIGLATIN '(TAKE OUT THE TRASH)))
+
+  (AKETAY OUTWAY ETHAY ASHTRAY )
+</pre>
+
+The first step in designing a system is: Take out a piece of paper
+and a pen or pencil. 
+<p>You will need paper to keep notes [and doodle while you think].
+If the system will have many functions in it you're definitely
+going to need a scorecard to keep track of the functions and their
+arguments. Because of the environment nature of Lisp, it's not easy
+to comment the functions so notes are important!</p>
+<a name="spec"></a>
+<p>Next, define the problem and lay out exact specifications.</p>
+
+<p>In this case, the specifications are fairly easy. The user will
+enter his sentence as a list of words, and the program will return
+the sentence with each word "pigized".</p>
+<a name="pigalgo"></a>
+<p>The next step is to decide on an algorithm.</p>
+
+<p>The standard pig Latin algorithm works in the following
+manner.</p>
+
+<p>Look at each word in the sentence. If its first letter is a
+vowel, simply add "way" to it. Otherwise, remove all the letters
+from the beginning of the word, and up to the first vowel. Put them
+after the word. Then add "ay".</p>
+
+<a name="ass"></a> 
+<p>There are a few assumptions in this description. It is very
+important to specify your assumptions so that you know which cases
+you won't have to deal with. A well-defined set of assumptions can
+make a programming task quite a bit simpler.</p>
+
+<p>We have assumed that all words have vowels in them. We will
+ignore the case of "words" (actually syllables) with no vowels.
+Also, we assume that only vowels can be one-letter words ("a",
+"I"). By examining some sample cases, we can fill in blanks in the
+algorithms.</p>
+
+<pre>
+WATER --&gt; ATERWAY
+WEEPS --&gt; EEPSWAY
+</pre>
+
+<p>Thus, "W" is not a vowel.</p>
+
+<pre>
+YELLOW --&gt; YELLOWAY
+YAKS --&gt; YAKSWAY
+</pre>
+
+<p>So "Y" is a vowel. Obviously, "A", "E", "I", "O", and "U" are
+vowels also.</p>
+
+<a name="mapcar"></a> 
+<p>We've now specified the problem. How do we go about programming
+it? The most useful technique to learn is called top down
+programming. It means that the main programs are written before the
+help functions. By using the top down style we can organize our
+thoughts. Let's start at the very beginning. The first part of the
+algorithm says: "Look at each word in the sentence." Because our
+sentence is a list, the words are the atoms in that list. Looking
+at each word is similar to the MAPCAR operator. Let's define our
+main function to use MAPCAR and cause each word in the sentence to
+be processed.</p>
+
+<pre>
+:(DEFINE (PIGLATIN (LAMBDA (SENTENCE)
+
+:  (MAPCAR 'PIGWORD SENTENCE)))))
+
+  PIGLATIN
+</pre>
+
+<a name="name"></a> This is the main function. There are two
+important factors to note in the definition of this function. The
+first is its name [and the name of the help function it calls] have
+meaning. We could have called this function "xyzzy" but then we
+would never be able to remember what it did! <a name="help"></a> 
+<p>The second point is more subtle. The main function and all the
+functions that we'll write are very short. We took a single idea
+[mapping down the sentence] and turned it into a function. The help
+function [PIGWORD] will also implement one little part of the
+whole. By slowly adding parts of the algorithm, we can build the
+entire system in very small, easily manageable increments. There
+are many advantages to this, not the least of which is that simpler
+and smaller functions are easier to edit or retype.</p>
+
+<p>Let's get on to the first help function: the processing of each
+word. The PIGWORD function will take a word and turn it into pig
+Latin. The I/O [Input/Output] behavior of this function should
+be</p>
+
+<pre>
+:(PIGWORD 'THIS)
+
+  ISTHAY
+</pre>
+
+There's a problem here. We have functions that modify lists but not
+functions for modifying the letters in an atom. The solution is to
+make the atom a list and then turn the processed list back into an
+atom: 
+<pre>
+THIS -&gt; (T H I S) -&gt; (I S T H A Y) -&gt; ISTHAY
+</pre>
+
+<a name="explodeimplode"></a> 
+<p>Of course, Lisp conveniently provides functions for doing this.
+EXPLODE turns an atom into a list of its letters, and IMPLODE does
+the opposite.</p>
+
+<p>Here we have a new concept not specified in the algorithm, but
+implicit in the nature of Lisp. We need to have some intermediate
+processing step that does this explosion, and subsequent implosion.
+We will define PIGWORD as follows:</p>
+
+<pre>
+:(DEFINE (PIGWORD (LAMBDA (WORD)
+
+:    (IMPLODE (PIGLISTEDWORD (EXPLODE WORD)))
+
+:    )))
+
+  PIGWORD
+</pre>
+
+PIGLATIN calls PIGWORD via MAPCAR and passes it to each word.
+PIGWORD, in turn, explodes the word and processes it using another
+help function [with a meaningful name] called PIGLISTEDWORD.
+PIGLISTEDWORD will return the list of the "pigized" word, and
+PIGWORD will implode it to an atom again and return the new word to
+PIGLATIN. 
+<p>All that remains now is write PIGLISTEDWORD. Which part of the
+problem does this one implement? Here is the definition.</p>
+
+<pre>
+:(DEFINE (PIGLISTEDWORD (LAMBDA (WORD)
+
+:  (COND
+
+:    ((ISAVOWEL (CAR WORD)) (PIGVOWEL WORD))
+
+:    (T (PIGNOVOWEL WORD))))))
+
+  PIGLISTEDWORD
+</pre>
+
+Several things are still missing from the system. PIGVOWEL will
+translate a word that starts with a vowel into its pig Latin
+equivalent. PIGNOVOWEL will translate all other words, and the
+predicate ISAVOWEL will tell us whether the letter it received is a
+vowel or not. 
+<p>Let's write the simple ones first:</p>
+
+<pre>
+:(DEFINE (ISAVOWEL (LAMBDA (LETTER)
+
+:   (MEMBER LETTER '(A E I O U Y))))
+
+:)
+
+  ISAVOWEL
+
+:(DEFINE (PIGVOWEL (LAMBDA (WORD)
+
+:   (CONC WORD '(W A Y))))))
+
+  PIGVOWEL
+
+:(PIGVOWEL '(A F T E R))))
+
+  (A F T E R W A Y )
+</pre>
+
+We should now be able to test the simple part of the
+system--sentences where all the words begin with a vowel. 
+<pre>
+:(PIGLATIN '(ALERT AIRMEN ARE ONTIME))
+
+  (ALERTWAY AIRMENWAY AREWAY ONTIMEWAY )
+</pre>
+
+[What would happen if we tried to "pigize" a sentence with words
+that began with consonants? Try it.] 
+<p>Great! Most of our system finished in only 5 functions. All we
+have to do now is write the hard one. PIGNOVOWEL. Let's describe
+the responsibility of that function in detail.</p>
+
+<p>Since we can only deal with one letter of the exploded word at a
+time, we have to search for the first vowel [ISAVOWEL will be
+useful here]. When we find the vowel, we will attach the first
+letters [which we will have been collecting up along the way] to
+the end of the word and tack on an "ay".</p>
+
+<p>How can we recur down a list and keep the information as we go?
+The answer is to pass the list of collected letters along with the
+recursion, and just tack on letters along the way. This is the
+function. Follow it by hand, and see what it does.</p>
+
+<pre>
+:(DEFINE (PIGNOVOWEL (LAMBDA (WORD LETS)
+
+:  (COND
+
+:    ((ISAVOWEL (CAR WORD))
+
+:       (CONC WORD (CONC LETS '(A Y))))
+
+:    (T (PIGNOVOWEL (CDR WORD) (APPEND LETS (CAR WORD))))))))
+
+  PIGNOVOWEL
+</pre>
+
+Note that there are two arguments to this function. We will always
+have to supply both of them, or this function will not work. O.K.,
+let's try it out: 
+<pre>
+:(PIGNOVOWEL '(T H I S) ())
+
+  (ISTHAY)
+</pre>
+
+That looks good, we should now be able to try the whole system: 
+<pre>
+:(PIGLATIN '(EVERY GOOD BOY DOES FINE))
+
+  ** ERROR: TOO FEW ARGS **
+  PIGNOVOWEL :: (WORD)
+
++()
+
+  NIL
+</pre>
+
+Oops! Something went wrong. The error message said we called
+PIGNOVOWEL with one argument instead of two. The call was from
+PIGLISTEDWORD. We hadn't forseen that we'd need two arguments in
+PIGNOVOWEL when we wrote PIGLISTEDWORD. Oh well, we can now go and
+edit it or retype it. 
+<pre>
+:(DEFINE (PIGLISTEDWORD (LAMBDA (WORD)
+
+:  (COND
+
+:    ((ISAVOWEL (CAR WORD)) (PIGNOVOWEL WORD))
+
+:    (T (PIGNOVOWEL WORD NIL))))))
+
+  PIGLISTEDWORD
+
+
+:(PIGLATIN '(STICKS AND STONES ARE PAINFUL))
+
+  (ICKSTAY ANDWAY ONESSTAY AREWAY AINFULPAY)
+</pre>
+
+Looks good! 
+<p>We've now completed the design of our pig Latin system to
+specification. You should SAVE it so that you can recover it
+later.</p>
+
+<a name="algospec"></a> 
+<p>The lessons of this chapter are summarized in the following
+list:</p>
+
+<ul>
+<li><a name="form"></a>Take notes. Write down every function and
+its "form of call". The form of call for ADD, for example, is:
+"(ADD number1 number2)". Also, write one line describing what is
+does and what it comes back with. If you're brave you can write
+down the function definition. This will help you figure out what's
+wrong.</li>
+
+<li>Formulate a complete specification of the problem before
+beginning to even think in Lisp. The I/O behavior of the function
+should be the main part of this description. I/O behavior also is a
+good way to formulate the descriptions of most help functions.</li>
+
+<li>Define the algorithm and assumptions [restrictions] involved.
+This will save you from embarrassing trouble later, when you
+suddenly remember something that you had forgotten.</li>
+
+<li><a name="top"></a>Use top down programming. That is, start with
+the function that the user will type in (think of the user as
+someone other than yourself), then fill in your undefined functions
+as you get to them. Work your way deeper and deeper into the help
+functions.</li>
+
+<li>As you write parts of the system, test the help functions
+thoroughly. This will save you debugging time in the long run.</li>
+
+<li><a name="name2"></a>Use mnemonic names. The names of all
+functions, help functions, and variables should have meaning to you
+and to others. [CAR and CDR are good examples of what not to use as
+names.]</li>
+
+<li>Keep your functions brief. Short functions are easier to edit
+and easier to retype.</li>
+
+<li>Implement a single part of the algorithm in each function. This
+will also help keep them brief. If the algorithm is well described,
+then there should be approximately one function per clause in the
+description.</li>
+
+<li><a name="consist"></a>Make sure that the parts of the system
+are internally consistent. [This is what went wrong with the
+arguments of PIGNOVOWEL.]</li>
+</ul>
+
+<p><strong>Designing a system in Lisp or any other programming
+language, is like designing in general. You take it step by step
+and fill in the unknowns when you come across them. Always have the
+final goal in mind.</strong></p>
+
+<h3>Exercises to Translate Into Thoughts</h3>
+
+<ol>
+<li>Explain how a function that sorts words in a list would work.
+Think about each function and describe the entire system in
+English.</li>
+
+<li>Practice taking a paper and pencil [or pen] out before starting
+to write things into Lisp. Do this until it becomes automatic.</li>
+
+<li>There is a simplification that can be made in our Pig Latin
+system. It is possible to do it without a function because its
+action is performed by a special use of another function. What are
+we talking about? Fix the system accordingly. Think about the
+advantages and, especially, the disadvantages of doing things this
+way.</li>
+
+<li>How is top down programming like recursive tree traversal?
+Design a Lisp system [in English but with possible real help
+functions] that would take a problem specification. Write the
+program using top down tree traversal.</li>
+
+<li>Adjust the pig Latin translator to work with words such as,
+"nth", "cwm" and "crwth".</li>
+</ol>
+
+<h3>Answers</h3>
+
+<ol>
+<li value="3">PIGVOWEL is a special case of PIGNOVOWEL. We can
+redefine PIGLISTEDWORD as 
+<pre>
+(DEFINE (PIGLISTEDWORD (LAMBDA (WORD)
+  (COND
+   ((ISAVOWEL (CAR WORD))
+      (PIGNOVOWEL WORD '(W)))
+   (T (PIGNOVOWEL WORD '()))
+  )
+)))
+</pre>
+</li>
+
+<li value="5">Put a termination condition in PIGNOVOWEL to watch
+for vowelless words. 
+<pre>
+(DEFINE (PIGNOVOWEL (LAMBDA (WORD LETS)
+  (COND
+    ((NULL WORD) (CONC LETS '(A Y)))
+    ((ISAVOWEL (CAR WORD))
+      (CONC WORD (CONC LETS '(A Y))) )
+    (T (PIGNOVOWEL (CDR WORD)
+      (APPEND (LETS (CAR WORD))) )
+  )
+)))
+</pre>
+</li>
+</ol>
+
+<p><a href="index.html">Contents</a> | <a href="17.html">Maps</a> |
+<a href="19.html">FEXPRS: Unevaluating Functions</a></p>
+</body>
+</html>
+

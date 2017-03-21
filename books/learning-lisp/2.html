@@ -1,0 +1,332 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 3.2//EN">
+<html>
+<head>
+<meta name="generator" content=
+"HTML Tidy for Linux/x86 (vers 1st July 2002), see www.w3.org">
+<title>LEARNING LISP - Lists, CAR and CDR</title>
+</head>
+<body bgcolor="white">
+<h1>LEARNING LISP</h1>
+
+<p><a href="index.html">Contents</a> | <a href="1.html">Getting
+Started</a> | <a href="3.html">More Lists</a></p>
+
+<h2>Lists, CAR and CDR</h2>
+
+We are going to direct our attention towards the structure of data
+in the Lisp language. All expressions in Lisp are in the form of a
+<em>list</em>. Even functions that we will define in a later
+chapter will be in the form of a list. Lists are so important that
+the next several chapters will be devoted to developing your
+facility in using lists. 
+<p>And now, meet the list.</p>
+
+<a name="atom"></a> 
+<p>A list is a linear arrangement of objects separated by blanks
+and surrounded by parentheses. The obkects which make up a list are
+either <em>atoms</em> or other lists. An atom is the basic unit of
+data understood by the Lisp language.</p>
+
+<p>Here are some atoms.</p>
+
+<pre>
+carbon
+eve
+1
+bananastand
+</pre>
+
+Here are some lists: 
+<pre>
+(1 2 3 4)
+((i hate) (peanut butter) (and jelly))
+(you (walrus (hurt) the (one you) love))
+(add 3 (mult 4 5))
+(garbage (garbage) out)
+(car ((in the garage) park))
+(deeper and (deeper and (deeper and (deeper we went))))
+</pre>
+
+Please note several things. 
+<ul>
+<li><a name="nil"></a>Some of the atoms in the above lists are:
+"i", "()", "4", and "deeper". An atom is a word or number or the
+pair of parentheses "()" which will be referred to as "NIL".</li>
+
+<li><a name="paren"></a>The parentheses in a list will always be
+<em>balanced</em> because every list is surrounded by a left and
+right parenthesis, and the only things inside which have
+parentheses are other lists.</li>
+
+<li>The definition given above permits us to nest lists within
+other lists to any arbitrary depth.</li>
+</ul>
+
+You should note that the parentheses are used to denote the list;
+they are not actually part of the list. 
+<p>"you" is an atom.<br>
+"(walrus (hurt) the (one you) love)" is a list.<br>
+</p>
+
+<p>The parts of that list are</p>
+
+<p>"walrus" is an atom.<br>
+"(hurt)" is a list with one element: the atom "hurt".<br>
+"the" is an atom.<br>
+"(one you)" is a list with the elements: "one" and "you", each of
+these is an atom.<br>
+"love" is an atom.</p>
+
+What does Lisp do with lists? Well, whenever you type a list into
+Lisp it tries to evaluate that list. 
+<p>Rules for lists being evaluated:</p>
+
+<ul>
+<li>The first element of the list should be a Lisp function [like
+ADD].</li>
+
+<li>The rest of the list should be the arguments to the Lisp
+function, that is, it should contain the data to be acted
+upon.</li>
+</ul>
+
+Evaluation takes place if Lisp can apply the function to the
+arguments. 
+<p>Thus,</p>
+
+<pre>
+:(ADD 8 3)
+
+  11
+</pre>
+
+is a list which is evaluated and has its value printed. 
+<p>If the first element is not a Lisp function, then an error
+occurs:</p>
+
+<pre>
+:(1 2 3 4)
+
+    ** ERROR: BAD ATOMIC ARG **
+      EVAL :: NIL
+
++()
+
+  NIL
+</pre>
+
+What if we try to add all the numbers in a list? 
+<pre>
+:(ADD (1 2))
+
+    ** ERROR: BAD ATOMIC ARG **
+      EVAL :: NIL
+
++()
+
+  NIL
+</pre>
+
+Compare the expressions (ADD 1 2) and (ADD (1 2)). In the first
+one, the ADD function acts on two separate atoms [not a list--no
+surrounding parentheses] while in the second one ADD acts [or at
+least tries to act] on a list: (1 2). Remember that Lisp first
+evaluates the arguments before applying the function. 
+<p>When Lisp encounters (ADD (1 2)), it first tries to evaluate the
+argument to ADD, namely the list (1 2). Note that "1" is not a Lisp
+function. [Remember, if Lisp is trying to evaluate a lista, the
+first element in the list had better be the name of a Lisp function
+and the rest of the list had better be the arguments to that
+function or else TROUBLE!!]</p>
+<a name="nil2"></a>
+<p>Here, again, NIL ["()"] is used to get back to the normal Lisp
+prompt ":".</p>
+
+<p>We would like to be able to use lists like "(A B C)", to
+represent data in Lisp. Unfortunately Lisp seems to want to
+evaluate everything that we enter. Since there is likely no "A"
+function, the evaluation of the list will cause an error. This
+leaves us in a bit of a quagmire!</p>
+<a name="quote"></a>
+<p>Good fortune has fallen upon you. There is a way to stop Lisp
+from trying to evaluate a list. The quote character ['] causes Lisp
+to take the expression as written rather than to try to evaluate
+it. We're going to begin applying the quote quite liberally from
+now on. Be very careful to watch what does and does not get
+evaluated.</p>
+
+<pre>
+:'(DO NOT (EAT ANYTHING) NOW))
+
+  ( DO NOT (EAT  ( ANYTHING ) NOW  ) )
+
+:'(MULT (ADD 1 2) 4)
+
+  ( MULT (ADD 1  2 ) 4 )
+</pre>
+
+<a name="carcdr"></a> Let's introduce some Lisp functions which
+manipulate lists. Manipulating involves taking apart, putting
+together, and checking the values of lists. The two functions CAR
+and CDR are used to get parts out of lists. The CAR function
+returns the first element in a list. 
+<pre>
+:(CAR '(1 2 3 4))
+
+  1
+
+:(CAR '((I HATE) (PEANUT BUTTER) (AND JELLY)))
+
+  ( I HATE )
+
+:(CAR 1)
+
+    ** ERROR: BAD ATOMIC ARG **
+      CAR :: (1       )
+
++()
+
+  NIL
+</pre>
+
+Note that the result of a CAR need not be an atom [in the second
+case above, it is a list of two atoms], but that CAR is only
+designed to take arguments which are lists, not atoms. 
+<p>CDR [pronounced "could-er"] is the complement of CAR in that the
+result of CDR is the "rest" of the list:</p>
+
+<pre>
+:(CDR '(1 2 3 4))
+
+  ( 2 3 4 )
+
+:(CDR '(FUN FROG))
+
+  ( FROG )
+
+:(CDR '((THREE BLIND) MACE))
+
+  ( MACE )
+
+:(CDR '(HELLO))
+
+  NIL
+
+:(CDR '())
+
+  NIL
+</pre>
+
+Like CAR, CDR is defined only to operate on lists. Unlike CAR,
+however, the value of CDR is ALWAYS a list. Note that the CDR of a
+list with only one element is an empty list [written as () or NIL].
+
+<p>We have, in the previous pages, listed the following seemingly
+contradictory characteristics of NIL:</p>
+
+<ul>
+<li>NIL is an atom.</li>
+
+<li>NIL is a list (as a result of the CDR operation).</li>
+
+<li>NIL means "false" in predicates.</li>
+
+<li>NIL, by name, means "nothing."</li>
+</ul>
+
+<p>NIL is certainly making a lot of trouble for such an empty
+concept. Why should we make so much ado about nothing? NIL is in
+fact the most important entity in the Lisp language. It is both an
+atom and a list, depending upon who is doing the asking. It can be
+returned by functions whose value is defined to be an atom, such as
+a predicate, or by functions whose value is defined to be a list,
+such as CDR. NIL is an empty list [a list with no elements]. The
+use of NIL will become clearer when we begin studying user defined
+functions in a later chapter.</p>
+
+<p>Back to the business at hand: CAR and CDR.</p>
+
+<p>We saw in the first chapter that subexpressions can be used in
+place of the arguments of any function. In the same way, the list
+processing functions can be combined to do various list
+operations.</p>
+
+<pre>
+:(CDR '(SAND WITCH))
+
+  ( WITCH )
+
+:(CDR (CDR '(SAND WITCH)))
+
+  NIL
+
+:(CDR (CDR (CDR '(SAND WITCH))))
+
+  NIL
+
+:(CAR (CDR '(SAND WITCH)))
+
+  WITCH
+
+:(CAR (CAR (CDR '(() ((BOZO) ( NO NO))))))
+
+  ( BOZO )
+
+:(CDR (CAR (CDR '(() ((BOZO)  (NO NO))))))
+
+  ( (NO NO ) )
+
+:(CAR (CAR (CDR (CAR (CDR '(() ((BOZO) (NO NO))))))))
+
+  NO
+
+:(CDR (CAR '((CAR CDR) CAR)))
+
+  ( CDR )
+
+:(CAR '(ADD 1 2))
+
+  ADD
+
+:(CDR '(ADD 1 2))
+
+  ( 1 2 )
+</pre>
+
+As we mentioned a little earlier in this chapter, the expressions
+that we are typing into Lisp are lists, just as "(1 2 3 4)" is a
+list. Remember functions and arguments? Well, the CAR of an
+expression-list is its function name and the CDR of that
+expression-list is the list of the arguments to that function! <a
+name="CxxxxR"></a> 
+<p>There are standard abbreviations for up to four successive
+applications of CAR/CDR combinations: take the letter "A" from
+every CAR and "D" from every CDR and place them next to each other
+sandwiched between a "C" and an "R" [NOTE: Lisp aficionados claim
+to be able to pronounce all 28 combinations of CAR and CDR]. For
+example, the expression (CADDR ANYLIST) is the same as the longer
+expression (CAR (CDR (CDR ANYLIST))). This book will not use these
+too much, but you should be familiar with them since many things
+written in Lisp do use them. The above example</p>
+
+<pre>
+:(cdr (car (cdr '() ((bozo) (no no))))))
+</pre>
+
+could have been written 
+<pre>
+:(CDADR ' (() ((BOZO) (NO NO))))
+
+  ( (NO NO ) )
+</pre>
+
+<h3>Exercises: Car For Yourself</h3>
+
+We still aren't deep enough into Lisp to do any entertaining or
+interesting exercises so your task is to make up some exercises for
+this chapter and do them. 
+<p><a href="index.html">Contents</a> | <a href="1.html">Getting
+Started</a> | <a href="3.html">More Lists</a></p>
+</body>
+</html>
+
