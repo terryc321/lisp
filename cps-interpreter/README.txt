@@ -1,4 +1,119 @@
 
+
+worked out a way to translate CPS to register machine architecture
+
+trying to see if we can get microcode included into the system.
+
+
+******************************************************************************
+
+didnt read SICP too well , because not saving registers at all in the right places
+return to SICP ways of doing things
+
+primitives use ARGL register , not EXP now .
+
+ev-if	        :       conditionals
+ev-begin	:	sequencing
+ev-application  :	application
+ev-define	:	define
+ev-assignment	:	set!
+
+******************************************************************************
+
+to do primitives
+ >
+ <
+ >=
+ <=
+
+******************************************************************************
+
+ * the number primitives *
++	: add
+*	: multiply
+-	:
+/	:
+=	: num =
+
+  * the list primitives *
+cons	: 
+car	: 
+cdr	: 
+reverse : 
+list	:
+length  :
+
+eq?	:
+eqv?	:
+
+ * type predicates *
+procedure?	:  
+pair?		:
+boolean?	:
+symbol?		:
+number?		:
+
+
+
+*****************************************************************************
+
+** some of this section is clearly not useful now , as got right evaluator from SICP **
+
+half way deciding on e.g eval-cons
+eval-cons
+CONS : exp = (x y)
+where x y are as yet un-evaluated
+
+here is observation -- this observation is quite important
+-- highlights distinction between syntactic and functions
+
+these are functions , meaning they evaluate all their arguments
+CONS CAR CDR LIST PAIR? REVERSE PROCEDURE? BOOLEAN?
+
+
+these are macros , Not functions so do not exist at runtime
+OR AND WHEN
+
+e.g in scheme we might want to write this ...
+(map or '(#t #t #t) '(#f #f #f))
+(map and '(#t #t #t) '(#f #f #f))
+but OR is a MACRO , so does not exist as a function , hence cannot be mapped like a function.
+
+the work-around might be something like this ...
+(map (lambda (x y)(or x y)) '(#t #t #t) '(#f #f #f))
+(map (lambda (x y)(and x y)) '(#t #t #t) '(#f #f #f))
+
+********************************************************************************
+
+by the time SICP evaluator gets involved there are NO MACROS whatever ,
+all completely function procedure-y code to evaluate
+
+between reader and base-eval , macro-expand is called
+this also handles quasiquote splicing and nesting , but thats another thing.
+
+***************************************************************************
+base-eval
+
+SICP explicit control evaluator has a stack and 7 registers
+
+1 EXP  : expression register  - a memory address
+2 ENV  : environment register - naturally an environment
+3 CONT : continuation register - a memory address , where go to next
+4 VAL  : value register - where THE value of result lives
+5 PROC :
+6 ARGL : argument list - 
+7 UNEV : unevaluated arguments 
+
+number = number
+boolean = boolean
+string = string
+vector = vector
+procedure = procedure
+symbol = lookup symbol in environment
+*****************************************************************
+
+pretty-printing circular list is a real pain.
+
 *****************************************************************
 
 (trace fib)	;; trace fibonacci routine
@@ -7,16 +122,34 @@
 (trace)		;; untraces everything
 
 *****************************************************************
+(begin)
+(begin 1)
+(begin 1 2 3)
+
+value of begin is last evaluated expression , or #f otherwise
+
+
+*****************************************************************
 did a rewrite on cps-function +
 other routines still using fexpr like approach
 
 weird interaction with apply and map , its really weird
+... apply fixed now !
+... split apply into operator operands
+slurps up operands , expects last element to be a list
+*****************************************************************
+
+
+base-apply does not now call base-eval
+
+base-eval evaluates expression
+if base-apply calls base-eval again , then it will throw evaluation out of whack.
+
+*****************************************************************
 
 how can i trace compiled routine ??
 
 what if we want to extend + operator to handle rectangles ??
-
-
 
 
 *****************************************************************

@@ -15,6 +15,7 @@
 
 
 
+
 ;;----------------- fexpr ---------------------------
 (define fexpr-tag #f)
 (define fexpr-tagged? #f)
@@ -202,6 +203,7 @@
 			 (debug #f env cont)))))))
 
 
+
 (define (debugger message exp env cont)
   (newline)
   (display "DEBUGGER ::")
@@ -272,9 +274,12 @@
    ((environment-tagged? exp) (cont exp))
    
    ;; (primitive-apply ... ...)
-   ((and (pair? exp) (= (length exp) 3) (eq? (car exp) 'primitive-apply))
-    (eval-primitive-apply exp env cont))
+   ;;((and (pair? exp) (= (length exp) 3) (eq? (car exp) 'primitive-apply))
+   ;; (eval-primitive-apply exp env cont))
 
+   ;; (apply ... ...)
+   ((and (pair? exp) (>= (length exp) 3) (eq? (car exp) 'apply))
+    (eval-apply exp env cont))
    
    ;; (begin ... ...)
    ((and (pair? exp) (eq? (car exp) 'begin))
@@ -320,7 +325,6 @@
    ((pair? exp) (base-eval-pair exp env cont))
    (else
     (error "base-eval unknown expr type" exp env cont))))
-
 
 
 (define (base-eval-pair exp env cont)
@@ -771,7 +775,7 @@
 
 
 
-
+;; dont actually use the environment in base apply
 (define (base-apply operator operands env cont)
   (cond
    
@@ -807,8 +811,15 @@
       ;;(format #t "passing continuation a result of : ~a ~%" (car operands))    
       (location (car operands))))
 
-   ((cps-function? operator)    
-    (cont (apply (cps-function-obj operator) operands)))
+   ((cps-function? operator)
+    (newline)
+    (display "cps-function: operator = ")
+    (display operator)
+    (newline)
+    (display "cps-function: operands = ")
+    (display operands)
+    (newline)    
+    ((cps-function-obj operator) operands env cont))
    
    ((procedure? operator)
     (newline)
@@ -1132,29 +1143,45 @@
 			    (lambda (v2)
 			      (cont (= v1 v2))))))))
 
-
-
-
-
 ;; --------------------- add --------------------------------
 (define eval-add-helper
-  (lambda (xs sum)
+  (lambda (xs sum cont)
     (cond
-     ((null? xs) sum)
-     (else (eval-add-helper (cdr xs) (+ sum (car xs)))))))
+     ((null? xs) (cont sum))
+     ((not (number? (car xs)))
+      (debugger "+ not a number"))
+     (else (eval-add-helper (cdr xs) (+ sum (car xs)) cont)))))
 
 (define eval-add
-  (lambda eargs
-    
-    ;; (newline)
-    ;; (display "+ EARGS : ")
-    ;; (display eargs)
-    ;; (newline)
-    
-    ;; (display "+ EARGS.LENGTH : ")    
-    ;; (display (length eargs))
-    ;; (newline)    
-    (eval-add-helper eargs 0)))
+  (lambda (operands env cont)
+    (eval-add-helper operands 0 cont)))
+
+
+
+;; (define eval-add-helper
+;;   (lambda (operands env xs sum cont)
+;;     (cond
+;;      ((null? xs) (cont sum))
+;;      ((not (number? (car xs)))
+;;       (debugger "not a number" operands env cont))
+;;      (else (eval-add-helper operands env (cdr xs) (+ sum (car xs)) cont)))))
+
+;; (define eval-add-helper
+;;   (lambda (xs sum)
+;;     (cond
+;;      ((null? xs) sum)
+;;      (else (eval-add-helper (cdr xs) (+ sum (car xs)))))))
+
+;; (define eval-add
+;;   (lambda eargs    
+;;     ;; (newline)
+;;     ;; (display "+ EARGS : ")
+;;     ;; (display eargs)
+;;     ;; (newline)
+;;     ;; (display "+ EARGS.LENGTH : ")    
+;;     ;; (display (length eargs))
+;;     ;; (newline)    
+;;     (eval-add-helper eargs 0)))
 
 
 
@@ -1196,77 +1223,113 @@
 ;; 	       (car vals)
 ;; 	       (eval-add-helper (cdr vals))))))
 
-
-
 ;; ---------------------------------------------------
+(define eval-sub-helper
+  (lambda (xs sum cont)
+    (cond
+     ((null? xs) (cont sum))
+     ((not (number? (car xs)))
+      (debugger "- not a number"))
+     (else (eval-sub-helper (cdr xs) (- sum (car xs)) cont)))))
 
-(define (eval-sub exp env cont)
-  (let ((a-part (car (cdr exp)))
-	(b-part (car (cdr (cdr exp)))))
-    (base-eval a-part env
-	       (lambda (v1)
-		 (base-eval b-part env
-			    (lambda (v2)
-			      (cont (- v1 v2))))))))
+(define eval-sub
+  (lambda (operands env cont)
+    (cond
+     ((null? operands) (cont 0))
+     ((null? (cdr operands)) (cont (- 0 (car operands))))
+     (else (eval-sub-helper (cdr operands) (car operands) cont)))))
 
 
 ;; --------------------- mul --------------------------------
-(define (eval-mul exp env cont)
-  (cond
-   ;; (*)  = 1
-   ((null? (cdr exp)) (cont 1))
-   ;; (* x) = x 
-   ((null? (cdr (cdr exp)))
-    (base-eval (car (cdr exp))
-	       env
-	       cont))
-   ((null? (cdr (cdr (cdr exp))))
-    (base-eval (car (cdr exp))
-	       env
-	       (lambda (v1)
-		 (base-eval (car (cdr (cdr exp)))
-			    env
-			    (lambda (v2)
-			      (cont (* v1 v2)))))))
-   (else 
-    ;; (* x y)
-    ;; (* x y z)
-    ;; (* x y z a)
-    ;; (* x y z a b)
-    (let ((expansion (eval-mul-helper (cdr exp))))
-      ;;(format #t "[* expander] : ~a ~%" expansion)
-      (base-eval expansion
-		 env
-		 cont)))))
+(define eval-mul-helper
+  (lambda (xs prod cont)
+    (cond
+     ((null? xs) (cont prod))
+     ((not (number? (car xs)))
+      (debugger "* not a number"))
+     (else (eval-mul-helper (cdr xs) (* prod (car xs)) cont)))))
+
+(define eval-mul
+  (lambda (operands env cont)
+    (cond
+     ((null? operands) (cont 1))
+     (else (eval-mul-helper operands 1 cont)))))
 
 
-(define (eval-mul-helper vals)
-  (cond
-   ((null? vals) '())
-   ((null? (cdr vals)) vals)
-   ((null? (cdr (cdr vals))) (cons '* vals))   
-   (else (list '*
-	       (car vals)
-	       (eval-mul-helper (cdr vals))))))
+
+
+;; (define (eval-mul exp env cont)
+;;   (cond
+;;    ;; (*)  = 1
+;;    ((null? (cdr exp)) (cont 1))
+;;    ;; (* x) = x 
+;;    ((null? (cdr (cdr exp)))
+;;     (base-eval (car (cdr exp))
+;; 	       env
+;; 	       cont))
+;;    ((null? (cdr (cdr (cdr exp))))
+;;     (base-eval (car (cdr exp))
+;; 	       env
+;; 	       (lambda (v1)
+;; 		 (base-eval (car (cdr (cdr exp)))
+;; 			    env
+;; 			    (lambda (v2)
+;; 			      (cont (* v1 v2)))))))
+;;    (else 
+;;     ;; (* x y)
+;;     ;; (* x y z)
+;;     ;; (* x y z a)
+;;     ;; (* x y z a b)
+;;     (let ((expansion (eval-mul-helper (cdr exp))))
+;;       ;;(format #t "[* expander] : ~a ~%" expansion)
+;;       (base-eval expansion
+;; 		 env
+;; 		 cont)))))
+
+;; (define (eval-mul-helper vals)
+;;   (cond
+;;    ((null? vals) '())
+;;    ((null? (cdr vals)) vals)
+;;    ((null? (cdr (cdr vals))) (cons '* vals))   
+;;    (else (list '*
+;; 	       (car vals)
+;; 	       (eval-mul-helper (cdr vals))))))
+
+
 
 ;;---------------------------------------------------------
+(define eval-div-helper
+  (lambda (xs prod cont)
+    (cond
+     ((null? xs) (cont prod))
+     ((not (number? (car xs)))
+      (debugger "/ not a number"))
+     (else (eval-div-helper (cdr xs) (/ prod (car xs)) cont)))))
+
+(define eval-div
+  (lambda (operands env cont)
+    (cond
+     ((null? operands) (debugger "/ division requires a number"))
+     (else (eval-div-helper (cdr operands) (car operands) cont)))))
 
 
 
 
-;; (/)
-;; (/ X)
-;; (/ X Y)
-;; (/ X Y ...) multiple args ...
-(define (eval-div exp env cont)
-  (let ((a-part (car (cdr exp)))
-	(b-part (car (cdr (cdr exp)))))
-    (base-eval a-part env
-	       (lambda (v1)
+
+
+;; ;; (/)
+;; ;; (/ X)
+;; ;; (/ X Y)
+;; ;; (/ X Y ...) multiple args ...
+;; (define (eval-div exp env cont)
+;;   (let ((a-part (car (cdr exp)))
+;; 	(b-part (car (cdr (cdr exp)))))
+;;     (base-eval a-part env
+;; 	       (lambda (v1)
 		 
-		 (base-eval b-part env
-			    (lambda (v2)
-			      (cont (/ v1 v2))))))))
+;; 		 (base-eval b-part env
+;; 			    (lambda (v2)
+;; 			      (cont (/ v1 v2))))))))
 
 
 
@@ -1412,16 +1475,76 @@
 ;; apply f x => (f x)
 (define (eval-primitive-apply exp env cont)
   (let ((fun-part (car (cdr exp)))
-	(arg-part (car (cdr (cdr exp)))))
+	(arg-part (car (cdr (cdr exp)))))    
     (base-eval fun-part
     	       env
     	       (lambda (v1)
-		 (base-eval arg-part
-			    env
-			    (lambda (v2)
-			      (base-eval (cons v1 v2)
-					 env
-					 cont)))))))
+    		 (base-eval arg-part
+    			    env
+    			    (lambda (v2)
+    			      (base-eval (cons v1 v2)
+    					 env
+    					 cont)))))))
+
+
+
+;; evaluates a sequence of expressions
+;; consing into last LIST expression , otherwise get improper list e.g (cons 'a 'b)
+(define (eval-apply-sequence exp env cont)
+  (cond
+   ((null? exp) (cont '()))
+   ((null? (cdr exp)) 
+      (base-eval (car exp)
+		 env
+		 cont))
+   (else
+    (base-eval (car exp)
+	       env
+	       (lambda (v1)
+		 (eval-apply-sequence (cdr exp)
+				      env
+				      (lambda (v2)
+					(cont (cons v1 v2)))))))))
+
+
+(define (eval-apply exp env cont)
+  (display "EVAL_APPLY : ")
+  ;;(display exp)
+  (newline)  
+  (let ((fun-part (car (cdr exp)))
+	(args-part (cdr (cdr exp))))
+    (eval-apply-sequence args-part
+			 env
+			 (lambda (operands)
+			   (display "EVAL_APPLY : operands = ")
+			   ;;(display operands)
+			   ;;(newline)  			   
+			   (base-eval fun-part
+				      env
+				      (lambda (operator)
+					(display "EVAL_APPLY : operator = ")
+					;;(display operator)
+					(newline)
+					(base-apply operator operands env cont)))))))
+
+
+
+
+
+
+    ;; (let ((apply-exp (cons fun-part args-part)))
+    ;;   (display "EVAL_APPLY : APPLY_EXP = ")
+    ;;   (display apply-exp)
+    ;;   (newline)
+    ;;   (cont apply-exp))))
+;;      (base-eval apply-exp
+;;		 env
+;;		 cont))))
+
+
+
+
+
 
 
 		 ;; (eval-apply-helper args-part
@@ -1560,10 +1683,12 @@
 (install-procedure  'cdr (cps-primitive eval-cdr))
 
 (install-procedure  '+ (cps-function eval-add))
+(install-procedure  '- (cps-function eval-sub))	    
+(install-procedure  '* (cps-function eval-mul))
+(install-procedure  '/ (cps-function eval-div))
 
-(install-procedure  '- (cps-primitive eval-sub))
-(install-procedure  '* (cps-primitive eval-mul))
-(install-procedure  '/ (cps-primitive eval-div))
+;; NOTICE - BIG change - CPS-FUNCTION instead of CPS-PRIMITIVE !!
+
 (install-procedure  'eq? (cps-primitive eval-eq?))
 (install-procedure  'eqv? (cps-primitive eval-eqv?))
 (install-procedure  '> (cps-primitive eval-greater-than))
@@ -1584,7 +1709,6 @@
 (install-procedure  'pair? (cps-primitive eval-pair?))
 
 
- 
 
    ;; fexprs -- like runtime macros -- call by text
    ;; 
@@ -1620,6 +1744,7 @@
   (lambda (path)
     (string-append *installation-directory* path)))
 
+
 ;;quasiquotation
 (load  	  "/home/terry/lisp/cps-interpreter/core/quasiquote.scm")
 
@@ -1653,43 +1778,43 @@
 ;; disjunction
 (load 	  "/home/terry/lisp/cps-interpreter/macros/or.scm")
 
+;; SICP register machine
+(load 	  "/home/terry/lisp/cps-interpreter/sicp.scm")
+
+;; start the system
+(repl)
 
 
 
-
-;; ----------- SECTION 2 -----------------
-;; section 2 should be loaded in the repl , so fib fac are defined
-;; some useful routines
-(base-eval '(begin
-	      (load "/home/terry/lisp/cps-interpreter/util/not.scm")
-	      (load "/home/terry/lisp/cps-interpreter/util/list.scm")
-	      (load "/home/terry/lisp/cps-interpreter/util/append.scm")
-	      (load "/home/terry/lisp/cps-interpreter/util/length.scm")
-	      (load "/home/terry/lisp/cps-interpreter/util/reverse.scm")
-	      
-	      (load "/home/terry/lisp/cps-interpreter/util/apply.scm")
-	      
-	      (load "/home/terry/lisp/cps-interpreter/util/map.scm")
-
-	      (load "/home/terry/lisp/cps-interpreter/util/fac.scm")
-	      (load "/home/terry/lisp/cps-interpreter/util/fib.scm")
-	      (load "/home/terry/lisp/cps-interpreter/util/assoc.scm")
-	      
-	      ;; -- run the tests --
-	      (load "/home/terry/lisp/cps-interpreter/tests/apply.scm")	      
-	      (load "/home/terry/lisp/cps-interpreter/tests/map.scm")	      
-	      ;;(load "/home/terry/lisp/cps-interpreter/tests/fib.scm")
-
-	      (display "!! ALL LIBRARIES LOADED OKAY !!")
-	      (newline)
-	      )
-	   environment
-	   (lambda (k)
-	     ;; run the repl if everything went ok
-	     ;; ------ start interactive repl -----
-	     (repl)))
+;; ;; ----------- SECTION 2 -----------------
+;; ;; section 2 should be loaded in the repl , so fib fac are defined
+;; ;; some useful routines
+;; (base-eval '(begin
+;; 	      (load "/home/terry/lisp/cps-interpreter/util/not.scm")
+;; 	      (load "/home/terry/lisp/cps-interpreter/util/list.scm")
+;; 	      (load "/home/terry/lisp/cps-interpreter/util/append.scm")
+;; 	      (load "/home/terry/lisp/cps-interpreter/util/length.scm")
+;; 	      (load "/home/terry/lisp/cps-interpreter/util/reverse.scm")      
+;; 	      (load "/home/terry/lisp/cps-interpreter/util/apply.scm")      
+;; 	      (load "/home/terry/lisp/cps-interpreter/util/map.scm")
+;; 	      (load "/home/terry/lisp/cps-interpreter/util/fac.scm")
+;; 	      (load "/home/terry/lisp/cps-interpreter/util/fib.scm")
+;; 	      (load "/home/terry/lisp/cps-interpreter/util/assoc.scm")
+;; 	      ;; -- run the tests --
+;; 	      (load "/home/terry/lisp/cps-interpreter/tests/apply.scm")	      
+;; 	      (load "/home/terry/lisp/cps-interpreter/tests/map.scm")	      
+;; 	      ;;(load "/home/terry/lisp/cps-interpreter/tests/fib.scm")
+;; 	      (display "!! ALL LIBRARIES LOADED OKAY !!")
+;; 	      (newline)
+;; 	      )
+;; 	   environment
+;; 	   (lambda (k)
+;; 	     ;; run the repl if everything went ok
+;; 	     ;; ------ start interactive repl -----
+;; 	     (repl)))
 
 ;; ------ run the tests ----------
+
 
 
 

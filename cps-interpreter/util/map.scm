@@ -60,6 +60,7 @@
                        (newline)
                        (cons (apply f (all-cars xs))
                              (mymap3 f (all-cdrs xs)))))))
+
            (mymap2 (lambda (f . xs)
                      ;;(newline)
                      (display "xs = ")
@@ -71,18 +72,6 @@
                       (else                        
                        (mymap3 f xs))))))
     mymap2))
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 ;; (define map

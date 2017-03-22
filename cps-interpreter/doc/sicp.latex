@@ -1,0 +1,771 @@
+
+\documentclass[a4paper,12pt]{article}
+\begin{document}
+
+\begin{verbatim}
+---------------------------------------------------------
+        *    eval-dispatch   * 
+---------------------------------------------------------
+example input  :    exp = '(begin 1 2 3) 
+example output :    val = 3
+---------------------------------------------------------
+inputs    : exp
+outputs   : val
+clobber   : argl , exp , unev , val , proc 
+preserved : cont , env
+---------------------------------------------------------
+eval-dispatch :
+
+---------------------------------------------------------	
+\end{verbatim}
+
+\newpage
+
+
+\begin{verbatim}
+---------------------------------------------------------
+        *    ev-begin   * 
+---------------------------------------------------------
+example input  :    exp = '(begin 1 2 3) 
+example output :    val = 3
+---------------------------------------------------------
+inputs    : exp
+outputs   : val
+clobber   : argl , exp , unev , val , proc 
+preserved : cont , env
+---------------------------------------------------------
+ev-begin :
+	 unev = cdr [ exp ]
+	 goto ev-sequence
+
+ev-sequence :
+	  if null? unev
+	       set val \# f
+	       goto continue
+	  exp = car [ unev ]
+	  if null? cdr [ unev ]
+	       ev-sequence-3
+	  save cont
+	  save env
+	  save unev
+	  cont = ev-sequence-2
+	  goto eval-dispatch
+ev-sequence-2 :
+	  restore unev
+	  restore env
+	  restore cont
+	  unev = cdr unev
+	  goto ev-sequence
+ev-sequence-3 :
+	  goto eval-dispatch
+---------------------------------------------------------	
+\end{verbatim}
+
+\newpage
+
+\begin{verbatim}
+---------------------------------------------------------
+        *    ev-definition   * 
+---------------------------------------------------------
+example input  :    exp = '(define a 5) 
+example output :    val = 'ok
+---------------------------------------------------------
+inputs    : exp
+outputs   : val
+clobber   : argl , exp , unev , val , proc 
+preserved : cont , env
+---------------------------------------------------------
+ev-definition:
+	 save exp
+	 save env
+	 save cont
+	 exp = car [cdr [ cdr exp ]]  ;; y
+	 cont = ev-definition-2
+	 eval-dispatch
+
+ev-definition-2:
+	restore cont
+	restore env
+	restore exp
+	exp = car [ cdr exp ] ;; f
+	... primitive operation (env-define! exp val env) ...
+	val = ok
+	goto cont
+---------------------------------------------------------	
+\end{verbatim}
+
+\newpage
+
+
+\begin{verbatim}
+---------------------------------------------------------
+        *    ev-assignment   * 
+---------------------------------------------------------
+example input  :    exp = '(set! a 5) 
+example output :    val = 'ok
+---------------------------------------------------------
+inputs    : exp
+outputs   : val
+clobber   : argl , exp , unev , val , proc 
+preserved : cont , env
+---------------------------------------------------------
+ev-assignment:
+	 save exp
+	 save env
+	 save cont
+	 exp = car [cdr [ cdr exp ]]  ;; y
+	 cont = ev-assignment-2
+	 eval-dispatch
+
+ev-assignment-2:
+	restore cont
+	restore env
+	restore exp
+	exp = car [ cdr exp ] ;; x
+	... primitive operation (env-set! exp val env) ...
+	val = ok
+	goto cont
+---------------------------------------------------------	
+\end{verbatim}
+
+\newpage
+
+\begin{verbatim}
+---------------------------------------------------------
+        *    ev-if   * 
+---------------------------------------------------------
+example input  :    exp = '(if #f 1 2) 
+example output :    val = 2
+---------------------------------------------------------
+inputs    : exp
+outputs   : val
+clobber   : argl , exp , unev , val , proc 
+preserved : cont , env
+---------------------------------------------------------
+ev-if:
+	 save exp
+	 save env
+	 save cont
+	 exp = car [cdr exp ]  ;; x
+	 cont = ev-if-2
+	 eval-dispatch
+ev-if-2:
+	restore cont
+	restore env
+	restore exp
+	if val is true
+	   goto ev-if-3
+	exp = cdr [ cdr [cdr exp ]
+	if null? exp
+	   val = \#f  ;; false
+	   goto continue
+	otherwise
+	   exp = car [ exp ]
+	   goto eval-dispatch	   
+ev-if-3:
+	exp = car [ cdr [cdr exp]] ;; y
+	goto eval-dispatch
+---------------------------------------------------------	
+\end{verbatim}
+
+\newpage
+
+\begin{verbatim}
+---------------------------------------------------------
+        *    ev-application   * 
+---------------------------------------------------------
+example input  :    exp = '(factorial 5) 
+example output :    val = 120
+---------------------------------------------------------
+inputs    : exp
+outputs   : val
+clobber   : argl , exp , unev , val , proc 
+preserved : cont , env
+---------------------------------------------------------
+ev-application :
+	unev = cdr exp  ; operands
+	save unev
+	save env
+	save cont
+	exp = car exp   ; the operator
+	cont = ev-application-2
+	goto eval-dispatch
+
+ev-application-2 :
+	restore cont
+	restore env
+	restore unev
+	proc = val	; 
+	save proc
+	save env
+	save cont
+	cont = ev-application-3
+	argl = '()	; the empty list
+	goto ev-operands
+
+ev-application-3 :
+	restore cont
+	restore env
+	restore proc
+	goto apply-dispatch
+---------------------------------------------------------	
+\end{verbatim}
+
+\newpage
+
+\begin{verbatim}
+---------------------------------------------------------
+            *    ev-operands usage   * 
+---------------------------------------------------------
+example input  :    unev = '((+ 10 20 ) (+ 30 40) (+ 50 60)
+example output :    argl = '( 110  70  30 )
+notes : argl result is REVERSEd .
+---------------------------------------------------------
+inputs    : unev
+outputs   : argl , the arguments are in REVERSE order
+clobber   : argl , exp , unev , val , maybe proc 
+preserved : cont , env
+---------------------------------------------------------
+ev-operands :
+	    argl = '()   ; empty list
+	    goto ev-operands-2
+
+ev-operands-2 :
+	      if null? unev then goto cont	   
+	      exp = car unev
+	      unev = cdr unev
+	      save env
+	      save unev
+	      save cont
+	      save argl
+	      cont = ev-operands-3
+	      goto eval-dispatch
+
+ev-operands-3 :
+	      restore argl
+	      restore cont
+	      restore unev
+	      restore env
+	      argl = cons val argl  ; adjoin
+	      goto ev-operands-2
+---------------------------------------------------------
+\end{verbatim}
+
+When we call ev-operands , we want to be sure argl is properly initialised. 
+We observe that the arguments are accumulated in reverse . ARGL values are reversed
+
+\newpage
+
+The rest of this document contains old notes that may be useful 
+
+\newpage
+
+
+\begin{verbatim}
+---------------------------------------------------------
+         *    reverse microcode   *
+piggy back on ev-operands 
+---------------------------------------------------------
+ev-reverse :
+	   unev = car [ cdr exp ]
+	   save-cont
+	   cont = ev-reverse-2
+	   goto ev-operands
+
+ev-reverse-2 :
+	   restore-cont
+	   val = argl
+	   goto cont
+---------------------------------------------------------
+\end{verbatim}
+
+
+
+\newpage
+
+
+
+Ev-operands takes unevaluated arguments in unev , we want evaluated arguments in argl
+
+if no operands are to be evaluated we are done
+
+\begin{verbatim}
+(define (ev-operands exp env cont)
+  (if (null? exp)
+      (cont '())
+      (base-eval (car exp) env
+EV-3 :   (lambda (val1)
+	     (ev-operands (cdr exp) env
+EV-4 :	    (lambda (val2)
+		  (cont (cons val1 val2))))))))
+\end{verbatim}
+
+\newpage
+
+
+Motivation
+
+We have a working continuation passing style lisp interpreter and have
+successfully written call-with-current-continuation.
+
+since callcc is crucial measure of a scheme system.
+
+Also written trace routine that works especially well in cps format , want to see this
+translated to SICP register machine version
+
+want to prove the simple CPS to register machine translation that we devised as a simple
+and trustworthy mechanism that requires mental overhead.
+
+\newpage
+
+eval-application
+
+left to right evaluation of arguments 
+
+many ways to do this , here we evaluate the operator and then the operands
+then apply operator to operands , simple really.
+
+\begin{verbatim}
+
+(define (eval-application exp env cont)
+   (let ((operator (car exp))
+   	 (operands (cdr exp)))
+     (base-eval operator env
+CONT-2:        (lambda (eop)
+ 	  (eval-operands operands env
+CONT-3:	     (lambda (eargs)
+	        (base-apply eop eargs env cont)))))))
+		
+\end{verbatim}
+
+cont1 and cont2 need environment env and continuation cont
+
+if we have unev be unevaluated arguments then exp can be operator in first call to base eval
+
+eop ends up in proc register
+
+eargs ends up in argl register
+
+\begin{verbatim}
+ev-application :
+	unev = cdr exp  ; operands
+	save unev
+	save env
+	save cont
+	exp = car exp   ; the operator
+	cont = ev-application-2
+	goto eval-dispatch
+
+ev-application-2 :
+	restore cont
+	restore env
+	restore unev
+	proc = val	; 
+	...
+\end{verbatim}
+
+now we have the procedure evaluated into proc register , we need to preserve it over the
+operands evaluation , so we stash it on the stack. 
+
+\begin{verbatim}
+	save proc
+	save env
+	save cont
+	cont = ev-application-3
+	argl = '()	; the empty list
+	goto ev-operands
+	
+\end{verbatim}
+
+Now want operands to be evaluated and result placed in argl register
+
+\begin{verbatim}
+ev-application-3 :
+	restore cont
+	restore env
+	restore proc
+	goto apply-dispatch
+	
+\end{verbatim}
+
+
+\newpage
+
+Self evaluating forms just return themselves
+
+evaluating quoted expression is just return the thing that is quoted 
+
+\begin{verbatim}
+1 (define (eval-quote exp env cont)
+2    (let ((thing-quoted (car (cdr exp))))
+3      (cont the-thing-quoted)     
+\end{verbatim}
+
+\newpage
+
+\begin{verbatim}
+1 (define (eval-if exp env cont)
+2 (let ((condition (car (cdr exp)))
+3       (consequent (car (cdr (cdr exp))))
+4	(alternative (cdr (cdr (cdr exp)))))
+5   (base-eval condition  env
+6     (lambda (bool)
+7       (if bool
+8           (base-eval consequent env cont)
+9	    (if (null? alternative)
+10	        (cont #f)
+11		(base-eval (car alternative) env cont)))))))		
+\end{verbatim}
+
+Splits if expression apart , evaluates the conditon , if the condition is true
+then go on to evaluate the consequent.
+If the condition is false and there is no alternative , continue with dummy \#f false value.
+otherwise evaluate the alternative in current environment.
+
+continuation at line 6 (lambda (bool) ....) need original env and continuation cont, also need
+original expression.
+
+\newpage
+
+ev-if is not called from any other site other than eval-dispatch , good modularity.
+
+\begin{verbatim}
+;; (if x y [z]) - conditional where z is optional
+ev-if:
+	 save exp
+	 save env
+	 save cont
+	 exp = car [cdr exp ]  ;; x
+	 cont = ev-if-2
+	 eval-dispatch
+ev-if-2:
+	restore cont
+	restore env
+	restore exp
+	if val is true
+	   goto ev-if-3
+	exp = cdr [ cdr [cdr exp ]
+	if null? exp
+	   val = \#f  ;; false
+	   goto continue
+	otherwise
+	   exp = car [ exp ]
+	   goto eval-dispatch	   
+ev-if-3:
+	exp = car [ cdr [cdr exp]] ;; y
+	goto eval-dispatch
+
+\end{verbatim}
+
+\newpage
+
+
+\begin{verbatim}
+1 (define (eval-set exp env cont)
+2 (let ((var (car (cdr exp)))
+3       (val (car (cdr (cdr exp)))))
+4     (base-eval val env (lambda (data)
+5                           (env-set! var data env)
+6                           (cont 'ok)))))
+\end{verbatim}
+
+Line 1 :
+
+Line 2 :
+break up set! expression into variable and the value components
+
+Line 3 :
+
+Line 4 :
+evaluate the value that will become the result to be assigned to var in the environment
+
+Line 5 :
+use a primitive procedure that alters the environment
+
+Line 6 :
+passing a nominal result to show the assignment has been completed.
+Also useful to prevent code from depending on the result of assignment as assignment can
+return anything it likes
+
+Looking at the routine we can see that continuation is (lambda (data) ...)
+
+VAR : need that symbol 
+
+ENV : environment env is used in the env-set! primitive
+
+CONT : original cont is required also
+
+\begin{verbatim}
+;; (set! x y) 
+ev-assignment:
+	 save exp
+	 save env
+	 save cont
+	 exp = car [cdr [ cdr exp ]]  ;; y
+	 cont = ev-assignment-2
+	 eval-dispatch
+
+ev-assignment-2:
+	restore cont
+	restore env
+	restore exp
+	exp = car [ cdr exp ] ;; x
+	... primitive operation (env-set! exp val env) ...
+	val = ok
+	goto cont
+
+\end{verbatim}
+
+\newpage
+
+SICP version uses unev 
+
+\begin{verbatim}
+;; (set! x y) 
+ev-assignment:
+	 unev = car [ cdr exp ]
+	 save unev
+	 save env
+	 save cont
+	 exp = car [cdr [ cdr exp ]]  ;; y
+	 cont = ev-assignment-2
+	 eval-dispatch
+
+ev-assignment-2:
+	restore cont
+	restore env
+	restore unev
+	;; unev = x , val = evaluated y	
+	... primitive operation (env-set! exp val env) ...
+	val = ok
+	goto cont
+
+\end{verbatim}
+
+
+\newpage
+
+
+\begin{verbatim}
+1 (define (eval-define exp env cont)
+2 (let ((var (car (cdr exp)))
+3       (val (car (cdr (cdr exp)))))
+4     (base-eval val env (lambda (data)
+5                           (env-define! var data env)
+6                           (cont 'ok)))))
+\end{verbatim}
+
+Line 1 :
+
+Line 2 :
+break up set! expression into variable and the value components
+
+Line 3 :
+
+Line 4 :
+evaluate the value that will become the result to be assigned to var in the environment
+
+Line 5 :
+use a primitive procedure that alters the environment
+
+Line 6 :
+passing a nominal result to show the assignment has been completed.
+Also useful to prevent code from depending on the result of assignment as assignment can
+return anything it likes
+
+Looking at the routine we can see that continuation is (lambda (data) ...)
+
+VAR : need that symbol 
+
+ENV : environment env is used in the env-set! primitive
+
+CONT : original cont is required also
+
+\begin{verbatim}
+;; (define f y) 
+ev-definition:
+	 save exp
+	 save env
+	 save cont
+	 exp = car [cdr [ cdr exp ]]  ;; y
+	 cont = ev-definition-2
+	 eval-dispatch
+
+ev-definition-2:
+	restore cont
+	restore env
+	restore exp
+	exp = car [ cdr exp ] ;; f
+	... primitive operation (env-define! exp val env) ...
+	val = ok
+	goto cont
+
+\end{verbatim}
+
+
+
+
+\newpage
+
+this version is new tail recursive as last expression in a begin sequence is
+evaluated without any further added continuations
+also incorporated a safety valve for empty begin expressions
+
+\begin{verbatim}
+1 (define (eval-begin exp env cont)
+2  (let ((body (cdr exp)))
+3    (eval-sequence body env cont)))
+4
+5 (define (eval-sequence body env cont)
+6  (cond
+7   ;; safety valve - just means (begin) evaluates to false
+8   ((null? body) (cont \#f))
+9   ;; last expression has no need to return -- key to tail recursion
+10   ((null? (cdr body))    
+11    (base-eval (car body) env cont))
+12   (else
+13    (base-eval (car body) env
+14	       (lambda (ignored)
+15		 ;; totally ignore the result 
+16		 (eval-sequence (cdr body) env cont))))))
+\end{verbatim}
+
+lines 1 to 3
+going evaluate the expressions of the begin sequence
+so seems appropriate to set unev to be the body of the begin sequence
+Line 3 : simple jump to eval sequence
+
+eval-begin :
+(set! unev (cdr exp))
+goto eval-sequence
+
+ev-sequence : 
+Line 8 : if unev is null , meaning nothing to evaluate then the result of whole begin sequence is undefined.
+let it be false \#f .
+(if (null? unev) (cont \#f))
+
+set! val \#f
+goto continue
+
+Line 10 : if this is the last expression , then all we need to do is pass this to base-eval , it never returns.
+
+set! exp (car unev)
+goto eval-dispatch ; which is base-eval
+
+Line 13 : otherwise evaluate the expression in the begin sequence and remember to come back to evaluate the rest
+
+set! exp (car unev)
+we want to come back to somewhere where we can tell it to evaluate the rest , ev-sequence-2 seems appropriate
+set! cont ev-sequence-2
+
+but we need original cont to carry on evaluating the sequence
+we also need original environment
+we also need the other unevaluated arguments also
+
+save-cont
+save-env
+save-unev
+set! exp (car unev)
+set! cont ev-sequence-2
+goto eval-dispatch
+
+ev-sequence-2 :
+line 14 : we observe see each lambda in continuation passing style becomes a new goto label location in register machine
+basic stack discipline , we restore the stack to its original state
+
+restore-unev
+restore-env
+restore-cont
+
+(cdr body)
+set! unev (cdr unev)
+
+line 16 : environment and continuation are the same as they are now , so we jump to ev-sequence
+goto ev-sequence
+
+Here is what the translation looks like 
+
+\begin{verbatim}
+
+(define (ev-begin)
+  (set! unev (cdr exp))
+  (ev-sequence))
+
+(define (ev-sequence)
+  (set! exp (car unev))
+  (cond
+   ((null? unev)
+    (set! val \#f)
+    (cont))
+   ((null? (cdr unev))
+    (ev-sequence-last-exp))
+   (else
+S1:    (save-cont)      ;; ***
+S2:    (save-env)       ;; ***
+S3:    (save-unev)      ;; ***
+    (set! cont ev-sequence-2)
+    (eval-dispatch))))
+
+(define (ev-sequence-2)
+R3:  (restore-unev)     ;; ***
+R2:  (restore-env)      ;; ***
+R1:  (restore-cont)     ;; ***
+  (set! unev (cdr unev))
+  (ev-sequence))
+
+(define (ev-sequence-last-exp)
+  (eval-dispatch))
+
+\end{verbatim}
+
+
+\newpage
+
+ev-sequence HOWEVER is called from other sites in addition to eval-dispatch.
+This is AWFUL modularity , means we cannot think about ev-sequence in isolation but must
+then look at who calls ev-sequence . 
+
+
+notice that the saves S1 S2 S3 and restores R3 R2 R1 must happen in reverse order to each other.
+it doesnt matter if we save any cont env or unev , but they must be preserved on restore to
+their original values -- stack discipline.
+
+Observed in SICP book version saves S1 and restores R1 have been hoisted out
+but this has far reaching ramifications to everything that uses ev-sequence
+- due to stack discipline.
+
+\begin{verbatim}
+
+(define (ev-begin)
+  (set! unev (cdr exp))
+S1:  (save-cont)        ;; *****
+  (ev-sequence))
+
+(define (ev-sequence)
+  (set! exp (car unev))
+  (cond
+   ((null? unev)
+    (set! val \#f)
+    (cont))
+   ((null? (cdr unev))
+    (ev-sequence-last-exp))
+   (else
+S2:    (save-env)
+S3:    (save-unev)
+    (set! cont ev-sequence-2)
+    (eval-dispatch))))
+
+(define (ev-sequence-2)
+R3:  (restore-unev)
+R2:  (restore-env)
+  (set! unev (cdr unev))
+  (ev-sequence))
+
+(define (ev-sequence-last-exp)
+R1:    (restore-cont)   ;; ***** 
+  (eval-dispatch))
+\end{verbatim}
+
+
+
+\end{document}
