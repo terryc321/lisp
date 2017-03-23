@@ -1179,6 +1179,11 @@
     (eval-num-div-helper (cdr argl)))))
 
 
+;;*****************************************************************
+;; primitives should really just return SOME VALUE , which is eventally assigned to VAL register
+;; or little val register to be more precise.
+(define (eval-read-line) (read-line))
+(define (eval-read-char) (read-char))
 
 ;; ;; (apply f a b c '(d e f))
 ;; ;; last item should be a list
@@ -1200,7 +1205,7 @@
 
 
 ;; have some initial environment ...
-
+;;*****************************************************************
 
 (set! env (cons 'reverse (cons eval-reverse env)))
 
@@ -1231,6 +1236,13 @@
 (set! env (cons '* (cons eval-num-mul env)))
 (set! env (cons '- (cons eval-num-sub env)))
 (set! env (cons '/ (cons eval-num-div env)))
+
+(set! env (cons 'read-line (cons eval-read-line env)))
+(set! env (cons 'read-char (cons eval-read-char env)))
+;;(set! env (cons 'eof-object? (cons eof-object? env)))
+
+
+
 
 
 
