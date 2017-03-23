@@ -227,6 +227,18 @@
 ;; evaluation continues until completed , or error
 (define (base-eval)
   (cond
+
+   ;; character = itself
+   ((char? exp)
+    (set! val exp)
+    (cont))
+
+   ;; string = itself
+   ((string? exp)
+    (set! val exp)
+    (cont))
+
+   
    ;; number = number
    ((number? exp)
     (set! val exp)
@@ -719,7 +731,7 @@
 (define (eval-debugger-print)
   (restore 'cont)
   (display ";; DE-BUG Value : ")
-  (display val)
+  (write val)
   (newline)
   (eval-debugger))
 
@@ -735,7 +747,7 @@
   (display bug)
   
   (display ";; DE-BUG Continue Value : ")
-  (display val)
+  (write val)
   (newline)
   (cont))
 
@@ -755,9 +767,9 @@
 (define (repl-print)
   (newline)
   (display ";; Value : ")
-  (display val)
+  (write val)
   (newline)
-  (stats) ;; show the stack statistics
+  ;;(stats) ;; show the stack statistics
   (repl))
 
 ;; just a helper routine , not a continuation point
@@ -768,9 +780,6 @@
    ((eq? exp (car env))
     (car (cdr env)))
    (else (lookup-symbol exp (cdr (cdr env))))))
-
-
-
 
 
 ;; ;; QUOTE : exp = (x)
@@ -1184,6 +1193,13 @@
 ;; or little val register to be more precise.
 (define (eval-read-line) (read-line))
 (define (eval-read-char) (read-char))
+(define (eval-char-p) (apply char? argl))
+(define (eval-char-eq) (apply char=? argl))
+
+(define (eval-char-ci=?) (apply char-ci=? argl))
+(define (eval-string->list) (apply string->list argl))
+
+
 
 ;; ;; (apply f a b c '(d e f))
 ;; ;; last item should be a list
@@ -1239,6 +1255,17 @@
 
 (set! env (cons 'read-line (cons eval-read-line env)))
 (set! env (cons 'read-char (cons eval-read-char env)))
+
+(set! env (cons 'char? (cons eval-char-p env)))
+(set! env (cons 'char=? (cons eval-char-eq env)))
+
+;; think char-case-ignore
+(set! env (cons 'char-ci=? (cons eval-char-ci=? env)))
+(set! env (cons 'string->list (cons eval-string->list env)))
+
+
+
+
 ;;(set! env (cons 'eof-object? (cons eof-object? env)))
 
 
