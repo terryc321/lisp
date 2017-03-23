@@ -233,10 +233,10 @@
     (set! val exp)
     (cont))
 
-   ;; microcode routines 
-   ((microcode-procedure? exp)
-    (set! val exp)
-    (cont))
+   ;; ;; microcode routines 
+   ;; ((microcode-procedure? exp)
+   ;;  (set! val exp)
+   ;;  (cont))
    
    ;; machine routines are just code
    ((primitive-procedure? exp)
@@ -318,20 +318,18 @@
   (base-eval))
 
 
-;; (set! f x)
-(define (ev-assignment)
-  ;; definition variable
-  (set! unev (car (cdr exp)))
-  (save 'unev)
-  ;; definition value
-  (set! exp (car (cdr (cdr exp))))
+
+;; (define f x)
+(define (ev-definition)
+  (set! unev (car (cdr exp))) ;; variable symbol 
+  (save 'unev)   
+  (set! exp (car (cdr (cdr exp)))) ;; arg x to eval
   (save 'env)
   (save 'cont)
-  (set! cont ev-assignment-2)
+  (set! cont ev-definition-2)
   (eval-dispatch))
 
-
-(define (ev-assignment-2)
+(define (ev-definition-2)
   (restore 'cont)
   (restore 'env)
   (restore 'unev)
@@ -339,10 +337,31 @@
   ;; key = unev
   ;; value = val
   ;;   rest environment is env
-  (set-variable-value unev val env)
-  ;;(set! env (cons unev (cons val env)))
+  (set! env (cons unev (cons val env)))
   (set! val 'ok)
   (cont))
+
+;; *****************************************
+
+;; (set! a y)
+(define (ev-assignment)
+  (set! unev (car (cdr exp))) ;; variable symbol 
+  (save 'unev)   
+  (set! exp (car (cdr (cdr exp)))) ;; arg x to eval
+  (save 'env)
+  (save 'cont)
+  (set! cont ev-assignment-2)
+  (eval-dispatch))
+
+(define (ev-assignment-2)
+  (restore 'cont)
+  (restore 'env)
+  (restore 'unev)
+  (set-variable-value unev val env)
+  (set! val 'ok)
+  (cont))
+
+
 
 
 (define (set-variable-value k v xs)
@@ -355,108 +374,7 @@
 
 
 
-
-;; (define f x)
-(define (ev-definition)
-  ;; definition variable
-  (set! unev (car (cdr exp)))
-  (save 'unev)
-  ;; definition value
-  (set! exp (car (cdr (cdr exp))))
-  (save 'env)
-  (save 'cont)
-  (set! cont ev-definition-1)
-  (eval-dispatch))
-
-(define (ev-definition-1)
-  (restore 'cont)
-  (restore 'env)
-  (restore 'unev)
-  ;; define the variable in environment
-  ;; key = unev
-  ;; value = val
-  ;;   rest environment is env
-  (set! env (cons unev (cons val env)))
-
-  (set! val 'ok)
-  (cont))
-
-
-
-
-
-
-
-
-
-
-
-;; ;;eval-application
-;; ;;exp = (f a b c d)
-;; (define (ev-application)
-;;   (save 'cont)
-;;   (save 'env)
-;;   (set! unev (cdr exp))
-;;   (save 'unev)
-;;   ;; the operator 
-;;   (set! exp (car exp))  
-;;   (set! cont ev-appl-did-operator)
-;;   (eval-dispatch))
-  
-;; (define (ev-appl-did-operator)
-;;   (restore 'unev)
-;;   (restore 'env)
-;;   ;; empty arg list
-;;   (set! argl '())
-;;   ;; operator evaluated now in proc
-;;   (set! proc val)
-;;   ;; if no args - goto apply dispatch
-;;   (if (null? unev)
-;;       (begin
-;; 	(apply-dispatch))
-;;       (begin
-;; 	(save 'proc)
-;; 	(ev-appl-operand-loop))))
-
-
-;; (define (ev-appl-operand-loop)
-;;   (save 'argl)
-;;   (set! exp (car unev))
-;;   (if (null? (cdr unev))
-;;       (begin
-;; 	(ev-appl-last-arg))
-;;       (begin
-;; 	(save 'env)
-;; 	(save 'unev)
-;; 	(set! cont ev-appl-accumulate-arg)
-;; 	(eval-dispatch))))
-
-;; (define (ev-appl-accumulate-arg)
-;;   (restore 'unev)
-;;   (restore 'env)
-;;   (restore 'argl)
-;;   ;; adjoin
-;;   (set! argl (cons val argl))
-;;   ;; rest of 
-;;   (set! unev (cdr unev))
-;;   (ev-appl-operand-loop))
-
-;; (define (ev-appl-last-arg)
-;;   (set! cont ev-appl-accum-last-arg)
-;;   (eval-dispatch))
-
-;; (define (ev-appl-accum-last-arg)
-;;   (restore 'argl)
-;;   ;; adjoin
-;;   (set! argl (cons val argl))
-;;   (restore 'proc)
-;;   (apply-dispatch))
-
-
 (define (ev-application)
-  ;; ...
-  (save 'cont) ;; this is a HACK to fit in with SICP apply-dispatch code
-  ;; ...
   (set! unev (cdr exp))
   (save 'unev)
   (save 'env)
@@ -470,7 +388,6 @@
   (restore 'env)
   (restore 'unev)
   (set! proc val)  
-  ;; ...
   (save 'proc)
   (save 'env)
   (save 'cont)
@@ -506,7 +423,6 @@
   (cont))
 
 ;; *******************
-
 
 (define (ev-operands)
   (set! argl '())
@@ -548,8 +464,8 @@
     (primitive-apply))
    ((user-procedure? proc)
     (user-apply))
-   ((microcode-procedure? proc)
-    (microcode-apply))
+   ;; ((microcode-procedure? proc)
+   ;;  (microcode-apply))
    (else
     (eval-error "unknown procedure type"))))
 
@@ -565,42 +481,33 @@
   ;; apply primitive procedure with operator in PROC , operands in ARGL
   ;; put args in correct order visually
   (set! argl (reverse argl))
-
   ;; (newline)
   ;; (display " * PRIMITIVE-APPLY * : ")
   ;; (display proc)
   ;; (display " : ARGS = ")
   ;; (display argl)
   ;; (newline)
-  
+  (save 'cont)
   (set! val (proc))
   (restore 'cont)
   (cont))
 
 
-
-(define (microcode-apply)
-
-  (newline)
-  (display " * MICROCODE-APPLY * : ")
-  (display proc)
-  (display " : ARGS = ")
-  (display argl)
-  (newline)
-  
-  (restore 'cont)
-  (cont))
-
-
-
+;; (define (microcode-apply)
+;;   (newline)
+;;   (display " * MICROCODE-APPLY * : ")
+;;   (display proc)
+;;   (display " : ARGS = ")
+;;   (display argl)
+;;   (newline)  
+;;   (restore 'cont)
+;;   (cont))
 
 
 (define (user-apply)
-  ;; procedure in PROC register
-  
+  ;; procedure in PROC register  
   ;; put arguments in correct order
   (set! argl (reverse argl))
-
   ;;(bkpt 'user-apply 'proc proc)
   (set! unev (user-procedure-lambda-params proc))
   ;; call the lambda environment because its just a thunk with environment hidden inside .
@@ -618,70 +525,71 @@
 
 
 (define (ev-begin)
-  (set! unev (cdr exp))
-  (save 'cont)
+  (set! unev (cdr exp))  
   (ev-sequence))
 
 (define (ev-sequence)
   (if (null? unev)
       (begin
-	(set! val #f)
-	(restore 'cont)
+	(set! val #f)	
 	(cont))
       (begin
 	(set! exp (car unev))  
 	(if (null? (cdr unev))
 	    (begin
-	      (ev-sequence-last-exp))
+	      (ev-sequence-3))
 	    (begin
-	      (save 'unev)
+	      (save 'cont)
 	      (save 'env)
+	      (save 'unev)	      
 	      (set! cont ev-sequence-2)
 	      (eval-dispatch))))))
 
-
 (define (ev-sequence-2)
-  (restore 'env)
   (restore 'unev)
+  (restore 'env)
+  (restore 'cont)
   (set! unev (cdr unev))
   (ev-sequence))
 
-(define (ev-sequence-last-exp)
-  (restore 'cont)
+(define (ev-sequence-3)
   (eval-dispatch))
 
+
+;; *****************************************
 
 (define (ev-if)
-  (save 'exp)
+  (set! unev (cdr (cdr exp)))
+  (save 'unev)
   (save 'env)
   (save 'cont)
-  (set! cont ev-if-decide)
   (set! exp (car (cdr exp)))
+  (set! cont ev-if-2)  
   (eval-dispatch))
 
-(define (ev-if-decide)
+(define (ev-if-2)
   (restore 'cont)
   (restore 'env)
-  (restore 'exp)
+  (restore 'unev)
   (if val
-      (ev-if-consequent)
-      (ev-if-alternative)))
+      (ev-if-3)
+      (ev-if-4)))
 
-(define (ev-if-consequent)
-  (set! exp (car (cdr (cdr exp))))
+(define (ev-if-3)
+  (set! exp (car unev))
   (eval-dispatch))
 
 ;; (if X Y Z)
-(define (ev-if-alternative)
-  (if (null? (cdr (cdr (cdr exp))))
+(define (ev-if-4)
+  (set! unev (cdr unev))
+  (if (null? unev)
       (begin
 	;; no alternative clause
 	(set! val #f)
 	(cont))
       (begin
-        (set! exp (car (cdr (cdr (cdr exp)))))
+        (set! exp (car unev))
 	(eval-dispatch))))
-
 
 
 

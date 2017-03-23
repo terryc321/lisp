@@ -4,10 +4,52 @@
 
 \begin{verbatim}
 ---------------------------------------------------------
+        *    apply-dispatch   * 
+---------------------------------------------------------
+inputs    : proc = evaluated procedure , argl = evaluated arguments
+outputs   : 
+clobber   : 
+preserved : 
+---------------------------------------------------------
+apply-dispatch :
+	 if primitive-procedure? proc	     
+	     goto primitive-apply
+	 if user-procedure? proc
+	     goto user-apply
+	 otherwise
+	     eval-error " unknown procedure type "
+---------------------------------------------------------	
+        *    primitive-apply   * 
+---------------------------------------------------------
+primitive-apply :
+	save continue ;; allows primitive to use all registers 
+	argl = reverse argl
+	val = call the primitive proc with arguments argl
+	restore continue ;; restore 
+	goto continue	
+---------------------------------------------------------
+        *    user-apply   * 
+---------------------------------------------------------
+user-apply :
+	argl = reverse argl
+	unev = user-lambda-params proc
+	env  = user-lambda-env proc
+	extend the environment [env] with [unev : params ] and [ argl : values ]
+	unev = user-lambda-body proc
+	goto ev-sequence ;; implicit sequence on body of lambda
+---------------------------------------------------------	
+\end{verbatim}
+
+
+\newpage
+
+
+\begin{verbatim}
+---------------------------------------------------------
         *    eval-dispatch   * 
 ---------------------------------------------------------
-example input  :    exp = '(begin 1 2 3) 
-example output :    val = 3
+example input  :    exp = < thing to be evaluated >
+example output :    val = < what it evaluates to >
 ---------------------------------------------------------
 inputs    : exp
 outputs   : val
@@ -15,12 +57,62 @@ clobber   : argl , exp , unev , val , proc
 preserved : cont , env
 ---------------------------------------------------------
 eval-dispatch :
-
+	 if self-evaluating? exp 
+	     val = exp
+	     goto continue
+	 if symbol? exp
+	     val = lookup symbol exp env
+	     goto continue
+	 if pair? exp and car [exp] = 'if
+	     goto ev-if
+	 if pair? exp and car [exp] = 'quote
+	     val = car [ cdr exp ]
+	     goto continue
+	 if pair? exp and car [exp] = 'begin
+	     goto ev-begin
+	 if pair? exp and car [exp] = 'lambda
+	     goto ev-lambda
+	 if pair? exp and car [exp] = 'define
+	     goto ev-definition
+	 if pair? exp and car [exp] = 'set!
+	     goto ev-assignment
+	 if pair? exp
+	     goto ev-application
+	 otherwise
+	     eval-error " what now ? "
 ---------------------------------------------------------	
 \end{verbatim}
 
 \newpage
+\begin{verbatim}
+---------------------------------------------------------
+ self-evaluating ?    
+---------------------------------------------------------
+	 if boolean? exp
+	    string? exp
+	    vector? exp
+	    procedure? exp
+	  then return true
+	  else return false
+---------------------------------------------------------
+        *    ev-lambda   * 
+---------------------------------------------------------
+ev-lambda :
+	 unev = car [ cdr exp ] ; params of lambda
+	 exp = cdr [ cdr exp ]  ; body of lambda
+	 val = #[ closure unev exp env ]  
+         goto cont
+---------------------------------------------------------	
+(define (user-procedure? x)
+  (and (vector? x)
+       (eq? 'closure (vector-ref x 0))))
+(define (user-lambda-params x) (vector-ref x 1))
+(define (user-lambda-body x)   (vector-ref x 2))
+(define (user-lambda-env x)    (vector-ref x 3))
+---------------------------------------------------------	
+\end{verbatim}
 
+\newpage
 
 \begin{verbatim}
 ---------------------------------------------------------
@@ -76,19 +168,19 @@ clobber   : argl , exp , unev , val , proc
 preserved : cont , env
 ---------------------------------------------------------
 ev-definition:
-	 save exp
-	 save env
+	 unev = car [ cdr exp ] ;  variable 
+	 save unev
+	 save env  ; save environment define will need that
 	 save cont
-	 exp = car [cdr [ cdr exp ]]  ;; y
+	 exp = car [cdr [ cdr exp ]]  ;; value to eval
 	 cont = ev-definition-2
 	 eval-dispatch
 
 ev-definition-2:
 	restore cont
 	restore env
-	restore exp
-	exp = car [ cdr exp ] ;; f
-	... primitive operation (env-define! exp val env) ...
+	restore unev	
+	... primitive ... (env-define! exp val env) ...
 	val = ok
 	goto cont
 ---------------------------------------------------------	
@@ -143,7 +235,8 @@ clobber   : argl , exp , unev , val , proc
 preserved : cont , env
 ---------------------------------------------------------
 ev-if:
-	 save exp
+	 unev = cdr [ cdr exp ]
+	 save unev
 	 save env
 	 save cont
 	 exp = car [cdr exp ]  ;; x
@@ -152,19 +245,21 @@ ev-if:
 ev-if-2:
 	restore cont
 	restore env
-	restore exp
+	restore unev
 	if val is true
 	   goto ev-if-3
-	exp = cdr [ cdr [cdr exp ]
-	if null? exp
+	   goto ev if-4
+ev-if-3:
+	exp = car unev ;; y
+	goto eval-dispatch
+ev-if-4:
+	unev = cdr unev 
+	if null? unev
 	   val = \#f  ;; false
 	   goto continue
 	otherwise
-	   exp = car [ exp ]
+	   exp = car unev
 	   goto eval-dispatch	   
-ev-if-3:
-	exp = car [ cdr [cdr exp]] ;; y
-	goto eval-dispatch
 ---------------------------------------------------------	
 \end{verbatim}
 
@@ -231,7 +326,8 @@ ev-operands :
 	    goto ev-operands-2
 
 ev-operands-2 :
-	      if null? unev then goto cont	   
+	      if null? unev
+	          goto cont	   
 	      exp = car unev
 	      unev = cdr unev
 	      save env

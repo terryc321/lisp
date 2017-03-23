@@ -1,8 +1,15 @@
 
+******************************************************************************
+
+******************************************************************************
 
 worked out a way to translate CPS to register machine architecture
 
 trying to see if we can get microcode included into the system.
+
+think the link between CPS evaluator and Register Machine code should be examined more
+closely.
+in particular want to see callcc in the register machine , along with trace and inspect.
 
 
 ******************************************************************************
@@ -100,7 +107,7 @@ SICP explicit control evaluator has a stack and 7 registers
 2 ENV  : environment register - naturally an environment
 3 CONT : continuation register - a memory address , where go to next
 4 VAL  : value register - where THE value of result lives
-5 PROC :
+5 PROC : procedure register .
 6 ARGL : argument list - 
 7 UNEV : unevaluated arguments 
 
