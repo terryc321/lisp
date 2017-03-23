@@ -49,7 +49,11 @@
   (display "stack pops   : ") (display *stack-pops* ) (newline)
   (display "stack height : ") (display *stack-height* ) (newline))
 
-  
+(define (read-and-macro-expand)
+  (macro-expand (read)))
+
+
+
   
 
 (define (save reg)
@@ -696,7 +700,7 @@
   (save 'cont)
   
   (set! cont eval-debugger-print)
-  (set! exp (read))
+  (set! exp (read-and-macro-expand))
   ;; intercept expressions - in addition to base eval
   (cond
    ;; (continue x)
@@ -745,7 +749,7 @@
   (newline)
   (stats-reset) ;; reset statistics
   (set! cont repl-print)
-  (set! exp (read))
+  (set! exp (read-and-macro-expand))
   (base-eval))
 
 (define (repl-print)
@@ -1023,8 +1027,15 @@
 
 
 ;; LIST : exp = (...)
-(define (eval-list)
-  argl)
+(define (eval-list)  argl)
+
+;; APPEND
+(define (eval-append)
+  (define (append-helper xs rs)
+    (cond
+     ((null? xs) rs)
+     (else (append-helper (cdr xs) (append rs (car xs))))))
+  (append-helper argl '()))
 
 
 ;; LENGTH : exp = (xs)
@@ -1197,11 +1208,13 @@
 ;;(set! env (cons 'reverse (cons (make-microcode ev-reverse) env)))
 
 
+;; list and append are required by quasiquote expander
+(set! env (cons 'list (cons eval-list env)))
+(set! env (cons 'append (cons eval-append env)))
 
 (set! env (cons 'car (cons eval-car env)))
 (set! env (cons 'cdr (cons eval-cdr env)))
 (set! env (cons 'cons (cons eval-cons env)))
-(set! env (cons 'list (cons eval-list env)))
 (set! env (cons 'procedure? (cons eval-procedure-p env)))
 (set! env (cons 'pair? (cons eval-pair-p env)))
 (set! env (cons 'boolean? (cons eval-boolean-p env)))

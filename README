@@ -1,9 +1,18 @@
 
-
 the best part is under CPS-INTERPRETER directory
-there is a file called repl.scm
-load this into GUILE scheme
 
+there is a file called repl.scm
+load this into mit-scheme
+
+********************************************************************************
+SICP Register Machine 
+
+special forms : IF , LAMBDA , QUOTE , SET! , BEGIN ,  
+
+A macro expander is available.
+Quasiquote expander requires list and append.
+
+********************************************************************************
 that should pull in all the required defmacro expander and quasiquote.
 
 at the moment macro expansion is handled outside of the lisp interpreter ,

@@ -1758,7 +1758,8 @@
 (load 	  "/home/terry/lisp/cps-interpreter/macros/cond.scm")
 
 ;; let is just applied lambda, but visual appearances easier keep as let
-;;(load 	  "/home/terry/lisp/cps-interpreter/macros/let.scm")
+;; 
+(load 	  "/home/terry/lisp/cps-interpreter/macros/let.scm")
 
 ;; letrec requires lets and sets
 (load 	  "/home/terry/lisp/cps-interpreter/macros/letrec.scm")
@@ -1778,11 +1779,13 @@
 ;; disjunction
 (load 	  "/home/terry/lisp/cps-interpreter/macros/or.scm")
 
-;; SICP register machine
+;; **** ------ SICP register machine ------- ****
+;; **** this redefines REPL 
 (load 	  "/home/terry/lisp/cps-interpreter/sicp.scm")
 
 ;; start the system
 (repl)
+
 
 
 
