@@ -1,29 +1,156 @@
 
+;; simply load compiler into our vanilla interpreter
+;; to see how it performs
+
 
 ;; sicp compiler
+;; true #t
+;; false #f
+;; self-evaluating
+;; quoted?
+;; variable?
+;;
+(define (compile exp target linkage)
+    (cond
+     ((self-evaluating? exp)
+      (compile-self-evaluating exp target linkage))     
+     ((quoted? exp)      (compile-quoted exp target linkage))     
+     ;; is it a symbol ?
+     ((variable? exp)  (compile-variable exp target linkage))     
+     ((assignment? exp)  (compile-assignment exp target linkage))     
+     ((definition? exp)  (compile-definition exp target linkage))
+     ((if? exp)     (compile-if exp target linkage))     
+     ((lambda? exp)      (compile-lambda exp target linkage))
+     ((begin? exp)     (compile-sequence (begin-actions exp)
+			target
+			linkage))
+     ;;((cond? exp) (compile (cond->if exp) target linkage))
+     ((application? exp)  (compile-application exp target linkage))     
+     (else
+      (error "Unknown expression type -- COMPILE" exp))))
 
-(define (sicp-compile exp target linkage)
-  (cond ((self-evaluating? exp)
-         (sicp-compile-self-evaluating exp target linkage))
-        ((quoted? exp) (sicp-compile-quoted exp target linkage))
-        ((variable? exp)
-         (sicp-compile-variable exp target linkage))
-        ((assignment? exp)
-         (sicp-compile-assignment exp target linkage))
-        ((definition? exp)
-         (sicp-compile-definition exp target linkage))
-        ((if? exp) (sicp-compile-if exp target linkage))
-        ((lambda? exp) (sicp-compile-lambda exp target linkage))
-        ((begin? exp)
-         (sicp-compile-sequence (begin-actions exp)
-                           target
-                           linkage))
-	;; is this a macro ?? 
-        ;;((cond? exp) (compile (cond->if exp) target linkage))
-        ((application? exp)
-         (sicp-compile-application exp target linkage))
-        (else
-         (error "Unknown expression type -- SICP-COMPILE" exp))))
+
+(define (self-evaluating? exp)
+  (cond ((number? exp) #t)
+        ((string? exp) #t)
+        (else #f)))
+
+
+(define (variable? exp)
+  (symbol? exp))
+
+(define (quoted? exp)
+  (tagged-list? exp 'quote))
+
+(define (text-of-quotation exp) (cadr exp))
+
+
+(define (tagged-list? exp tag)
+  (if (pair? exp)
+      (eq? (car exp) tag)
+      false))
+
+;;Assignments have the form (set! <var> <value>):
+(define (assignment? exp)
+  (tagged-list? exp 'set!))
+(define (assignment-variable exp) (cadr exp))
+(define (assignment-value exp) (caddr exp))
+
+
+(define (definition? exp)
+  (tagged-list? exp 'define))
+
+(define (definition-variable exp)
+  (if (symbol? (cadr exp))
+      (cadr exp)
+      (caadr exp)))
+
+(define (definition-value exp)
+  (if (symbol? (cadr exp))
+      (caddr exp)
+      (make-lambda (cdadr exp)   ; formal parameters
+			(cddr exp)))) ; body
+
+
+(define (lambda? exp)
+  (tagged-list? exp 'lambda))
+(define (lambda-parameters exp)
+  (cadr exp))
+(define (lambda-body exp)
+  (cddr exp))
+
+;;We also provide a constructor for lambda expressions, which is used by definition-value, above:
+
+(define (make-lambda parameters body)
+  (cons 'lambda (cons parameters body)))
+
+(define (if? exp)
+  (tagged-list? exp 'if))
+(define (if-predicate exp)
+  (cadr exp))
+(define (if-consequent exp)
+  (caddr exp))
+(define (if-alternative exp)
+  (if (not (null? (cdddr exp)))
+      (cadddr exp)
+      'false))
+
+(define (make-if predicate consequent alternative)
+  (list 'if predicate consequent alternative))
+
+(define (begin? exp)
+  (tagged-list? exp 'begin))
+
+(define (begin-actions exp)
+  (cdr exp))
+
+(define (last-exp? seq)
+  (null? (cdr seq)))
+
+(define (first-exp seq)
+  (car seq))
+
+(define (rest-exps seq)
+  (cdr seq))
+
+
+(define (sequence->exp seq)
+  (cond ((null? seq) seq)
+        ((last-exp? seq) (first-exp seq))
+        (else (make-begin seq))))
+
+(define (make-begin seq) (cons 'begin seq))
+
+(define (application? exp) (pair? exp))
+(define (operator exp) (car exp))
+(define (operands exp) (cdr exp))
+(define (no-operands? ops) (null? ops))
+(define (first-operand ops) (car ops))
+(define (rest-operands ops) (cdr ops))
+
+
+(define (cond? exp) (tagged-list? exp 'cond))
+(define (cond-clauses exp) (cdr exp))
+(define (cond-else-clause? clause)
+  (eq? (cond-predicate clause) 'else))
+(define (cond-predicate clause) (car clause))
+(define (cond-actions clause) (cdr clause))
+(define (cond->if exp)
+  (expand-clauses (cond-clauses exp)))
+
+(define (expand-clauses clauses)
+  (if (null? clauses)
+      'false                          ; no else clause
+      (let ((first (car clauses))
+            (rest (cdr clauses)))
+        (if (cond-else-clause? first)
+            (if (null? rest)
+                (sequence->exp (cond-actions first))
+                (error "ELSE clause isn't last -- COND->IF"
+                       clauses))
+            (make-if (cond-predicate first)
+                     (sequence->exp (cond-actions first))
+                     (expand-clauses rest))))))
 
 
 (define (make-instruction-sequence needs modifies statements)
@@ -32,7 +159,37 @@
 (define (empty-instruction-sequence)
   (make-instruction-sequence '() '() '()))
 
-(define (sicp-compile-linkage linkage)
+
+(define (preserving regs seq1 seq2)
+  (if (null? regs)
+      (append-instruction-sequences seq1 seq2)
+      (let ((first-reg (car regs)))
+        (if (and (needs-register? seq2 first-reg)
+                 (modifies-register? seq1 first-reg))
+            (preserving (cdr regs)
+             (make-instruction-sequence
+              (list-union (list first-reg)
+                          (registers-needed seq1))
+              (list-difference (registers-modified seq1)
+                               (list first-reg))
+              (append `((save ,first-reg))
+                      (statements seq1)
+                      `((restore ,first-reg))))
+             seq2)
+            (preserving (cdr regs) seq1 seq2)))))
+
+
+
+(define (tack-on-instruction-sequence seq body-seq)
+  (make-instruction-sequence
+   (registers-needed seq)
+   (registers-modified seq)
+   (append (statements seq) (statements body-seq))))
+
+
+;;----------------------------------------------------------------------
+
+(define (compile-linkage linkage)
   (cond ((eq? linkage 'return)
          (make-instruction-sequence '(continue) '()
 				    '((goto (reg continue)))))
@@ -42,23 +199,30 @@
          (make-instruction-sequence '() '()
 				    `((goto (label ,linkage)))))))
 
-
-
 (define (end-with-linkage linkage instruction-sequence)
   (preserving '(continue)
    instruction-sequence
-   (sicp-compile-linkage linkage)))
+   (compile-linkage linkage)))
 
 
-(define (sicp-compile-self-evaluating exp target linkage)
-  (end-with-linkage linkage
-   (make-instruction-sequence '() (list target)
-    `((assign ,target (const ,exp))))))
-(define (sicp-compile-quoted exp target linkage)
-  (end-with-linkage linkage
-   (make-instruction-sequence '() (list target)
+;; compiling simple expressions
+(define (compile-self-evaluating exp target linkage)
+  (end-with-linkage
+   linkage
+   (make-instruction-sequence '()
+			      (list target)
+			      `((assign ,target (const ,exp))))))
+
+
+(define (compile-quoted exp target linkage)
+  (end-with-linkage
+   linkage
+   (make-instruction-sequence
+    '()
+    (list target)
     `((assign ,target (const ,(text-of-quotation exp)))))))
-(define (sicp-compile-variable exp target linkage)
+
+(define (compile-variable exp target linkage)
   (end-with-linkage linkage
    (make-instruction-sequence '(env) (list target)
     `((assign ,target
@@ -67,10 +231,10 @@
               (reg env))))))
 
 
-(define (sicp-compile-assignment exp target linkage)
+(define (compile-assignment exp target linkage)
   (let ((var (assignment-variable exp))
         (get-value-code
-         (sicp-compile (assignment-value exp) 'val 'next)))
+         (compile (assignment-value exp) 'val 'next)))
     (end-with-linkage linkage
      (preserving '(env)
       get-value-code
@@ -80,10 +244,11 @@
                   (reg val)
                   (reg env))
          (assign ,target (const ok))))))))
-(define (sicp-compile-definition exp target linkage)
+
+(define (compile-definition exp target linkage)
   (let ((var (definition-variable exp))
         (get-value-code
-         (sicp-compile (definition-value exp) 'val 'next)))
+         (compile (definition-value exp) 'val 'next)))
     (end-with-linkage linkage
      (preserving '(env)
       get-value-code
@@ -96,18 +261,18 @@
 
 
 
-(define (sicp-compile-if exp target linkage)
+(define (compile-if exp target linkage)
   (let ((t-branch (make-label 'true-branch))
         (f-branch (make-label 'false-branch))                    
         (after-if (make-label 'after-if)))
     (let ((consequent-linkage
            (if (eq? linkage 'next) after-if linkage)))
-      (let ((p-code (sicp-compile (if-predicate exp) 'val 'next))
+      (let ((p-code (compile (if-predicate exp) 'val 'next))
             (c-code
-             (sicp-compile
+             (compile
               (if-consequent exp) target consequent-linkage))
             (a-code
-             (sicp-compile (if-alternative exp) target linkage)))
+             (compile (if-alternative exp) target linkage)))
         (preserving '(env continue)
          p-code
          (append-instruction-sequences
@@ -120,15 +285,15 @@
           after-if))))))
 
 
-(define (sicp-compile-sequence seq target linkage)
+(define (compile-sequence seq target linkage)
   (if (last-exp? seq)
-      (sicp-compile (first-exp seq) target linkage)
+      (compile (first-exp seq) target linkage)
       (preserving '(env continue)
-       (sicp-compile (first-exp seq) target 'next)
-       (sicp-compile-sequence (rest-exps seq) target linkage))))
+       (compile (first-exp seq) target 'next)
+       (compile-sequence (rest-exps seq) target linkage))))
 
 
-(define (sicp-compile-lambda exp target linkage)
+(define (compile-lambda exp target linkage)
   (let ((proc-entry (make-label 'entry))
         (after-lambda (make-label 'after-lambda)))
     (let ((lambda-linkage
@@ -138,37 +303,37 @@
         (end-with-linkage lambda-linkage
          (make-instruction-sequence '(env) (list target)
           `((assign ,target
-                    (op make-sicp-compiled-procedure)
+                    (op make-compiled-procedure)
                     (label ,proc-entry)
                     (reg env)))))
-        (sicp-compile-lambda-body exp proc-entry))
+        (compile-lambda-body exp proc-entry))
        after-lambda))))
 
 
-(define (sicp-compile-lambda-body exp proc-entry)
+(define (compile-lambda-body exp proc-entry)
   (let ((formals (lambda-parameters exp)))
     (append-instruction-sequences
      (make-instruction-sequence '(env proc argl) '(env)
       `(,proc-entry
-        (assign env (op sicp-compiled-procedure-env) (reg proc))
+        (assign env (op compiled-procedure-env) (reg proc))
         (assign env
                 (op extend-environment)
                 (const ,formals)
                 (reg argl)
                 (reg env))))
-     (sicp-compile-sequence (lambda-body exp) 'val 'return))))
+     (compile-sequence (lambda-body exp) 'val 'return))))
 
 
-(define (sicp-compile-application exp target linkage)
-  (let ((proc-code (sicp-compile (operator exp) 'proc 'next))
+(define (compile-application exp target linkage)
+  (let ((proc-code (compile (operator exp) 'proc 'next))
         (operand-codes
-         (map (lambda (operand) (sicp-compile operand 'val 'next))
+         (map (lambda (operand) (compile operand 'val 'next))
               (operands exp))))
     (preserving '(env continue)
      proc-code
      (preserving '(proc continue)
       (construct-arglist operand-codes)
-      (sicp-compile-procedure-call target linkage)))))
+      (compile-procedure-call target linkage)))))
 
 
 (define (construct-arglist operand-codes)
@@ -201,11 +366,11 @@
          (code-to-get-rest-args (cdr operand-codes))))))
 
 
-(define (sicp-compile-procedure-call target linkage)
+(define (compile-procedure-call target linkage)
   (let ((primitive-branch (make-label 'primitive-branch))
-        (sicp-compiled-branch (make-label 'sicp-compiled-branch))
+        (compiled-branch (make-label 'compiled-branch))
         (after-call (make-label 'after-call)))
-    (let ((sicp-compiled-linkage
+    (let ((compiled-linkage
            (if (eq? linkage 'next) after-call linkage)))
       (append-instruction-sequences
        (make-instruction-sequence '(proc) '()
@@ -213,8 +378,8 @@
           (branch (label ,primitive-branch))))
        (parallel-instruction-sequences
         (append-instruction-sequences
-         sicp-compiled-branch
-         (sicp-compile-proc-appl target sicp-compiled-linkage))
+         compiled-branch
+         (compile-proc-appl target compiled-linkage))
         (append-instruction-sequences
          primitive-branch
          (end-with-linkage linkage
@@ -227,11 +392,11 @@
        after-call))))
 
 
-(define (sicp-compile-proc-appl target linkage)
+(define (compile-proc-appl target linkage)
   (cond ((and (eq? target 'val) (not (eq? linkage 'return)))
          (make-instruction-sequence '(proc) all-regs
            `((assign continue (label ,linkage))
-             (assign val (op sicp-compiled-procedure-entry)
+             (assign val (op compiled-procedure-entry)
                          (reg proc))
              (goto (reg val)))))
         ((and (not (eq? target 'val))
@@ -239,7 +404,7 @@
          (let ((proc-return (make-label 'proc-return)))
            (make-instruction-sequence '(proc) all-regs
             `((assign continue (label ,proc-return))
-              (assign val (op sicp-compiled-procedure-entry)
+              (assign val (op compiled-procedure-entry)
                           (reg proc))
               (goto (reg val))
               ,proc-return
@@ -247,11 +412,11 @@
               (goto (label ,linkage))))))
         ((and (eq? target 'val) (eq? linkage 'return))
          (make-instruction-sequence '(proc continue) all-regs
-          '((assign val (op sicp-compiled-procedure-entry)
+          '((assign val (op compiled-procedure-entry)
                         (reg proc))
             (goto (reg val)))))
         ((and (not (eq? target 'val)) (eq? linkage 'return))
-         (error "return linkage, target not val -- SICP-COMPILE"
+         (error "return linkage, target not val -- COMPILE"
                 target))))
 
 
@@ -265,6 +430,7 @@
 
 (define (needs-register? seq reg)
   (memq reg (registers-needed seq)))
+
 (define (modifies-register? seq reg)
   (memq reg (registers-modified seq)))
 
@@ -317,12 +483,6 @@
 
 
 
-(define (tack-on-instruction-sequence seq body-seq)
-  (make-instruction-sequence
-   (registers-needed seq)
-   (registers-modified seq)
-   (append (statements seq) (statements body-seq))))
-
 
 (define (parallel-instruction-sequences seq1 seq2)
   (make-instruction-sequence
@@ -333,8 +493,6 @@
    (append (statements seq1) (statements seq2))))
 
 
-(define (self-evaluating? exp)
-  (number? exp))
 
 (define (lambda? exp) 
   (and (pair? exp) (eq? (car exp) 'lambda)))
@@ -419,7 +577,7 @@
 
 
 (define (example)
-  (sicp-compile
+  (compile
    '(define (factorial n)
       (if (= n 1)
 	  1

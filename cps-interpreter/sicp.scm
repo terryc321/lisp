@@ -299,7 +299,6 @@
          (eq? (car exp) 'lambda))
     (ev-lambda))
    
-
    ;; (define f x)
    ((and (pair? exp)
          (eq? (car exp) 'define)
@@ -666,24 +665,19 @@
     ;; key = car xs
     ;; val = car vals
     ;;   env is rest of environment
-    (set! env (cons (car xs)
-		    (cons (car vals)
-			  env)))
-    (extend-environment (cdr xs) (cdr vals)))))
-
-
-    ;; (if (symbol? (cdr xs))
-    ;; 	(begin
-    ;; 	  (set! env (cons (cdr xs) (cons (cdr vals) env))))
-    ;; 	(begin
-    ;; 	  (extend-environment (cdr xs) (cdr vals)))))))
+    (set! env (cons (car xs) (cons (car vals) env)))
+    ;; dotted pair means slurpy
+    (if (symbol? (cdr xs))
+    	(begin
+    	  (set! env (cons (cdr xs) (cons (cdr vals) env))))
+    	(begin
+    	  (extend-environment (cdr xs) (cdr vals)))))))
 
 
 
 (define (eval-application-4)
   (restore 'cont)
   (restore 'env)
-
   (cont))
   
 
@@ -771,6 +765,37 @@
   (newline)
   ;;(stats) ;; show the stack statistics
   (repl))
+
+
+;; load-repl
+(define (load-repl)
+  (newline)
+  (display ";; Load SICP >")
+  (newline)
+  (stats-reset) ;; reset statistics
+  (set! cont load-repl-print)  
+  (set! exp (read (current-input-port)))
+  (if (eof-object? exp)
+      #f
+      (begin
+	(set! exp (macro-expand exp))
+	(newline)
+	(display ";; Load EXP >")
+	(pprint exp)
+	(base-eval))))
+
+
+
+
+
+(define (load-repl-print)
+  (newline)
+  (display ";; Load VAL : ")
+  (write val)
+  (load-repl))
+
+
+
 
 ;; just a helper routine , not a continuation point
 (define (lookup-symbol exp env)
@@ -1188,6 +1213,28 @@
     (eval-num-div-helper (cdr argl)))))
 
 
+;; open file , keep reading in stuff , close file ,
+;; return last result to val register
+(define (eval-load)
+  (set! val #f)
+  (save-cont)
+  (let ((filename (car argl)))
+    (with-input-from-file filename
+      (lambda ()
+	(load-repl))))
+  (restore-cont))
+
+
+
+
+
+  
+
+
+
+
+
+
 ;;*****************************************************************
 ;; primitives should really just return SOME VALUE , which is eventally assigned to VAL register
 ;; or little val register to be more precise.
@@ -1198,6 +1245,18 @@
 
 (define (eval-char-ci=?) (apply char-ci=? argl))
 (define (eval-string->list) (apply string->list argl))
+
+(define (eval-string-p) (apply string? argl))
+
+(define (eval-cadr) (apply cadr argl))
+(define (eval-cddr) (apply cddr argl))
+
+(define (eval-caadr) (apply caadr argl))
+(define (eval-cdadr) (apply cdadr argl))
+(define (eval-gensym) (apply generate-uninterned-symbol argl))
+(define (eval-symbol->string) (apply symbol->string argl))
+(define (eval-null-p) (apply null? argl))
+(define (eval-memq) (apply memq argl))
 
 
 
@@ -1263,11 +1322,22 @@
 (set! env (cons 'char-ci=? (cons eval-char-ci=? env)))
 (set! env (cons 'string->list (cons eval-string->list env)))
 
+(set! env (cons 'load (cons eval-load env)))
 
+(set! env (cons 'string? (cons eval-string-p env)))
+(set! env (cons 'cadr (cons eval-cadr env)))
+(set! env (cons 'cddr (cons eval-cddr env)))
 
+(set! env (cons 'caadr (cons eval-caadr env)))
+(set! env (cons 'cdadr (cons eval-cdadr env)))
+
+(set! env (cons 'gensym (cons eval-gensym env)))
+
+(set! env (cons 'symbol->string (cons eval-symbol->string env)))
 
 ;;(set! env (cons 'eof-object? (cons eof-object? env)))
-
+(set! env (cons 'null? (cons eval-null-p env)))
+(set! env (cons 'memq (cons eval-memq env)))
 
 
 

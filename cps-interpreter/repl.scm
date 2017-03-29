@@ -685,6 +685,8 @@
 
 
 
+
+
     
 
 
@@ -1622,91 +1624,93 @@
 
 
 
-;; repl is just a loop , that is all it does -- for now.
-(define (repl)
-  (begin    
-    (newline)    
-    (display "::> ")
-    (read-k (lambda (exp)
-	      ;; macro-expand the expression
-	      (let ((expanded-exp (macro-expand exp)))
-		(display "ME> ")
-		(pprint expanded-exp)
-		(newline)
-		;; evaluate the expanded macro free expression
-		(base-eval expanded-exp
-			   environment
-			   (lambda (val)
-			     (newline)
-			     (display "==> ")
-			     (pprint val)
-			     (newline)
-			     (repl))))))))
+;; ;; repl is just a loop , that is all it does -- for now.
+;; (define (repl)
+;;   (begin    
+;;     (newline)    
+;;     (display "::> ")
+;;     (read-k (lambda (exp)
+;; 	      ;; macro-expand the expression
+;; 	      (let ((expanded-exp (macro-expand exp)))
+;; 		(display "ME> ")
+;; 		(pprint expanded-exp)
+;; 		(newline)
+;; 		;; evaluate the expanded macro free expression
+;; 		(base-eval expanded-exp
+;; 			   environment
+;; 			   (lambda (val)
+;; 			     (newline)
+;; 			     (display "==> ")
+;; 			     (pprint val)
+;; 			     (newline)
+;; 			     (repl))))))))
+
 
 
 ;;------------------------------------------
 
+
 ;;   'cps-primitive  cps-primitive
 ;;  'defmacro  (cps-primitive eval-defmacro)
 
-(install-procedure 'eof-object? eof-object?)
-(install-procedure 'primitive-procedure? procedure?)
+;; (install-procedure 'eof-object? eof-object?)
+;; (install-procedure 'primitive-procedure? procedure?)
 
-(install-procedure 'macro-expand  (cps-primitive eval-macro-expand))
+;; (install-procedure 'macro-expand  (cps-primitive eval-macro-expand))
 
-(install-procedure 'eval   (cps-primitive eval-eval))
+;; (install-procedure 'eval   (cps-primitive eval-eval))
 
 
-;;(install-procedure 'apply  (cps-primitive eval-apply))
-;;(install-procedure 'begin  (cps-primitive eval-begin))
+;; ;;(install-procedure 'apply  (cps-primitive eval-apply))
+;; ;;(install-procedure 'begin  (cps-primitive eval-begin))
 
-(let ((cc (cps-primitive eval-callcc)))
-  (install-procedure 'call/cc  cc)
-  (install-procedure 'call-with-current-continuation  cc))
+;; (let ((cc (cps-primitive eval-callcc)))
+;;   (install-procedure 'call/cc  cc)
+;;   (install-procedure 'call-with-current-continuation  cc))
 
-;;(install-procedure 'quote  (cps-primitive eval-quote))
-;;(install-procedure 'if (cps-primitive eval-if))
-;;(install-procedure 'lambda (cps-primitive eval-lambda))
+;; ;;(install-procedure 'quote  (cps-primitive eval-quote))
+;; ;;(install-procedure 'if (cps-primitive eval-if))
+;; ;;(install-procedure 'lambda (cps-primitive eval-lambda))
 
-;;(install-procedure 'let (cps-primitive eval-let))
-;;(install-procedure 'let*  (cps-primitive eval-let-star))
-;;(install-procedure 'letrec (cps-primitive eval-letrec))
+;; ;;(install-procedure 'let (cps-primitive eval-let))
+;; ;;(install-procedure 'let*  (cps-primitive eval-let-star))
+;; ;;(install-procedure 'letrec (cps-primitive eval-letrec))
 
-;;(install-procedure  'assoc (cps-primitive eval-assoc))
-;;(install-procedure  'set! (cps-primitive eval-set!))  
+;; ;;(install-procedure  'assoc (cps-primitive eval-assoc))
+;; ;;(install-procedure  'set! (cps-primitive eval-set!))  
 
-(install-procedure  'newline (cps-primitive eval-newline))
-(install-procedure  'define (cps-primitive eval-define))
+;; (install-procedure  'newline (cps-primitive eval-newline))
+;; (install-procedure  'define (cps-primitive eval-define))
 
-(install-procedure  'cons (cps-primitive eval-cons))
-(install-procedure  'car (cps-primitive eval-car))
-(install-procedure  'cdr (cps-primitive eval-cdr))
+;; (install-procedure  'cons (cps-primitive eval-cons))
+;; (install-procedure  'car (cps-primitive eval-car))
+;; (install-procedure  'cdr (cps-primitive eval-cdr))
 
-(install-procedure  '+ (cps-function eval-add))
-(install-procedure  '- (cps-function eval-sub))	    
-(install-procedure  '* (cps-function eval-mul))
-(install-procedure  '/ (cps-function eval-div))
+;; (install-procedure  '+ (cps-function eval-add))
+;; (install-procedure  '- (cps-function eval-sub))	    
+;; (install-procedure  '* (cps-function eval-mul))
+;; (install-procedure  '/ (cps-function eval-div))
 
-;; NOTICE - BIG change - CPS-FUNCTION instead of CPS-PRIMITIVE !!
+;; ;; NOTICE - BIG change - CPS-FUNCTION instead of CPS-PRIMITIVE !!
 
-(install-procedure  'eq? (cps-primitive eval-eq?))
-(install-procedure  'eqv? (cps-primitive eval-eqv?))
-(install-procedure  '> (cps-primitive eval-greater-than))
-(install-procedure  '< (cps-primitive eval-less-than))
-(install-procedure  '= (cps-primitive eval-num-eq))
-(install-procedure  'read (cps-primitive eval-read))
-(install-procedure  'display (cps-primitive eval-display))
-(install-procedure  'set-car! (cps-primitive eval-set-car!))
-(install-procedure  'set-cdr! (cps-primitive eval-set-cdr!))
-(install-procedure  'gensym (cps-primitive eval-gensym)) 
-(install-procedure  'load (cps-primitive eval-load))
-(install-procedure  'vector? (cps-primitive eval-vector?))
-(install-procedure  'boolean? (cps-primitive eval-boolean?))
-(install-procedure  'string? (cps-primitive eval-string?))
-(install-procedure  'symbol? (cps-primitive eval-symbol?))
-(install-procedure  'number? (cps-primitive eval-number?))
-(install-procedure  'null? (cps-primitive eval-null?))
-(install-procedure  'pair? (cps-primitive eval-pair?))
+;; (install-procedure  'eq? (cps-primitive eval-eq?))
+;; (install-procedure  'eqv? (cps-primitive eval-eqv?))
+;; (install-procedure  '> (cps-primitive eval-greater-than))
+;; (install-procedure  '< (cps-primitive eval-less-than))
+;; (install-procedure  '= (cps-primitive eval-num-eq))
+;; (install-procedure  'read (cps-primitive eval-read))
+;; (install-procedure  'display (cps-primitive eval-display))
+;; (install-procedure  'set-car! (cps-primitive eval-set-car!))
+;; (install-procedure  'set-cdr! (cps-primitive eval-set-cdr!))
+;; (install-procedure  'gensym (cps-primitive eval-gensym)) 
+;; (install-procedure  'load (cps-primitive eval-load))
+;; (install-procedure  'vector? (cps-primitive eval-vector?))
+;; (install-procedure  'boolean? (cps-primitive eval-boolean?))
+;; (install-procedure  'string? (cps-primitive eval-string?))
+;; (install-procedure  'symbol? (cps-primitive eval-symbol?))
+;; (install-procedure  'number? (cps-primitive eval-number?))
+;; (install-procedure  'null? (cps-primitive eval-null?))
+;; (install-procedure  'pair? (cps-primitive eval-pair?))
 
 
 
@@ -1779,13 +1783,16 @@
 ;; disjunction
 (load 	  "/home/terry/lisp/cps-interpreter/macros/or.scm")
 
+;; define
+(load 	  "/home/terry/lisp/cps-interpreter/macros/define.scm")
+
+
 ;; **** ------ SICP register machine ------- ****
 ;; **** this redefines REPL 
 (load 	  "/home/terry/lisp/cps-interpreter/sicp.scm")
 
 ;; start the system
 (repl)
-
 
 
 
