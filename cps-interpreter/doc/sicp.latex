@@ -2,6 +2,44 @@
 \documentclass[a4paper,12pt]{article}
 \begin{document}
 
+\newpage
+
+Compiler
+
+If compiler can see an expression that can be simplified it is probably a good idea to replace it
+with an equivalent but more efficient expression.
+
+\begin{verbatim}
+(if #f 1 2) => 2
+\end{verbatim}
+
+Lets assume got debugged code and want it to run fast.  Here is where the compiler can help.
+
+Lets build a compiler.
+
+
+\newpage
+
+In the following pages are the basis of a scheme interpreter using 7 registers
+argl , expr , val , et al .
+
+The interpreter does not include call-with-current-continuation , but this is a small addition
+with another primitive that wraps continuation much like a closure wraps lambda and environment.
+ * TO DO * .
+
+Condition system needs to be written in also , as we do not yet have any way to signal a condition,
+let alone handle it or pass it off.
+
+Garbage collector needs to be written up , that is also missing.
+
+
+
+
+
+
+\newpage
+
+
 \begin{verbatim}
 ---------------------------------------------------------
         *    apply-dispatch   * 
@@ -359,7 +397,7 @@ The rest of this document contains old notes that may be useful
 
 \begin{verbatim}
 ---------------------------------------------------------
-         *    reverse microcode   *
+         *    reverse  *
 piggy back on ev-operands 
 ---------------------------------------------------------
 ev-reverse :

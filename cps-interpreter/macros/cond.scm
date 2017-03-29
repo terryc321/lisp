@@ -14,16 +14,21 @@
     (c2 (cdr expr)))
   ;; ((c1 ...)(c2 ...)(else ...))
   (define (c2 expr)
-    (let ((condition (car (car expr)))
-	  (consequences (cdr (car expr))))
-      (cond
-       ((eq? condition 'else)
-	(cons 'begin consequences))
-       (else (list 'if
-		   condition
-		   (cons 'begin consequences)
-		   (c2 (cdr expr)))))))
+    (cond
+     ((null? expr) #f)
+     (else
+      (let ((condition (car (car expr)))
+            (consequences (cdr (car expr))))
+        (cond
+         ((eq? condition 'else)
+          (cons 'begin consequences))
+         (else (list 'if
+                     condition
+                     (cons 'begin consequences)
+                     (c2 (cdr expr)))))))))
   (c expr)))
+
+
 
 
 
