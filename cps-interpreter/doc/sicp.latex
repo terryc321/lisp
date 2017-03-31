@@ -33,12 +33,92 @@ let alone handle it or pass it off.
 Garbage collector needs to be written up , that is also missing.
 
 
+\newpage
 
+Evaluation of arguments left to right means that building up argument list requires a reversal at
+end of ev-operands.
 
 
 
 \newpage
 
+\begin{verbatim}
+
+---------------------------------------------------------
+        *    repl   *
+---------------------------------------------------------
+because in a repl we do not know when last expression will be ,
+we treat it like an endless begin sequence.
+thus we need to
+
+MAYBE - avoid saving and restoring cont , have ev-read-3 do restore and continue
+so save cont register before entering ev-read proper , 
+---------------------------------------------------------
+(define (eval-repl exp env cont)
+  (newline)
+  (display ";; Ready > ")
+  (let ((input (read)))
+    (base-eval input env
+    	(lambda (result)
+	   (display ";; Value > ")
+	   (display result)
+	   (newline)
+	   (eval-repl #f env cont)))))
+---------------------------------------------------------
+ev-read :
+	 save cont
+	 goto ev-read-2
+
+ev-read-2 : display ";; Ready > "
+	 exp = read-primitive
+	 if eof-object?
+	     goto ev-read-4
+	 save env
+	 cont = ev-read-2	 
+	 goto eval-dispatch
+
+ev-read-3 :
+	 restore env
+	 display ";; Value > " val
+	 goto ev-read
+
+ev-read-4 :
+         restore cont
+	 goto continue
+---------------------------------------------------------	
+\end{verbatim}
+
+
+\newpage
+
+\begin{verbatim}
+
+in this version , shorter but makes 2 saves and restores , instead of just 1
+for each round trip of the read eval print loop.
+
+---------------------------------------------------------
+        *    repl   *
+---------------------------------------------------------
+ev-read :        
+	 display ";; Ready > "
+	 exp = read-primitive
+	 if eof-object?
+	     goto continue
+	 save cont
+	 save env
+	 cont = ev-read-2	 
+	 goto eval-dispatch
+
+ev-read-2 :
+	 restore env
+	 restore cont
+	 display ";; Value > " val
+	 goto ev-read
+	 
+---------------------------------------------------------	
+\end{verbatim}
+
+\newpage
 
 \begin{verbatim}
 ---------------------------------------------------------

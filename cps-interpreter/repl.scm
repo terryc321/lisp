@@ -6,10 +6,16 @@
 
 
 ;;;  guile specific stuff
+;;(define gensym gensym)
+
+;;; mit specific stuff
+(define gensym generate-uninterned-symbol)
+
+
 ;;; (use-modules (ice-9 pretty-print))
 ;;; (load "/home/terry/lisp/cps-interpreter/core/synclo.scm")
 
-(define gensym generate-uninterned-symbol)
+
 
 (define *debug-level* 0)
 

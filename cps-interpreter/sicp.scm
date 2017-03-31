@@ -23,6 +23,17 @@
 ;; bug register - records what went wrong
 (define bug '())
 
+
+;; give TOPLEVEL some definitions
+;; also required SET-CAR! , SET-CDR! because they dont work on empty list
+;; see ev-definition-2 
+(define *toplevel* '(#t #t #f #f))
+
+
+
+(define *initial-input-port* #f)
+(define *initial-output-port* #f)
+
 ;; a unqiue tag for closures
 ;;(define closure-tag (generate-uninterned-symbol "closure"))
 
@@ -47,11 +58,12 @@
   (display "stack min height : ") (display *stack-min-height* ) (newline)
   (display "stack pushes : ") (display *stack-pushes* ) (newline)
   (display "stack pops   : ") (display *stack-pops* ) (newline)
-  (display "stack height : ") (display *stack-height* ) (newline))
+  (display "stack height    : ") (display *stack-height* ) (newline)
+  (display "stack height[2] : ") (display (length stack)) (newline))
+
 
 (define (read-and-macro-expand)
   (macro-expand (read)))
-
 
 
   
@@ -94,82 +106,6 @@
      ((eq? reg 'val)  (set! val (car stack)))
      (else (error "RESTORE : register not recognised" reg)))
     (set! stack (cdr stack))))
-
-
-
-
-   
-
-;; stack operations for argl
-(define (save-argl)
-  
-  (set! stack (cons argl stack)))
-(define (restore-argl)
-  
-  (set! argl (car stack))
-  (set! stack (cdr stack)))
-
-
-;; stack operations for val
-(define (save-val)
-  
-  (set! stack (cons val stack)))
-(define (restore-val)
-  
-  (set! val (car stack))
-  (set! stack (cdr stack)))
-
-
-;; stack operations for exp
-(define (save-exp)
-  
-  (set! stack (cons exp stack)))
-(define (restore-exp)
-  
-  (set! exp (car stack))
-  (set! stack (cdr stack)))
-
-
-;; stack operations for cont
-(define (save-cont)
-  
-  (set! stack (cons cont stack)))
-(define (restore-cont)
-  
-  (set! cont (car stack))
-  (set! stack (cdr stack)))
-
-;; stack operations for env
-(define (save-env)
-  
-  (set! stack (cons env stack)))
-(define (restore-env)
-  
-  (set! env (car stack))
-  (set! stack (cdr stack)))
-
-
-
-;; stack operations for unev
-(define (save-unev)
-  
-  (set! stack (cons unev stack)))
-(define (restore-unev)
-  
-  (set! unev (car stack))
-  (set! stack (cdr stack)))
-
-
-
-;; stack operations for proc
-(define (save-proc)
-  
-  (set! stack (cons proc stack)))
-(define (restore-proc)
-  
-  (set! proc (car stack))
-  (set! stack (cdr stack)))
-
 
 
 
@@ -226,6 +162,9 @@
 ;; call sicp
 ;; evaluation continues until completed , or error
 (define (base-eval)
+  (display "[sicp]BASE-EVAL:")
+  (pprint exp)
+  (newline)
   (cond
 
    ;; character = itself
@@ -352,9 +291,19 @@
   ;; key = unev
   ;; value = val
   ;;   rest environment is env
-  (set! env (cons unev (cons val env)))
+  ;;(set! env (cons unev (cons val env)))
+
+  (let ((old-car (car env))
+	(old-cdr (cdr env)))
+    
+    ;; Lets ASSUME - no such definition in the environment 
+    (set-car! env unev)
+    (set-cdr! env (cons val (cons old-car old-cdr))))
+  
   (set! val 'ok)
   (cont))
+
+  
 
 ;; *****************************************
 
@@ -385,6 +334,8 @@
    ((eq? k (car xs))
     (set-car! (cdr xs) v))
    (else (set-variable-value k v (cdr (cdr xs))))))
+
+
 
 
 
@@ -482,7 +433,14 @@
    ;; ((microcode-procedure? proc)
    ;;  (microcode-apply))
    (else
+    (display "***INTERNAL ERROR **SICP APPLY-DISPATCH INTERNAL ERROR ")
+    (newline)
+    (display "PROC = ")
+    (display proc)
+    (newline)
     (eval-error "unknown procedure type"))))
+
+
 
 
 
@@ -661,17 +619,19 @@
 (define (extend-environment xs vals)
   (cond
    ((null? xs) 'done)
+   ((symbol? xs)
+    ;; (lambda xs ....)  xs gets all arguments
+    ;; also handles dotted pair 
+    (set! env (cons xs (cons vals env))))
    (else
-    ;; key = car xs
-    ;; val = car vals
-    ;;   env is rest of environment
-    (set! env (cons (car xs) (cons (car vals) env)))
-    ;; dotted pair means slurpy
-    (if (symbol? (cdr xs))
-    	(begin
-    	  (set! env (cons (cdr xs) (cons (cdr vals) env))))
-    	(begin
-    	  (extend-environment (cdr xs) (cdr vals)))))))
+    (begin
+      ;; key = car xs
+      ;; val = car vals
+      ;;   env is rest of environment
+      (set! env (cons (car xs) (cons (car vals) env)))
+      (extend-environment (cdr xs) (cdr vals))))))
+
+
 
 
 
@@ -753,48 +713,78 @@
   (newline)
   (display ";; SICP >")
   (newline)
+  ;; save environment
+  ;;(set! env *toplevel*)
+  (save 'env)
+  
+  ;; (if current-input-port
+  ;;     (begin #f)  ;; no action needed
+  ;;     (begin (set! *initial-input-port*  current-input-port)))  
+  
   (stats-reset) ;; reset statistics
+  
   (set! cont repl-print)
-  (set! exp (read-and-macro-expand))
-  (base-eval))
+  (set! exp (read))
+  (if (eof-object? exp)
+      #t
+      (begin
+	(set! exp (macro-expand exp))
+	(base-eval))))
 
 (define (repl-print)
   (newline)
   (display ";; Value : ")
   (write val)
   (newline)
-  ;;(stats) ;; show the stack statistics
+
+  (stats) ;; show the stack statistics
+  
+  ;; restore environment
+  ;;(set! *toplevel* env)
+  (restore 'env)
+  
   (repl))
 
 
-;; load-repl
-(define (load-repl)
-  (newline)
-  (display ";; Load SICP >")
-  (newline)
-  (stats-reset) ;; reset statistics
-  (set! cont load-repl-print)  
-  (set! exp (read (current-input-port)))
-  (if (eof-object? exp)
-      #f
-      (begin
-	(set! exp (macro-expand exp))
-	(newline)
-	(display ";; Load EXP >")
-	(pprint exp)
-	(base-eval))))
+
+
+
+;; ;; load-repl
+;; (define (load-repl)
+;;   (newline)
+;;   (display ";; Load SICP >")
+;;   (newline)
+;;   (stats-reset) ;; reset statistics
+;;   (set! cont load-repl-print)  
+;;   (set! exp (read (current-input-port)))
+;;   (if (eof-object? exp)
+;;       (begin
+;; 	(restore 'cont)
+;; 	(goto 'cont))
+;;       (begin
+;; 	(set! exp (macro-expand exp))
+;; 	(newline)
+;; 	(display ";; Load EXP >")
+;; 	(pprint exp)
+;; 	(base-eval))))
 
 
 
 
+;; (define (load-repl-print)
+;;   (newline)
+;;   (display ";; Load VAL : ")
+;;   (write val)
+;;   (load-repl))
 
-(define (load-repl-print)
-  (newline)
-  (display ";; Load VAL : ")
-  (write val)
-  (load-repl))
 
-
+;; (define (lookup-helper exp names values)
+;;   (cond
+;;    ((null? names)
+;;     (eval-error "symbol not found" exp))
+;;    ((eq? exp (car names))
+;;     (car values))
+;;    (else (lookup-helper exp (cdr names) (cdr values)))))
 
 
 ;; just a helper routine , not a continuation point
@@ -1213,23 +1203,97 @@
     (eval-num-div-helper (cdr argl)))))
 
 
-;; open file , keep reading in stuff , close file ,
-;; return last result to val register
+;; ;; open file , keep reading in stuff , close file ,
+;; ;; return last result to val register
+;; (define (eval-load)  
+;;   (set! val #f)
+;;   (let ((filename (car argl)))
+;;     (let ((port (open-input-file filename)))
+;;       (set! *initial-input-port*  current-input-port)
+;;       (set-current-input-port! port))))
+
+
+;; filename in argl 
 (define (eval-load)
   (set! val #f)
-  (save-cont)
   (let ((filename (car argl)))
     (with-input-from-file filename
-      (lambda ()
-	(load-repl))))
-  (restore-cont))
+      (lambda ()	
+	(load-repl)))))
+
+	
+	
+
+
+
+
+;; read - eval - print loop
+;; if read fails 
+(define (load-repl)
+  (newline)
+  (display ";; LOAD-SICP >")
+  (newline)
+  ;; save environment
+  ;;(set! env *toplevel*)
+  (save 'cont)
+  (save 'env)
+  
+  ;; (if current-input-port
+  ;;     (begin #f)  ;; no action needed
+  ;;     (begin (set! *initial-input-port*  current-input-port)))  
+  
+  (stats-reset) ;; reset statistics
+  
+  (set! cont load-repl-print)
+  (set! exp (read))
+  (if (eof-object? exp)
+      (begin
+	(restore 'env)
+	(restore 'cont)
+	(cont))
+      (begin
+	(newline)
+	(display ";; LOAD-SICP >")
+	(display exp)
+	(newline)
+	
+	(set! exp (macro-expand exp))
+
+	(newline)
+	(display ";; LOAD-SICP : ME >")
+	(newline)
+	(display exp)
+	
+	(base-eval))))
+
+
+
+(define (load-repl-print)
+  (newline)
+  (display ";; LOAD-Value : ")
+  (write val)
+  (newline)
+
+  (stats) ;; show the stack statistics
+  
+  ;; restore environment
+  ;;(set! *toplevel* env)
+  (restore 'env)
+  (restore 'cont)
+  (load-repl))
+
+
+
+
+
+
+
 
 
 
 
 
   
-
 
 
 
@@ -1248,16 +1312,20 @@
 
 (define (eval-string-p) (apply string? argl))
 
-(define (eval-cadr) (apply cadr argl))
-(define (eval-cddr) (apply cddr argl))
-
-(define (eval-caadr) (apply caadr argl))
-(define (eval-cdadr) (apply cdadr argl))
 (define (eval-gensym) (apply generate-uninterned-symbol argl))
 (define (eval-symbol->string) (apply symbol->string argl))
 (define (eval-null-p) (apply null? argl))
 (define (eval-memq) (apply memq argl))
 
+(define (eval-display) (apply display argl))
+(define (eval-newline) (apply newline argl))
+
+
+
+;; (define (eval-cadr) (apply cadr argl))
+;; (define (eval-cddr) (apply cddr argl))
+;; (define (eval-caadr) (apply caadr argl))
+;; (define (eval-cdadr) (apply cdadr argl))
 
 
 ;; ;; (apply f a b c '(d e f))
@@ -1278,69 +1346,58 @@
 ;;   (cont))
 
 
-
 ;; have some initial environment ...
 ;;*****************************************************************
 
-(set! env (cons 'reverse (cons eval-reverse env)))
-
-;; try using microcode version
-;;(set! env (cons 'reverse (cons (make-microcode ev-reverse) env)))
-
-
-;; list and append are required by quasiquote expander
-(set! env (cons 'list (cons eval-list env)))
-(set! env (cons 'append (cons eval-append env)))
-
-(set! env (cons 'car (cons eval-car env)))
-(set! env (cons 'cdr (cons eval-cdr env)))
-(set! env (cons 'cons (cons eval-cons env)))
-(set! env (cons 'procedure? (cons eval-procedure-p env)))
-(set! env (cons 'pair? (cons eval-pair-p env)))
-(set! env (cons 'boolean? (cons eval-boolean-p env)))
-(set! env (cons 'symbol? (cons eval-symbol-p env)))
-(set! env (cons 'number? (cons eval-number-p env)))
-(set! env (cons 'apply (cons eval-apply env)))
-
-(set! env (cons 'length (cons eval-length env)))
-(set! env (cons 'eq? (cons eval-eq-p env)))
-(set! env (cons 'eqv? (cons eval-eqv-p env)))
-
-(set! env (cons '= (cons eval-num-eq env)))
-(set! env (cons '+ (cons eval-num-add env)))
-(set! env (cons '* (cons eval-num-mul env)))
-(set! env (cons '- (cons eval-num-sub env)))
-(set! env (cons '/ (cons eval-num-div env)))
-
-(set! env (cons 'read-line (cons eval-read-line env)))
-(set! env (cons 'read-char (cons eval-read-char env)))
-
-(set! env (cons 'char? (cons eval-char-p env)))
-(set! env (cons 'char=? (cons eval-char-eq env)))
-
-;; think char-case-ignore
-(set! env (cons 'char-ci=? (cons eval-char-ci=? env)))
-(set! env (cons 'string->list (cons eval-string->list env)))
-
-(set! env (cons 'load (cons eval-load env)))
-
-(set! env (cons 'string? (cons eval-string-p env)))
-(set! env (cons 'cadr (cons eval-cadr env)))
-(set! env (cons 'cddr (cons eval-cddr env)))
-
-(set! env (cons 'caadr (cons eval-caadr env)))
-(set! env (cons 'cdadr (cons eval-cdadr env)))
-
-(set! env (cons 'gensym (cons eval-gensym env)))
-
-(set! env (cons 'symbol->string (cons eval-symbol->string env)))
-
-;;(set! env (cons 'eof-object? (cons eof-object? env)))
-(set! env (cons 'null? (cons eval-null-p env)))
-(set! env (cons 'memq (cons eval-memq env)))
 
 
 
+(define (install-toplevel name val)
+  (set! *toplevel* (cons name (cons val *toplevel*))))
+
+
+(install-toplevel 'reverse eval-reverse)
+(install-toplevel 'list eval-list)
+(install-toplevel 'append eval-append)
+(install-toplevel 'car eval-car)
+(install-toplevel 'cdr eval-cdr)
+(install-toplevel 'cons eval-cons)
+(install-toplevel 'procedure? eval-procedure-p)
+(install-toplevel 'pair? eval-pair-p)
+(install-toplevel 'boolean? eval-boolean-p)
+(install-toplevel 'symbol? eval-symbol-p)
+(install-toplevel 'number? eval-number-p)
+(install-toplevel 'apply? eval-apply)
+(install-toplevel 'length eval-length)
+(install-toplevel 'eq? eval-eq-p)
+(install-toplevel 'eqv  eval-eqv-p)
+(install-toplevel '=  eval-num-eq)
+(install-toplevel '+  eval-num-add)
+(install-toplevel '*  eval-num-mul)
+(install-toplevel '-  eval-num-sub)
+(install-toplevel '/  eval-num-div)
+(install-toplevel 'read-line eval-read-line)
+(install-toplevel 'read-char eval-read-char)
+(install-toplevel 'char?  eval-char-p)
+(install-toplevel 'char=?  eval-char-eq)
+(install-toplevel 'char-ci=?  eval-char-ci=?)
+(install-toplevel 'string->list  eval-string->list)
+(install-toplevel 'load  eval-load)
+(install-toplevel 'string?  eval-string-p)
+(install-toplevel 'gensym  eval-gensym)
+(install-toplevel 'symbol->string  eval-symbol->string)
+(install-toplevel 'null?  eval-null-p)
+(install-toplevel 'memq   eval-memq)
+(install-toplevel 'display eval-display)
+(install-toplevel 'newline eval-newline)
+
+(newline)
+(display "*toplevel* = ")
+(display *toplevel*)
+(newline)
+
+;; an initial environment          
+(set! env *toplevel*)
 
 
 ;; a default continuation for external calls to sicp evaluator
@@ -1364,6 +1421,45 @@
 
 (set! exp '(define var-n (lambda (n) (= n 1))))
 (base-eval)
+
+;; (set! exp (macro-expand '(define map
+;; 			   (letrec ((all-cars (lambda (xs)
+;; 						(cond
+;; 						 ((null? xs) xs)
+;; 						 (else (cons (car (car xs))
+;; 							     (all-cars (cdr xs)))))))
+;; 				    (all-cdrs (lambda (xs)
+;; 						(cond
+;; 						 ((null? xs) xs)
+;; 						 (else (cons (cdr (car xs))
+;; 							     (all-cdrs (cdr xs)))))))
+;; 				    (mymap3 (lambda (f xs)
+;; 					      (cond
+;; 					       ((null? xs) '())
+;; 					       ((null? (car xs)) '())
+;; 					       (else 
+;; 						;;(newline)
+;; 						(display "xs3 = ")
+;; 						(display xs)
+;; 						(newline)
+;; 						(cons (apply f (all-cars xs))
+;; 						      (mymap3 f (all-cdrs xs)))))))
+
+;; 				    (mymap2 (lambda (f . xs)
+;; 					      ;;(newline)
+;; 					      (display "xs = ")
+;; 					      (display xs)
+;; 					      (newline)
+;; 					      (cond
+;; 					       ((null? xs) '())
+;; 					       ((null? (car xs)) '())                      
+;; 					       (else                        
+;; 						(mymap3 f xs))))))
+;; 			     mymap2))))
+;; (base-eval)
+
+
+
 
 
 

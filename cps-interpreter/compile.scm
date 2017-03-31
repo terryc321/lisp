@@ -1,4 +1,6 @@
 
+
+  
 ;; simply load compiler into our vanilla interpreter
 ;; to see how it performs
 
@@ -30,6 +32,26 @@
       (error "Unknown expression type -- COMPILE" exp))))
 
 
+
+(define (cddr x) (cdr (cdr x)))
+(define (cadr x) (car (cdr x)))
+(define (cdar x) (cdr (car x)))
+(define (caar x) (car (car x)))
+
+(define (cdddr x) (cdr (cdr (cdr x))))
+(define (caddr x) (car (cdr (cdr x))))
+(define (cdadr x) (cdr (car (cdr x))))
+(define (cddar x) (cdr (cdr (car x))))
+(define (caadr x) (car (car (cdr x))))
+(define (cadar x) (car (cdr (car x))))
+(define (cdaar x) (cdr (car (car x))))
+(define (caaar x) (car (car (car x))))
+
+(define (cadddr x) (car (cdr (cdr (cdr x)))))
+
+
+
+
 (define (self-evaluating? exp)
   (cond ((number? exp) #t)
         ((string? exp) #t)
@@ -42,7 +64,8 @@
 (define (quoted? exp)
   (tagged-list? exp 'quote))
 
-(define (text-of-quotation exp) (cadr exp))
+(define (text-of-quotation exp)
+  (cadr exp))
 
 
 (define (tagged-list? exp tag)
@@ -53,8 +76,11 @@
 ;;Assignments have the form (set! <var> <value>):
 (define (assignment? exp)
   (tagged-list? exp 'set!))
+
 (define (assignment-variable exp) (cadr exp))
+
 (define (assignment-value exp) (caddr exp))
+
 
 
 (define (definition? exp)
@@ -74,8 +100,10 @@
 
 (define (lambda? exp)
   (tagged-list? exp 'lambda))
+
 (define (lambda-parameters exp)
   (cadr exp))
+
 (define (lambda-body exp)
   (cddr exp))
 
@@ -86,10 +114,13 @@
 
 (define (if? exp)
   (tagged-list? exp 'if))
+
 (define (if-predicate exp)
   (cadr exp))
+
 (define (if-consequent exp)
   (caddr exp))
+
 (define (if-alternative exp)
   (if (not (null? (cdddr exp)))
       (cadddr exp)
@@ -184,43 +215,66 @@
   (make-instruction-sequence
    (registers-needed seq)
    (registers-modified seq)
-   (append (statements seq) (statements body-seq))))
-
+   (append (statements seq)
+	   (statements body-seq))))
 
 ;;----------------------------------------------------------------------
 
 (define (compile-linkage linkage)
   (cond ((eq? linkage 'return)
-         (make-instruction-sequence '(continue) '()
+         (make-instruction-sequence '(continue)
+				    '()
 				    '((goto (reg continue)))))
         ((eq? linkage 'next)
          (empty-instruction-sequence))
         (else
-         (make-instruction-sequence '() '()
+         (make-instruction-sequence '()
+				    '()
 				    `((goto (label ,linkage)))))))
 
+
+
 (define (end-with-linkage linkage instruction-sequence)
-  (preserving '(continue)
+  (preserving
+   '(continue)
    instruction-sequence
    (compile-linkage linkage)))
 
 
+
+
+
 ;; compiling simple expressions
 (define (compile-self-evaluating exp target linkage)
-  (end-with-linkage
-   linkage
-   (make-instruction-sequence '()
-			      (list target)
-			      `((assign ,target (const ,exp))))))
+  (make-instruction-sequence '()
+			     (list target)
+			     `((assign ,target (const ,exp)))))
+
+
+  ;; (end-with-linkage
+  ;;  linkage
+  ;;  (make-instruction-sequence '()
+  ;; 			      (list target)
+  ;; 			      (list (list 'assign target
+  ;; 					  (list 'const exp))))))
+
 
 
 (define (compile-quoted exp target linkage)
-  (end-with-linkage
-   linkage
-   (make-instruction-sequence
-    '()
-    (list target)
-    `((assign ,target (const ,(text-of-quotation exp)))))))
+  (make-instruction-sequence
+   '()
+   (list target)
+   `((assign ,target (const ,(text-of-quotation exp))))))
+
+
+  ;; (end-with-linkage
+  ;;  linkage
+  ;;  (make-instruction-sequence
+  ;;   '()
+  ;;   (list target)
+  ;;   `((assign ,target (const ,(text-of-quotation exp)))))))
+
+
 
 (define (compile-variable exp target linkage)
   (end-with-linkage linkage
@@ -258,6 +312,7 @@
                   (reg val)
                   (reg env))
          (assign ,target (const ok))))))))
+
 
 
 
@@ -336,6 +391,7 @@
       (compile-procedure-call target linkage)))))
 
 
+
 (define (construct-arglist operand-codes)
   (let ((operand-codes (reverse operand-codes)))
     (if (null? operand-codes)
@@ -352,6 +408,8 @@
                code-to-get-last-arg
                (code-to-get-rest-args
                 (cdr operand-codes))))))))
+
+
 (define (code-to-get-rest-args operand-codes)
   (let ((code-for-next-arg
          (preserving '(argl)
@@ -420,12 +478,26 @@
                 target))))
 
 
+
+;;---------------------------------------------------------------
+
 (define (registers-needed s)
   (if (symbol? s) '() (car s)))
+
 (define (registers-modified s)
   (if (symbol? s) '() (cadr s)))
+
 (define (statements s)
-  (if (symbol? s) (list s) (caddr s)))
+  (if (symbol? s)
+      (list s)
+      (car (cdr (cdr s)))))
+
+
+;; (define (statements s)
+;;   (if (symbol? s)
+;;       (list s)
+;;       (caddr s)))
+
 
 
 (define (needs-register? seq reg)
@@ -435,32 +507,97 @@
   (memq reg (registers-modified seq)))
 
 
+(define (append-2-sequences seq1 seq2)
+  (newline)
+  (display "APPEND-2-SEQUENCES : seq1 : ")
+  (display seq1)
+  (newline)
+  (display "seq 2 :")
+  (display seq2)
+  (newline)
+  (display "registers-needed: seq1 : ")
+  (display (registers-needed seq1))  
+  (newline)
+  (display "registers-needed: seq2 : ")
+  (display (registers-needed seq2))  
+  (newline)
+  (display "registers-modified: seq1 : ")
+  (display (registers-modified seq1))  
+  (newline)
+  (display "registers-modified: seq2 : ")
+  (display (registers-modified seq2))  
+  (newline)
+  (display "statements seq1 : ")
+  (display (statements seq1))
+  (newline)
+  (display "statements seq2 : ")
+  (display (statements seq2))
+  (newline)
+  (let ((part-a   (list-union (registers-needed seq1)
+			      (list-difference (registers-needed seq2)
+					       (registers-modified seq1)))))
+    (newline)
+    (display "part -a : ")
+    (display part-a)
+
+    (let ((part-b    (list-union (registers-modified seq1)
+				 (registers-modified seq2))))
+
+    (newline)
+    (display "part -b : ")
+    (display part-b)
+
+      (let ((part-c  (append (statements seq1) (statements seq2))))
+
+    (newline)
+    (display "part -c : ")
+    (display part-c)
+
+    (newline)
+    (make-instruction-sequence part-a part-b part-c)))))
+
+
+
+
+
+
+	  
+
+
+
+
+(define (append-seq-list seqs)
+  (newline)
+  (display "APPEND-SEQ-LIST : ")
+  (display seqs)
+  (newline)
+  (if (null? seqs)
+      (empty-instruction-sequence)
+      (begin
+	(append-2-sequences (car seqs)
+			    (append-seq-list (cdr seqs))))))
+
+
+;; nested definitions ??
 (define (append-instruction-sequences . seqs)
-  (define (append-2-sequences seq1 seq2)
-    (make-instruction-sequence
-     (list-union (registers-needed seq1)
-                 (list-difference (registers-needed seq2)
-                                  (registers-modified seq1)))
-     (list-union (registers-modified seq1)
-                 (registers-modified seq2))
-     (append (statements seq1) (statements seq2))))
-  (define (append-seq-list seqs)
-    (if (null? seqs)
-        (empty-instruction-sequence)
-        (append-2-sequences (car seqs)
-                            (append-seq-list (cdr seqs)))))
   (append-seq-list seqs))
 
 
+;;-----------------------------------------------------------
+;; all symbols in s1 and s2
 (define (list-union s1 s2)
   (cond ((null? s1) s2)
         ((memq (car s1) s2) (list-union (cdr s1) s2))
         (else (cons (car s1) (list-union (cdr s1) s2)))))
+
+
+;; those symbols in s1 , but not in s2 
 (define (list-difference s1 s2)
   (cond ((null? s1) '())
         ((memq (car s1) s2) (list-difference (cdr s1) s2))
         (else (cons (car s1)
                     (list-difference (cdr s1) s2)))))
+;;------------------------------------------------------------
 
 
 (define (preserving regs seq1 seq2)
@@ -469,17 +606,21 @@
       (let ((first-reg (car regs)))
         (if (and (needs-register? seq2 first-reg)
                  (modifies-register? seq1 first-reg))
-            (preserving (cdr regs)
-             (make-instruction-sequence
-              (list-union (list first-reg)
-                          (registers-needed seq1))
-              (list-difference (registers-modified seq1)
-                               (list first-reg))
-              (append `((save ,first-reg))
-                      (statements seq1)
-                      `((restore ,first-reg))))
-             seq2)
-            (preserving (cdr regs) seq1 seq2)))))
+            (begin
+	      (preserving (cdr regs)
+			  (make-instruction-sequence
+			   (list-union (list first-reg)
+				       (registers-needed seq1))
+			   (list-difference (registers-modified seq1)
+					    (list first-reg))
+			   (append `((save ,first-reg))
+				   (statements seq1)
+				   `((restore ,first-reg))))
+			  seq2))
+	    (begin
+	      (preserving (cdr regs) seq1 seq2))))))
+
+
 
 
 
@@ -513,6 +654,7 @@
   (if (symbol? (cadr exp))
       (cadr exp)
       (caadr exp)))
+
 (define (definition-value exp)
   (if (symbol? (cadr exp))
       (caddr exp)
@@ -575,7 +717,6 @@
 
 
 
-
 (define (example)
   (compile
    '(define (factorial n)
@@ -584,6 +725,41 @@
 	  (* (factorial (- n 1)) n)))
    'val
    'next))
+
+
+(define (test1)
+  (compile
+   5
+   'val
+   'next))
+
+
+(define (test2)
+  (compile
+   "asdf"
+   'val
+   'next))
+
+(define (test3)
+  (compile
+   (quote 4)
+   'val
+   'next))
+
+(define (test4)
+  (append-instruction-sequences (test1) (test2)))
+
+
+
+(define (dummy)  #f)
+
+
+
+
+
+
+
+
 
 
 

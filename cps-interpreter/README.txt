@@ -1,5 +1,47 @@
 
+
 ******************************************************************************
+
+
+******************************************************************************
+
+fixed macro expander DEFINE bug , didnt expand ... in this example
+ (define f ...)
+
+ (define f (letrec ((x 1)) x))
+ f -> 1
+ 
+
+******************************************************************************
+
+fixed repl environment bug
+
+required environment be mutated in place , at exact memory location initial
+environment is pointing at.
+
+
+
+******************************************************************************
+
+in trying to run compile.scm in the repl.scm interpreter , run into really nasty bug
+. seems proc register is assigned 
+
+split cps repl into another file cps-repl.scm
+
+at the moment it really does not contain much useful stuff as it is not wired together.
+want to investigate the cps interpreter further as it has more useful properties.
+
+narrowed it down to environment problem that is not yet fixed.
+
+(define f 3)
+f -> 3
+(define (g f) 2)
+(g 10)
+f -> 10
+
+environment in place is still the one that got constructed when called the procedure.
+
+
 
 ******************************************************************************
 

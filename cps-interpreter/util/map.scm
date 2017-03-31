@@ -38,40 +38,58 @@
 ;; 	(error "map "))))))
 
 
-(define map
-  (letrec ((all-cars (lambda (xs)
-                       (cond
-                        ((null? xs) xs)
-                        (else (cons (car (car xs))
-                                    (all-cars (cdr xs)))))))
-           (all-cdrs (lambda (xs)
-                       (cond
-                        ((null? xs) xs)
-                        (else (cons (cdr (car xs))
-                                    (all-cdrs (cdr xs)))))))
-           (mymap3 (lambda (f xs)
-                     (cond
-                      ((null? xs) '())
-                      ((null? (car xs)) '())
-                      (else 
-                       ;;(newline)
-                       (display "xs3 = ")
-                       (display xs)
-                       (newline)
-                       (cons (apply f (all-cars xs))
-                             (mymap3 f (all-cdrs xs)))))))
+(define map (lambda (f xs)
+	      (cond
+	       ((null? xs) xs)
+	       (else (cons (f (car xs))
+			   (map f (cdr xs)))))))
 
-           (mymap2 (lambda (f . xs)
-                     ;;(newline)
-                     (display "xs = ")
-                     (display xs)
-                     (newline)
-                     (cond
-                      ((null? xs) '())
-                      ((null? (car xs)) '())                      
-                      (else                        
-                       (mymap3 f xs))))))
-    mymap2))
+(define not (lambda (x)
+	      (if x
+		  #f
+		  #t)))
+
+
+
+
+
+
+
+
+;; (define map
+;;   (letrec ((all-cars (lambda (xs)
+;;                        (cond
+;;                         ((null? xs) xs)
+;;                         (else (cons (car (car xs))
+;;                                     (all-cars (cdr xs)))))))
+;;            (all-cdrs (lambda (xs)
+;;                        (cond
+;;                         ((null? xs) xs)
+;;                         (else (cons (cdr (car xs))
+;;                                     (all-cdrs (cdr xs)))))))
+;;            (mymap3 (lambda (f xs)
+;;                      (cond
+;;                       ((null? xs) '())
+;;                       ((null? (car xs)) '())
+;;                       (else 
+;;                        ;;(newline)
+;;                        (display "xs3 = ")
+;;                        (display xs)
+;;                        (newline)
+;;                        (cons (apply f (all-cars xs))
+;;                              (mymap3 f (all-cdrs xs)))))))
+
+;;            (mymap2 (lambda (f . xs)
+;;                      ;;(newline)
+;;                      (display "xs = ")
+;;                      (display xs)
+;;                      (newline)
+;;                      (cond
+;;                       ((null? xs) '())
+;;                       ((null? (car xs)) '())                      
+;;                       (else                        
+;;                        (mymap3 f xs))))))
+;;     mymap2))
 
 
 ;; (define map
@@ -86,6 +104,7 @@
 ;;                       (else (cons (f (car xs))
 ;;                                   (mymap3 f (cdr xs))))))))
 ;;     mymap2))
+
 
 
 
