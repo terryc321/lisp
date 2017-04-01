@@ -1792,6 +1792,9 @@
 ;; define
 (load 	  "/home/terry/lisp/cps-interpreter/macros/define.scm")
 
+;; begin simplifier
+(load 	  "/home/terry/lisp/cps-interpreter/macros/begin.scm")
+
 
 ;; **** ------ SICP register machine ------- ****
 ;; **** this redefines REPL 

@@ -2,6 +2,46 @@
 
 ******************************************************************************
 
+map is a multi -argument routine
+
+apply seems to work now.
+
+(apply map list '((1 2 3)(10 20 30)))
+ => ((1) (2) (3))
+ because MAP is loaded from util/map.scm , only takes 1 argument
+
+
+
+
+
+
+******************************************************************************
+
+calling length on circular lists -- leads to infiinite 
+
+******************************************************************************
+
+ev-operands
+ builds up arguments in wrong order
+
+user-apply
+primitive-apply
+ both then have to reverse the arguments built by ev-operands
+
+EVAL-APPLY
+   PROC =
+   ARGL =
+
+(apply fac '(10))  ;; works ok
+
+on next application to
+(+ 1 2)
+
+;; stack looks like it got environment stuck on it
+;; clearly mismatch on 
+;; 
+
+
 
 ******************************************************************************
 

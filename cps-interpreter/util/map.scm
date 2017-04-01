@@ -44,6 +44,8 @@
 	       (else (cons (f (car xs))
 			   (map f (cdr xs)))))))
 
+
+
 (define not (lambda (x)
 	      (if x
 		  #f

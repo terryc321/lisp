@@ -42,6 +42,16 @@
 ;;     app))
 
 
+;;(define (apply f . xs)
+;;  (f xs))
+
+
+
+
+
+
+
+
 
 
 

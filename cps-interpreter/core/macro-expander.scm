@@ -20,9 +20,9 @@
 
 
 (define (macro-expand expr)
-   (display "macro expanding :")
-   (display expr)
-   (newline)  
+   ;; (display "macro expanding :")
+   ;; (display expr)
+   ;; (newline)  
   ;; symbol macros ?
   (if (not (pair? expr))
       expr
@@ -34,9 +34,9 @@
 	  (let ((expander (get-macro keyword)))
 	    (if  (pair? expander)
 		 (begin
-		   (display "found macro expander : ")
-		   (display expander)
-		   (newline)
+		   ;; (display "found macro expander : ")
+		   ;; (display expander)
+		   ;; (newline)
 		   ;; test prevents infinitely calling macro expansion
 		   (let ((original expr)
 			 (new ((car (cdr expander)) expr)))

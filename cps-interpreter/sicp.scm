@@ -9,6 +9,7 @@
 (define env '())
 ;; 3 argument list register
 (define argl '())
+(define argl-tail #f)
 ;; 4 unevaluated args register
 (define unev '())
 ;; 5 procedure register
@@ -80,6 +81,7 @@
    ((eq? reg 'exp) (set! stack (cons exp stack)))
    ((eq? reg 'env) (set! stack (cons env stack)))
    ((eq? reg 'argl) (set! stack (cons argl stack)))
+   ((eq? reg 'argl-tail) (set! stack (cons argl-tail stack)))   
    ((eq? reg 'unev) (set! stack (cons unev stack)))
    ((eq? reg 'proc) (set! stack (cons proc stack)))
    ((eq? reg 'cont) (set! stack (cons cont stack)))
@@ -100,12 +102,14 @@
      ((eq? reg 'exp)  (set! exp (car stack)))
      ((eq? reg 'env)  (set! env (car stack)))
      ((eq? reg 'argl) (set! argl (car stack)))
+     ((eq? reg 'argl-tail) (set! argl-tail (car stack)))     
      ((eq? reg 'unev) (set! unev (car stack)))
      ((eq? reg 'proc) (set! proc (car stack)))
      ((eq? reg 'cont) (set! cont (car stack)))
      ((eq? reg 'val)  (set! val (car stack)))
      (else (error "RESTORE : register not recognised" reg)))
     (set! stack (cdr stack))))
+
 
 
 
@@ -162,9 +166,10 @@
 ;; call sicp
 ;; evaluation continues until completed , or error
 (define (base-eval)
-  (display "[sicp]BASE-EVAL:")
-  (pprint exp)
-  (newline)
+  ;; (display "[sicp]BASE-EVAL:")
+  ;; (pprint exp)
+  ;; (newline)
+
   (cond
 
    ;; character = itself
@@ -390,14 +395,18 @@
 
 ;; *******************
 
+;; ev-operands requires a FRESH list as the arguments are SET-CAR'd 
 (define (ev-operands)
-  (set! argl '())
+  (set! argl (list 'dummy))
+  (set! argl-tail argl)
   (ev-operands-2))
 
 
 (define (ev-operands-2)
   (if (null? unev)
       (begin
+	;; disgard dummy argl
+	(set! argl (cdr argl))
 	(cont))
       (begin
         (set! exp (car unev))
@@ -406,18 +415,24 @@
         (save 'unev)
         (save 'cont)
         (save 'argl)
+	(save 'argl-tail)	
         (set! cont ev-operands-3)
         (eval-dispatch))))
 
 (define (ev-operands-3)
+  (restore 'argl-tail)  
   (restore 'argl)
   (restore 'cont)
   (restore 'unev)
   (restore 'env)
-  (set! argl (cons val argl))
+  (set-cdr! argl-tail (cons val '()))
+  (set! argl-tail (cdr argl-tail))
   (ev-operands-2))
 
-  
+
+
+
+
 
 
 
@@ -453,7 +468,9 @@
 (define (primitive-apply)
   ;; apply primitive procedure with operator in PROC , operands in ARGL
   ;; put args in correct order visually
-  (set! argl (reverse argl))
+  
+  ;;(set! argl (reverse argl))
+
   ;; (newline)
   ;; (display " * PRIMITIVE-APPLY * : ")
   ;; (display proc)
@@ -478,9 +495,13 @@
 
 
 (define (user-apply)
-  ;; procedure in PROC register  
+  ;; procedure in PROC register
+
+  
   ;; put arguments in correct order
-  (set! argl (reverse argl))
+  ;;(set! argl (reverse argl))
+
+
   ;;(bkpt 'user-apply 'proc proc)
   (set! unev (user-procedure-lambda-params proc))
   ;; call the lambda environment because its just a thunk with environment hidden inside .
@@ -706,22 +727,28 @@
   (cont))
 
 
-
 ;; read - eval - print loop
 ;; if read fails 
 (define (repl)
   (newline)
   (display ";; SICP >")
+
   (newline)
+  (display ";;repl.stack >")
+  (display stack)
+  (newline)
+  
   ;; save environment
   ;;(set! env *toplevel*)
   (save 'env)
-  
+
+
+ 
   ;; (if current-input-port
   ;;     (begin #f)  ;; no action needed
   ;;     (begin (set! *initial-input-port*  current-input-port)))  
   
-  (stats-reset) ;; reset statistics
+  ;;(stats-reset) ;; reset statistics
   
   (set! cont repl-print)
   (set! exp (read))
@@ -737,13 +764,14 @@
   (write val)
   (newline)
 
-  (stats) ;; show the stack statistics
+  ;;(stats) ;; show the stack statistics
   
   ;; restore environment
   ;;(set! *toplevel* env)
   (restore 'env)
   
   (repl))
+
 
 
 
@@ -969,9 +997,74 @@
 
 
 
+
 ;; ************************************************************
 ;; primitives are normal functions that return a result
 ;; ************************************************************
+;; ;; apply f arg1 arg2 arg3 .... arglist
+;; ;;      (f arg1 arg2 arg3 .... ,@arglist )
+(define (eval-apply-helper xs)
+  (cond
+   ((null? xs) xs)
+   ((null? (cdr xs)) (car xs))
+   (else (cons (car xs)
+	       (eval-apply-helper (cdr xs))))))
+
+(define (eval-apply)  
+  (newline)
+  (display "eval-apply: PROC=")
+  (display proc)
+  (newline)
+  (display "eval-apply: ARGL=")
+  (display argl)
+  (newline)
+  
+  (set! proc (car argl))
+  (set! argl (eval-apply-helper (cdr argl)))
+
+  (newline)
+  (display "eval-apply after: PROC=")
+  (display proc)
+  (newline)
+  (display "eval-apply after: ARGL=")
+  (display argl)
+  (newline)
+  
+  (save 'cont)
+  (set! cont eval-apply-2)
+  (apply-dispatch))
+
+
+
+
+(define (eval-apply-2)
+  (restore 'cont)
+
+  (newline)
+  (display "eval-apply .after : STACK=")
+  (display stack)
+  (newline)
+  (display "eval-apply .after : VAL=")
+  (display val)
+  (newline)
+  val)
+
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
 
 ;; CONS : argl = (x y)
 ;; evaluate x , save val ... later restore as argl ... then do cons
@@ -1230,9 +1323,10 @@
 ;; read - eval - print loop
 ;; if read fails 
 (define (load-repl)
-  (newline)
-  (display ";; LOAD-SICP >")
-  (newline)
+  ;; (newline)
+  ;; (display ";; LOAD-SICP >")
+  ;; (newline)
+  
   ;; save environment
   ;;(set! env *toplevel*)
   (save 'cont)
@@ -1242,7 +1336,7 @@
   ;;     (begin #f)  ;; no action needed
   ;;     (begin (set! *initial-input-port*  current-input-port)))  
   
-  (stats-reset) ;; reset statistics
+  ;;(stats-reset) ;; reset statistics
   
   (set! cont load-repl-print)
   (set! exp (read))
@@ -1252,29 +1346,27 @@
 	(restore 'cont)
 	(cont))
       (begin
-	(newline)
-	(display ";; LOAD-SICP >")
-	(display exp)
-	(newline)
-	
+	;; (newline)
+	;; (display ";; LOAD-SICP >")
+	;; (display exp)
+	;; (newline)
 	(set! exp (macro-expand exp))
 
-	(newline)
-	(display ";; LOAD-SICP : ME >")
-	(newline)
-	(display exp)
+	;; (newline)
+	;; (display ";; LOAD-SICP : ME >")
+	;; (newline)
+	;; (display exp)
 	
 	(base-eval))))
 
 
-
 (define (load-repl-print)
-  (newline)
-  (display ";; LOAD-Value : ")
-  (write val)
-  (newline)
+  ;; (newline)
+  ;; (display ";; LOAD-Value : ")
+  ;; (write val)
+  ;; (newline)
 
-  (stats) ;; show the stack statistics
+  ;; (stats) ;; show the stack statistics
   
   ;; restore environment
   ;;(set! *toplevel* env)
@@ -1356,6 +1448,7 @@
   (set! *toplevel* (cons name (cons val *toplevel*))))
 
 
+
 (install-toplevel 'reverse eval-reverse)
 (install-toplevel 'list eval-list)
 (install-toplevel 'append eval-append)
@@ -1367,7 +1460,9 @@
 (install-toplevel 'boolean? eval-boolean-p)
 (install-toplevel 'symbol? eval-symbol-p)
 (install-toplevel 'number? eval-number-p)
-(install-toplevel 'apply? eval-apply)
+
+(install-toplevel 'apply eval-apply)
+
 (install-toplevel 'length eval-length)
 (install-toplevel 'eq? eval-eq-p)
 (install-toplevel 'eqv  eval-eqv-p)
@@ -1391,10 +1486,10 @@
 (install-toplevel 'display eval-display)
 (install-toplevel 'newline eval-newline)
 
-(newline)
-(display "*toplevel* = ")
-(display *toplevel*)
-(newline)
+;; (newline)
+;; (display "*toplevel* = ")
+;; (display *toplevel*)
+;; (newline)
 
 ;; an initial environment          
 (set! env *toplevel*)

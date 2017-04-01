@@ -1,0 +1,78 @@
+
+idea is there is a bug in the load code
+try just to redirect stardard input to the file instead .
+
+
+----------------------------------------------------------------------------------------------
+
+basic idea is load repl , loads sicp , load compile into repl then run few tests , test4 in particular.
+Notice how the first run goes fine , next run it crashes.
+
+somehow the argument has found its way into PROC register.
+
+transcript from bug
+
+----------------------------------------------------------------------------------------------
+Transcript
+----------------------------------------------------------------------------------------------
+
+;; SICP >
+(test4)
+
+APPEND-SEQ-LIST : ((() (val) ((assign val (const 5)))) (() (val) ((assign val (const asdf)))))
+
+APPEND-SEQ-LIST : ((() (val) ((assign val (const asdf)))))
+
+APPEND-SEQ-LIST : ()
+
+APPEND-2-SEQUENCES : seq1 : (() (val) ((assign val (const asdf))))
+seq 2 :(() () ())
+registers-needed: seq1 : ()
+registers-needed: seq2 : ()
+registers-modified: seq1 : (val)
+registers-modified: seq2 : ()
+statements seq1 : ((assign val (const asdf)))
+statements seq2 : ()
+
+part -a : ()
+part -b : (val)
+part -c : ((assign val (const asdf)))
+
+APPEND-2-SEQUENCES : seq1 : (() (val) ((assign val (const 5))))
+seq 2 :(() (val) ((assign val (const asdf))))
+registers-needed: seq1 : ()
+registers-needed: seq2 : ()
+registers-modified: seq1 : (val)
+registers-modified: seq2 : (val)
+statements seq1 : ((assign val (const 5)))
+statements seq2 : ((assign val (const asdf)))
+
+part -a : ()
+part -b : (val)
+part -c : ((assign val (const 5)) (assign val (const asdf)))
+
+;; Value : (() (val) ((assign val (const 5)) (assign val (const "asdf"))))
+
+;; SICP >
+(test4)
+
+APPEND-SEQ-LIST : ((() (val) ((assign val (const 5)))) (() (val) ((assign val (const asdf)))))
+
+APPEND-SEQ-LIST : ((() (val) ((assign val (const asdf)))))
+
+APPEND-SEQ-LIST : ()
+
+APPEND-2-SEQUENCES : seq1 : (() (val) ((assign val (const asdf))))
+seq 2 :(() () ())
+registers-needed: seq1 : ()
+registers-needed: seq2 : ()
+registers-modified: seq1 : (val)
+registers-modified: seq2 : ()
+statements seq1 : ***INTERNAL ERROR **SICP APPLY-DISPATCH INTERNAL ERROR 
+PROC = ((assign val (const 5)) (assign val (const asdf)))
+
+;; ERROR : unknown procedure type
+;; ERROR ARGS : ()
+;; DE-BUG [1] >
+----------------------------------------------------------------------------------------------
+

@@ -234,6 +234,7 @@
 
 
 
+
 (define (end-with-linkage linkage instruction-sequence)
   (preserving
    '(continue)
@@ -246,33 +247,23 @@
 
 ;; compiling simple expressions
 (define (compile-self-evaluating exp target linkage)
-  (make-instruction-sequence '()
-			     (list target)
-			     `((assign ,target (const ,exp)))))
-
-
-  ;; (end-with-linkage
-  ;;  linkage
-  ;;  (make-instruction-sequence '()
-  ;; 			      (list target)
-  ;; 			      (list (list 'assign target
-  ;; 					  (list 'const exp))))))
+  (end-with-linkage
+   linkage
+   (make-instruction-sequence '()
+  			      (list target)
+  			      (list (list 'assign target
+  					  (list 'const exp))))))
 
 
 
 (define (compile-quoted exp target linkage)
-  (make-instruction-sequence
-   '()
-   (list target)
-   `((assign ,target (const ,(text-of-quotation exp))))))
+  (end-with-linkage
+   linkage
+   (make-instruction-sequence
+    '()
+    (list target)
+    `((assign ,target (const ,(text-of-quotation exp)))))))
 
-
-  ;; (end-with-linkage
-  ;;  linkage
-  ;;  (make-instruction-sequence
-  ;;   '()
-  ;;   (list target)
-  ;;   `((assign ,target (const ,(text-of-quotation exp)))))))
 
 
 
