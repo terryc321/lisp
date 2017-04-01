@@ -1,5 +1,11 @@
 
+
 ;; Libraries 
+
+;;; mit specific stuff
+;;(define (gensym args) (cons 'gensym args)) ;;generate-uninterned-symbol)
+(define gensym generate-uninterned-symbol)
+
 
 ;;quasiquotation
 (load  	  "/home/terry/lisp/cps-interpreter/core/quasiquote.scm")
@@ -71,6 +77,10 @@
 ;; also required SET-CAR! , SET-CDR! because they dont work on empty list
 ;; see ev-definition-2 
 (define *toplevel* '(#t #t #f #f))
+
+(define *input-ports* '())
+
+
 
 
 
@@ -266,7 +276,7 @@
    ((and (pair? exp)
          (eq? (car exp) 'if))    
     (ev-if))
-   
+  
    ;; quote
    ((and (pair? exp)
          (eq? (car exp) 'quote)
@@ -772,6 +782,7 @@
   (cont))
 
 
+
 ;; read - eval - print loop
 ;; if read fails 
 (define (repl)
@@ -801,6 +812,7 @@
 	(set! exp (macro-expand exp))
 	(base-eval))))
 
+
 (define (repl-print)
   (newline)
   (display ";; Value : ")
@@ -814,6 +826,14 @@
   (restore 'env)
   
   (repl))
+
+
+
+
+
+
+
+
 
 
 
@@ -1040,7 +1060,6 @@
 
 
 
-
 ;; ************************************************************
 ;; primitives are normal functions that return a result
 ;; ************************************************************
@@ -1053,46 +1072,44 @@
    (else (cons (car xs)
 	       (eval-apply-helper (cdr xs))))))
 
-(define (eval-apply)  
-  (newline)
-  (display "eval-apply: PROC=")
-  (display proc)
-  (newline)
-  (display "eval-apply: ARGL=")
-  (display argl)
-  (newline)
+(define (eval-apply)
+  
+  ;; (newline)
+  ;; (display "eval-apply: PROC=")
+  ;; (display proc)
+  ;; (newline)
+  ;; (display "eval-apply: ARGL=")
+  ;; (display argl)
+  ;; (newline)
   
   (set! proc (car argl))
   (set! argl (eval-apply-helper (cdr argl)))
 
-  (newline)
-  (display "eval-apply after: PROC=")
-  (display proc)
-  (newline)
-  (display "eval-apply after: ARGL=")
-  (display argl)
-  (newline)
+  ;; (newline)
+  ;; (display "eval-apply after: PROC=")
+  ;; (display proc)
+  ;; (newline)
+  ;; (display "eval-apply after: ARGL=")
+  ;; (display argl)
+  ;; (newline)
   
   (save 'cont)
   (set! cont eval-apply-2)
   (apply-dispatch))
 
 
-  
-
-
-
 
 (define (eval-apply-2)
   (restore 'cont)
 
-  (newline)
-  (display "eval-apply .after : STACK=")
-  (display stack)
-  (newline)
-  (display "eval-apply .after : VAL=")
-  (display val)
-  (newline)
+  ;; (newline)
+  ;; (display "eval-apply .after : STACK=")
+  ;; (display stack)
+  ;; (newline)
+  ;; (display "eval-apply .after : VAL=")
+  ;; (display val)
+  ;; (newline)
+
   val)
 
 
@@ -1201,7 +1218,7 @@
 ;;   (append-helper argl '()))
 
 
-;; LENGTH : exp = (xs)
+;; LENGTH : 
 (define (eval-length)
   (if (and (pair? argl) (or (null? (car argl))
 			   (pair? (car argl))))
@@ -1211,7 +1228,7 @@
 
 
 
-;; EQ? : exp = (....)
+;; EQ? : 
 (define (eval-eq-p)
   (if (and (pair? argl)
 	   (pair? (cdr argl)))
@@ -1219,7 +1236,7 @@
       (begin ;; otherwise
         (eval-error "EQ? : expected 2 arguments"))))
 
-;; EQV? : exp = (....)
+;; EQV? : 
 (define (eval-eqv-p)
   (if (and (pair? argl) (pair? (cdr argl)))
       (eqv? (car argl) (car (cdr argl)))
@@ -1227,7 +1244,38 @@
         (eval-error "EQV? : expected 2 arguments"))))
 
 
-;; = : exp = (....)
+
+;; < : 
+(define (eval-num-less-than)
+  ;; (display "NUM = : ")
+  ;; (display argl)
+  ;; (newline)
+  (if (and (pair? argl)
+	   (pair? (cdr argl)))
+      (begin
+	(if (or (not (number? (car argl)))
+		(not (number? (car (cdr argl)))))
+	    (eval-error "NUM = : not a number")
+            (if (= (car argl)
+                   (car (cdr argl)))
+                (begin
+                  ;; (1 2 3)
+                  ;; 
+                  (if (null? (cdr (cdr argl)))
+                      (begin
+                        #t)
+                      (begin
+                        (set! argl (cdr argl))
+                        (eval-num-eq))))
+                (begin
+                  #f))))
+      (begin ;; otherwise
+        (eval-error "NUM = : expected 2 arguments"))))
+
+
+
+
+;; = : 
 (define (eval-num-eq)
   ;; (display "NUM = : ")
   ;; (display argl)
@@ -1255,6 +1303,7 @@
         (eval-error "NUM = : expected 2 arguments"))))
 
 
+
 ;; + : exp = (....)
 (define (eval-num-add-helper xs)
   (cond
@@ -1280,6 +1329,7 @@
     (eval-num-mul-helper (cdr xs)))
    (else
     (eval-error "NUM * : not a number"))))
+
    
 (define (eval-num-mul)
   (set! val 1)
@@ -1326,6 +1376,7 @@
     (eval-num-div-helper (cdr xs)))
    (else
     (eval-error "NUM / : not a number"))))
+
    
 (define (eval-num-div)
   (set! val 0)
@@ -1342,6 +1393,7 @@
     (eval-num-div-helper (cdr argl)))))
 
 
+
 ;; ;; open file , keep reading in stuff , close file ,
 ;; ;; return last result to val register
 ;; (define (eval-load)  
@@ -1352,13 +1404,24 @@
 ;;       (set-current-input-port! port))))
 
 
-;; filename in argl 
+
+;; ;; filename in argl 
+;; (define (eval-load)
+;;   (set! val #f)
+;;   (let ((filename (car argl)))
+;;     (set *input-ports* (cons (current-input-port) *input-ports*))
+;;     (set-current-input-port! (open-input-file filename))
+;;     'ok))
+
+
+
 (define (eval-load)
   (set! val #f)
   (let ((filename (car argl)))
     (with-input-from-file filename
       (lambda ()	
 	(load-repl)))))
+
 
 	
 	
@@ -1406,6 +1469,7 @@
 	(base-eval))))
 
 
+
 (define (load-repl-print)
   ;; (newline)
   ;; (display ";; LOAD-Value : ")
@@ -1419,10 +1483,6 @@
   (restore 'env)
   (restore 'cont)
   (load-repl))
-
-
-
-
 
 
 
@@ -1547,6 +1607,7 @@
 
 ;; ;; a default continuation for external calls to sicp evaluator
 (define (done) #t)
+
 (set! cont done)
 
 
@@ -1554,6 +1615,11 @@
   (let ((full-path (string-append "/home/terry/lisp/cps-interpreter/util/" filename)))
     (set! exp `(load ,full-path))
     (base-eval)))
+
+
+(load-util "zero.scm")
+(load-util "add1.scm")
+(load-util "sub1.scm")
 
 (load-util "fac.scm")
 (load-util "fib.scm")
@@ -1567,52 +1633,11 @@
 
 
 
-;; (set! exp '(define id (lambda (x) x)))
-;; (base-eval)
-
-;; (set! exp '(define rcons (lambda (x y) (cons y x))))
-;; (base-eval)
-
-;; (set! exp '(define fib (lambda (n) (if (= n 1) 1 (if (= n 2) 1 (+ (fib (- n 1)) (fib (- n 2))))))))
-;; (base-eval)
-
-;; (set! exp '(define fac (lambda (n) (if (= n 1) 1 (* n (fac (- n 1)))))))
-;; (base-eval)
-
-;; (set! exp '(define one-p (lambda (n) (if (= n 1) #t #f))))
-;; (base-eval)
-
-;; (set! exp '(define var-n (lambda (n) (= n 1))))
-;; (base-eval)
-
-
-
-;; (base-eval '(begin
-;; 	      (load "/home/terry/lisp/cps-interpreter/util/not.scm")
-;; 	      (load "/home/terry/lisp/cps-interpreter/util/list.scm")
-;; 	      (load "/home/terry/lisp/cps-interpreter/util/append.scm")
-;; 	      (load "/home/terry/lisp/cps-interpreter/util/length.scm")
-;; 	      (load "/home/terry/lisp/cps-interpreter/util/reverse.scm")      
-;; 	      (load "/home/terry/lisp/cps-interpreter/util/apply.scm")      
-;; 	      (load "/home/terry/lisp/cps-interpreter/util/map.scm")
-;; 	      (load "/home/terry/lisp/cps-interpreter/util/fac.scm")
-;; 	      (load "/home/terry/lisp/cps-interpreter/util/fib.scm")
-;; 	      (load "/home/terry/lisp/cps-interpreter/util/assoc.scm")
-;; 	      ;; -- run the tests --
-;; 	      (load "/home/terry/lisp/cps-interpreter/tests/apply.scm")	      
-;; 	      (load "/home/terry/lisp/cps-interpreter/tests/map.scm")	      
-;; 	      ;;(load "/home/terry/lisp/cps-interpreter/tests/fib.scm")
-;; 	      (display "!! ALL LIBRARIES LOADED OKAY !!")
-;; 	      (newline)
-;; 	      )
-;; 	   environment
-;; 	   (lambda (k)
-;; 	     ;; run the repl if everything went ok
-;; 	     ;; ------ start interactive repl -----
-;; 	     (repl)))
-
-
 (repl)
+
+
+
+
 
 
 

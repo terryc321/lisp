@@ -13,3 +13,11 @@
 		 (else (+ 1 acc))))))
       (length-acc xs 0))))
 
+
+(display "length defined")
+(newline)
+
+
+
+
+

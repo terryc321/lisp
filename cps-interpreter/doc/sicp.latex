@@ -2,6 +2,102 @@
 \documentclass[a4paper,12pt]{article}
 \begin{document}
 
+Lisp.scm
+
+Minimal.scm
+
+Minimal version is supposed to be absolute CORE of SPECIAL FORMS.
+
+IF is a conditional . Cond can be built on if construct.
+
+QUOTE allows arbitrary lisp expressions .
+
+BEGIN allows sequencing of operations .
+
+DEFINE allows mutate the environment , it also redefines the first found definition if it exists,
+or creates a new definition.  the original environment is mutated in place.
+
+SET! should alter existing binding in the environment.
+
+LAMBDA allows abstraction .
+
+There is another APPLICATION  
+
+...................................................
+
+so these 7 special forms QUOTE , IF , BEGIN , DEFINE , SET! , LAMBDA , APPLICATION .
+
+so we notice there is no READER and no pretty PRINTER.
+
+we can make the low level code FAST , if it does little or no checks .
+
+
+
+...................................................
+
+
+Okay , do we need some PRIMITIVES .
+
+...................................................
+
+'()  :  nil : the empty list
+
+(null? x) :  type predicate
+
+...................................................
+
+Pairs
+
+(cons x y) : constructor
+
+(car x) : selector
+
+(cdr x) : selector
+
+(pair? x) : type predicate 
+
+...................................................
+
+Symbols
+
+(make-symbol x) : constructor
+
+(eq? x y) : are two symbols the same memory location ?
+
+(symbol? x) : type predicate
+
+(gensym) : special symbol constructor
+
+...................................................
+
+Strings
+
+(string-length x) : length of string
+
+(string? x) : type predicate
+
+...................................................
+
+Self evaluating items - \#a characters , "a string" strings , 123 numbers , \#T \#F booleans.
+
+Symbols are looked up in the environment.
+
+also hash tables , vectors ...
+
+...................................................
+
+Boolean
+
+\#T true : constructor
+
+\#F false : constructor
+
+(boolean? x) : type predicate
+
+...................................................
+
+
+
 \newpage
 
 Compiler
@@ -17,6 +113,7 @@ Lets assume got debugged code and want it to run fast.  Here is where the compil
 
 Lets build a compiler.
 
+Lets build a correct interpreter first then . 
 
 \newpage
 

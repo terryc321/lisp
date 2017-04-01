@@ -1,5 +1,116 @@
 
 
+
+******************************************************************************
+
+Nested definitions do not work correctly
+
+(define ...
+  (define ...)
+  (define ...)
+
+need to be translated into letrecs
+
+(define ...
+  (letrec ...))
+
+******************************************************************************
+
+minimal.scm  - this is really the heart of the lisp system
+
+
+******************************************************************************
+
+lisp.scm - older version missing some primitives
+
+******************************************************************************
+reverse
+
+(define reverse
+  (lambda (xs)
+    (letrec ((rev-acc (lambda (ys acc)
+			(cond
+			 ((null? ys) acc)
+			 ((pair? ys) (rev-acc (cdr ys) (cons (car ys) acc)))
+			 (else acc)))))
+      (rev-acc xs '()))))
+
+******************************************************************************
+
+list
+
+(define (list . xs) xs) 
+
+
+******************************************************************************
+
+(define (append . args)
+  (letrec ((app2 (lambda (xs ys) ;; xs , ys both simple lists
+		   (cond
+		    ((null? ys) xs)
+		    ((null? xs) ys)
+		    (else (cons (car xs)
+				(app2 (cdr xs) ys))))))   
+	   
+	   (app (lambda (xs lists-of-ys)
+		  (cond
+		   ((null? lists-of-ys) xs)
+		   ((null? (cdr lists-of-ys)) (app2 xs (car lists-of-ys)))
+		   (else (app (app2 xs (car lists-of-ys))
+			      (cdr lists-of-ys)))))))
+  
+    (cond
+     ((null? args) args)
+     ((null? (cdr args)) (car args))
+     (else (app (car args) (cdr args))))))
+
+(apply append '(1 2) '(3 4) '((5 6 7)))
+=> (1 2 3 4 5 6 7)
+
+(append '(1 2) '(3 4))
+=> (1 2 3 4)
+
+******************************************************************************
+Sat  1 Apr 18:41:11 BST 2017
+executing util/map.scm
+
+says mymap3 is not found , meaning letrec isnt working as it should.
+
+written multi argument MAP
+
+(define (map f . xs)
+  (letrec ((all-cars (lambda (ys)
+		       (cond
+			((and (pair? ys) (pair? (car ys)))
+			 (cons (car (car ys))
+				    (all-cars (cdr ys))))
+			(else '()))))
+	   (all-cdrs (lambda (ys)
+		       (cond
+			((and (pair? ys)
+			      (pair? (car ys)))
+			 (cons (cdr (car ys))
+			       (all-cdrs (cdr ys))))
+			(else '()))))
+	   ;; f doesnt change 
+	   (map2 (lambda (ys)
+	    	   (cond
+	    	    ((null? ys) '())
+		    ((null? (car ys)) '())		     
+		    (else (cons (apply f (all-cars ys))
+				(map2 (all-cdrs ys))))))))
+    (map2 xs)))
+
+
+(apply map list '((1 2 3) (10 20 30)))
+;; => ((1 10) (2 20) (3 30))
+
+(apply map list '(1 2 3) '((10 20 30)))
+;; => ((1 10) (2 20) (3 30))
+
+(map fac '(1 2 3 4))
+;; => (1 2 6 24)
+
 ******************************************************************************
 
 map is a multi -argument routine
@@ -9,11 +120,6 @@ apply seems to work now.
 (apply map list '((1 2 3)(10 20 30)))
  => ((1) (2) (3))
  because MAP is loaded from util/map.scm , only takes 1 argument
-
-
-
-
-
 
 ******************************************************************************
 

@@ -1,7 +1,13 @@
 
-(define fib (lambda (n) (if (< n 3) 1 (+ (fib (- n 1)) (fib (- n 2))))))
+(define fib (lambda (n) (if (= n 0) 0
+			    (if (= n 1) 1
+				(if (= n 2) 1
+				    (+ (fib (- n 1)) (fib (- n 2))))))))
+
 
 (display "fib defined")
 (newline)
+
+
 
 

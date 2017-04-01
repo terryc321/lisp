@@ -1,8 +1,15 @@
 
 
-;; make use of parameter matching to slurp all args into a list
-(define list
-  (lambda args args))
+
+
+(define (list . xs)  xs)
+
+
+(display "list defined")
+(newline)
+
+
+
 
 
 

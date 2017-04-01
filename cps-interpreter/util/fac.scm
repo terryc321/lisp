@@ -1,10 +1,11 @@
 
 
 
-(define fac (lambda (n) (if (< n 2) 1 (* n (fac (- n 1))))))
+(define fac (lambda (n) (if (= n 1) 1 (* n (fac (- n 1))))))
 
 (display "fac defined")
 (newline)
+
 
 
 

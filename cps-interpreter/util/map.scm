@@ -1,6 +1,7 @@
 
 ;; ---------------------- map --------------------------------------------
 
+
 ;; surprisingly difficult to get this right , really.
 ;; firstly map takes any number of arguments - so need dotted pairs on lambda to get all of them
 
@@ -38,24 +39,18 @@
 ;; 	(error "map "))))))
 
 
-(define map (lambda (f xs)
-	      (cond
-	       ((null? xs) xs)
-	       (else (cons (f (car xs))
-			   (map f (cdr xs)))))))
+;; (define map (lambda (f xs)
+;; 	      (cond
+;; 	       ((null? xs) xs)
+;; 	       (else (cons (f (car xs))
+;; 			   (map f (cdr xs)))))))
 
 
 
-(define not (lambda (x)
-	      (if x
-		  #f
-		  #t)))
-
-
-
-
-
-
+;; (define not (lambda (x)
+;; 	      (if x
+;; 		  #f
+;; 		  #t)))
 
 
 ;; (define map
@@ -91,7 +86,7 @@
 ;;                       ((null? (car xs)) '())                      
 ;;                       (else                        
 ;;                        (mymap3 f xs))))))
-;;     mymap2))
+;;     (list mymap2 mymap3 all-cdrs all-cars)))
 
 
 ;; (define map
@@ -109,31 +104,36 @@
 
 
 
+;; contract xs = must be a list of lists
+;; f must be a function that takes n of such lists 
+(define (map f . xs)
+  (letrec ((all-cars (lambda (ys)
+		       (cond
+			((and (pair? ys) (pair? (car ys)))
+			 (cons (car (car ys))
+				    (all-cars (cdr ys))))
+			(else '()))))
+	   (all-cdrs (lambda (ys)
+		       (cond
+			((and (pair? ys)
+			      (pair? (car ys)))
+			 (cons (cdr (car ys))
+			       (all-cdrs (cdr ys))))
+			(else '()))))
+	   ;; f doesnt change 
+	   (map2 (lambda (ys)
+	    	   (cond
+	    	    ((null? ys) '())
+		    ((null? (car ys)) '())		     
+		    (else (cons (apply f (all-cars ys))
+				(map2 (all-cdrs ys))))))))
+    (map2 xs)))
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+(display "map defined.")
+(newline)
 
 
 

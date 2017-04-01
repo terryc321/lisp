@@ -1,5 +1,11 @@
 
+
 ;; Libraries 
+
+;;; mit specific stuff
+;;(define (gensym args) (cons 'gensym args)) ;;generate-uninterned-symbol)
+(define gensym generate-uninterned-symbol)
+
 
 ;;quasiquotation
 (load  	  "/home/terry/lisp/cps-interpreter/core/quasiquote.scm")
@@ -63,19 +69,11 @@
 ;; the machine stack
 (define stack '())
 
-;; bug register - records what went wrong
-(define bug '())
-
-
 ;; give TOPLEVEL some definitions
 ;; also required SET-CAR! , SET-CDR! because they dont work on empty list
 ;; see ev-definition-2 
 (define *toplevel* '(#t #t #f #f))
 
-
-
-(define *initial-input-port* #f)
-(define *initial-output-port* #f)
 
 ;; a unqiue tag for closures
 ;;(define closure-tag (generate-uninterned-symbol "closure"))
@@ -86,14 +84,12 @@
 (define *stack-pops* 0)
 (define *stack-height* 0)
 
-
 (define (stats-reset)
   (set! *stack-max-height* 0)
   (set! *stack-min-height* 0)
   (set! *stack-pushes* 0)
   (set! *stack-pops* 0)
-  (set! *stack-height* 0))
-  
+  (set! *stack-height* 0)) 
 
 (define (stats)
   (newline) (display "*------- stack statistics ---------*") (newline)
@@ -103,13 +99,7 @@
   (display "stack pops   : ") (display *stack-pops* ) (newline)
   (display "stack height    : ") (display *stack-height* ) (newline)
   (display "stack height[2] : ") (display (length stack)) (newline))
-
-
-(define (read-and-macro-expand)
-  (macro-expand (read)))
-
-
-  
+ 
 
 (define (save reg)
   (set! *stack-height* (+ 1 *stack-height*))
@@ -155,53 +145,6 @@
 
 
 
-;; every routine is just a label
-
-;; ;; reverse x 
-;; ((and (pair? exp)
-;;       (eq? (car exp) 'reverse)
-;;       (not (null? (cdr exp))))
-;;  (set! exp (cdr exp))    
-;;  (eval-reverse))
-
-;; ;; pair? x 
-;; ((and (pair? exp)
-;;       (eq? (car exp) 'pair?)
-;;       (not (null? (cdr exp))))
-;;  (set! exp (cdr exp))    
-;;  (eval-pair-p))
-
-;; ;; list ....
-;; ((and (pair? exp)
-;;       (eq? (car exp) 'list))
-;;  (set! exp (cdr exp))    
-;;  (eval-list))   
-
-;; ;; cons x y
-;; ((and (pair? exp)
-;;       (eq? (car exp) 'cons)
-;;       (not (null? (cdr (cdr exp)))))
-;;  (set! exp (cdr exp))
-;;  (eval-cons))   
-
-;; ;; car x
-;; ((and (pair? exp)  (eq? (car exp) 'car))
-;;  (set! exp (cdr exp))   
-;;  (eval-car))
-
-;; ;; cdr x
-;; ((and (pair? exp)  (eq? (car exp) 'cdr))
-;;  (set! exp (cdr exp))    
-;;  (eval-cdr))
-
-;; ;; (procedure? p)
-;; ((and (pair? exp)
-;;       (eq? (car exp) 'procedure?)
-;;       (not (null? (cdr exp))))
-;;  (set! exp (cdr exp))    
-;;  (eval-procedure-p))
-
-
 ;; load up expression register
 ;; load up environment register
 ;; load up cont register
@@ -239,6 +182,7 @@
    ;; ((microcode-procedure? exp)
    ;;  (set! val exp)
    ;;  (cont))
+
    
    ;; machine routines are just code
    ((primitive-procedure? exp)
@@ -262,11 +206,12 @@
     (set! val (lookup-symbol exp env))
     (cont))
 
+   
    ;; if
    ((and (pair? exp)
          (eq? (car exp) 'if))    
     (ev-if))
-   
+  
    ;; quote
    ((and (pair? exp)
          (eq? (car exp) 'quote)
@@ -308,11 +253,11 @@
     )))
 
 
-
 ;;eval-application ... evaluate all arguments ... then the procedure ...
 ;; if the procedure is compound - then just call it with argl
 ;; otherwise its a user defined function in language and pass parameters as required and
 ;; evaluate body of lambda in environment of the lambda yada yada yada...
+
 
 ;; eval-dispatch is just base-eval
 (define (eval-dispatch)
@@ -498,13 +443,6 @@
     (eval-error "unknown procedure type"))))
 
 
-
-
-
-
-
-
-
 (define primitive-procedure? compound-procedure?)
 
 (define (primitive-apply)
@@ -525,20 +463,8 @@
   (cont))
 
 
-;; (define (microcode-apply)
-;;   (newline)
-;;   (display " * MICROCODE-APPLY * : ")
-;;   (display proc)
-;;   (display " : ARGS = ")
-;;   (display argl)
-;;   (newline)  
-;;   (restore 'cont)
-;;   (cont))
-
-
 (define (user-apply)
   ;; procedure in PROC register
-
   
   ;; put arguments in correct order
   ;;(set! argl (reverse argl))
@@ -704,9 +630,6 @@
   (cont))
   
 
-
-
-
 ;; debugger
 (define (eval-error msg . args)
   (newline)
@@ -772,6 +695,7 @@
   (cont))
 
 
+
 ;; read - eval - print loop
 ;; if read fails 
 (define (repl)
@@ -801,6 +725,7 @@
 	(set! exp (macro-expand exp))
 	(base-eval))))
 
+
 (define (repl-print)
   (newline)
   (display ";; Value : ")
@@ -814,8 +739,6 @@
   (restore 'env)
   
   (repl))
-
-
 
 
 
@@ -922,20 +845,18 @@
     (e)))
 
 
-;; **************************************************
-(define (microcode-procedure? x)
-  (and (vector? x)
-       (eq? 'microcode (vector-ref x 0)))) 
+;; ;; **************************************************
+;; (define (microcode-procedure? x)
+;;   (and (vector? x)
+;;        (eq? 'microcode (vector-ref x 0)))) 
 
-(define (microcode-routine x)
-  (vector-ref x 1))
+;; (define (microcode-routine x)
+;;   (vector-ref x 1))
 
-(define (make-microcode x)
-  (vector 'microcode x))
+;; (define (make-microcode x)
+;;   (vector 'microcode x))
 
-;; **************************************************
-
-
+;; ;; **************************************************
 
 
 
@@ -1040,7 +961,6 @@
 
 
 
-
 ;; ************************************************************
 ;; primitives are normal functions that return a result
 ;; ************************************************************
@@ -1053,61 +973,45 @@
    (else (cons (car xs)
 	       (eval-apply-helper (cdr xs))))))
 
-(define (eval-apply)  
-  (newline)
-  (display "eval-apply: PROC=")
-  (display proc)
-  (newline)
-  (display "eval-apply: ARGL=")
-  (display argl)
-  (newline)
+(define (eval-apply)
+  
+  ;; (newline)
+  ;; (display "eval-apply: PROC=")
+  ;; (display proc)
+  ;; (newline)
+  ;; (display "eval-apply: ARGL=")
+  ;; (display argl)
+  ;; (newline)
   
   (set! proc (car argl))
   (set! argl (eval-apply-helper (cdr argl)))
 
-  (newline)
-  (display "eval-apply after: PROC=")
-  (display proc)
-  (newline)
-  (display "eval-apply after: ARGL=")
-  (display argl)
-  (newline)
+  ;; (newline)
+  ;; (display "eval-apply after: PROC=")
+  ;; (display proc)
+  ;; (newline)
+  ;; (display "eval-apply after: ARGL=")
+  ;; (display argl)
+  ;; (newline)
   
   (save 'cont)
   (set! cont eval-apply-2)
   (apply-dispatch))
 
 
-  
-
-
-
 
 (define (eval-apply-2)
   (restore 'cont)
 
-  (newline)
-  (display "eval-apply .after : STACK=")
-  (display stack)
-  (newline)
-  (display "eval-apply .after : VAL=")
-  (display val)
-  (newline)
+  ;; (newline)
+  ;; (display "eval-apply .after : STACK=")
+  ;; (display stack)
+  ;; (newline)
+  ;; (display "eval-apply .after : VAL=")
+  ;; (display val)
+  ;; (newline)
+
   val)
-
-
-
-
-
-
-
-
-
-
-  
-
-
-
 
 
 
@@ -1170,6 +1074,7 @@
     (eval-error "CAR : expected a pair"))
    (else (car (car argl)))))
 
+
 ;; CDR
 (define (eval-cdr)
   (cond
@@ -1181,16 +1086,15 @@
     (eval-error "CDR : expected a pair"))
    (else (cdr (car argl)))))
 
-;; REVERSE : exp = (xs)
-(define (eval-reverse)
-  (if (and (pair? argl) (pair? (car argl)))
-      (reverse (car argl))
-      (begin ;; otherwise
-        (eval-error "REVERSE : not a pair"))))
+;; ;; REVERSE : exp = (xs)
+;; (define (eval-reverse)
+;;   (if (and (pair? argl) (pair? (car argl)))
+;;       (reverse (car argl))
+;;       (begin ;; otherwise
+;;         (eval-error "REVERSE : not a pair"))))
 
-
-;; LIST : exp = (...)
-(define (eval-list)  argl)
+;; ;; LIST : exp = (...)
+;; (define (eval-list)  argl)
 
 ;; ;; APPEND
 ;; (define (eval-append)
@@ -1201,17 +1105,17 @@
 ;;   (append-helper argl '()))
 
 
-;; LENGTH : exp = (xs)
-(define (eval-length)
-  (if (and (pair? argl) (or (null? (car argl))
-			   (pair? (car argl))))
-      (length (car argl))
-      (begin ;; otherwise
-        (eval-error "LENGTH : not a pair or empty list"))))
+;; ;; LENGTH : 
+;; (define (eval-length)
+;;   (if (and (pair? argl) (or (null? (car argl))
+;; 			   (pair? (car argl))))
+;;       (length (car argl))
+;;       (begin ;; otherwise
+;;         (eval-error "LENGTH : not a pair or empty list"))))
 
 
 
-;; EQ? : exp = (....)
+;; EQ? : 
 (define (eval-eq-p)
   (if (and (pair? argl)
 	   (pair? (cdr argl)))
@@ -1219,7 +1123,8 @@
       (begin ;; otherwise
         (eval-error "EQ? : expected 2 arguments"))))
 
-;; EQV? : exp = (....)
+
+;; EQV? : (or (eq? a b) (= a b))
 (define (eval-eqv-p)
   (if (and (pair? argl) (pair? (cdr argl)))
       (eqv? (car argl) (car (cdr argl)))
@@ -1227,7 +1132,49 @@
         (eval-error "EQV? : expected 2 arguments"))))
 
 
-;; = : exp = (....)
+
+;; < : 
+(define (eval-num-less)  (apply < argl))
+;; > : 
+(define (eval-num-more)  (apply > argl))
+;; modulo 
+(define (eval-modulo)   (apply modulo argl))
+;; remainder
+(define (eval-remainder) (apply remainder argl))
+
+
+
+
+
+  ;; ;; (display "NUM = : ")
+  ;; ;; (display argl)
+  ;; ;; (newline)
+  ;; (if (and (pair? argl)
+  ;; 	   (pair? (cdr argl)))
+  ;;     (begin
+  ;; 	(if (or (not (number? (car argl)))
+  ;; 		(not (number? (car (cdr argl)))))
+  ;; 	    (eval-error "NUM = : not a number")
+  ;;           (if (= (car argl)
+  ;;                  (car (cdr argl)))
+  ;;               (begin
+  ;;                 ;; (1 2 3)
+  ;;                 ;; 
+  ;;                 (if (null? (cdr (cdr argl)))
+  ;;                     (begin
+  ;;                       #t)
+  ;;                     (begin
+  ;;                       (set! argl (cdr argl))
+  ;;                       (eval-num-eq))))
+  ;;               (begin
+  ;;                 #f))))
+  ;;     (begin ;; otherwise
+  ;;       (eval-error "NUM = : expected 2 arguments"))))
+
+
+
+
+;; = : 
 (define (eval-num-eq)
   ;; (display "NUM = : ")
   ;; (display argl)
@@ -1255,6 +1202,7 @@
         (eval-error "NUM = : expected 2 arguments"))))
 
 
+
 ;; + : exp = (....)
 (define (eval-num-add-helper xs)
   (cond
@@ -1280,6 +1228,7 @@
     (eval-num-mul-helper (cdr xs)))
    (else
     (eval-error "NUM * : not a number"))))
+
    
 (define (eval-num-mul)
   (set! val 1)
@@ -1326,6 +1275,7 @@
     (eval-num-div-helper (cdr xs)))
    (else
     (eval-error "NUM / : not a number"))))
+
    
 (define (eval-num-div)
   (set! val 0)
@@ -1342,6 +1292,7 @@
     (eval-num-div-helper (cdr argl)))))
 
 
+
 ;; ;; open file , keep reading in stuff , close file ,
 ;; ;; return last result to val register
 ;; (define (eval-load)  
@@ -1352,13 +1303,24 @@
 ;;       (set-current-input-port! port))))
 
 
-;; filename in argl 
+
+;; ;; filename in argl 
+;; (define (eval-load)
+;;   (set! val #f)
+;;   (let ((filename (car argl)))
+;;     (set *input-ports* (cons (current-input-port) *input-ports*))
+;;     (set-current-input-port! (open-input-file filename))
+;;     'ok))
+
+
+
 (define (eval-load)
   (set! val #f)
   (let ((filename (car argl)))
     (with-input-from-file filename
       (lambda ()	
 	(load-repl)))))
+
 
 	
 	
@@ -1406,6 +1368,7 @@
 	(base-eval))))
 
 
+
 (define (load-repl-print)
   ;; (newline)
   ;; (display ";; LOAD-Value : ")
@@ -1419,21 +1382,6 @@
   (restore 'env)
   (restore 'cont)
   (load-repl))
-
-
-
-
-
-
-
-
-
-
-
-
-  
-
-
 
 
 
@@ -1457,8 +1405,6 @@
 
 (define (eval-display) (apply display argl))
 (define (eval-newline) (apply newline argl))
-
-
 
 ;; (define (eval-cadr) (apply cadr argl))
 ;; (define (eval-cddr) (apply cddr argl))
@@ -1494,8 +1440,6 @@
   (set! *toplevel* (cons name (cons val *toplevel*))))
 
 
-
-
 ;;(install-toplevel 'reverse eval-reverse)
 ;;(install-toplevel 'list eval-list)
 ;;(install-toplevel 'append eval-append)
@@ -1503,6 +1447,7 @@
 (install-toplevel 'car eval-car)
 (install-toplevel 'cdr eval-cdr)
 (install-toplevel 'cons eval-cons)
+
 
 (install-toplevel 'procedure? eval-procedure-p)
 (install-toplevel 'pair? eval-pair-p)
@@ -1515,11 +1460,15 @@
 ;;(install-toplevel 'length eval-length)
 (install-toplevel 'eq? eval-eq-p)
 (install-toplevel 'eqv  eval-eqv-p)
+
+
 (install-toplevel '=  eval-num-eq)
 (install-toplevel '+  eval-num-add)
 (install-toplevel '*  eval-num-mul)
 (install-toplevel '-  eval-num-sub)
 (install-toplevel '/  eval-num-div)
+
+
 (install-toplevel 'read-line eval-read-line)
 (install-toplevel 'read-char eval-read-char)
 (install-toplevel 'char?  eval-char-p)
@@ -1528,12 +1477,20 @@
 (install-toplevel 'string->list  eval-string->list)
 (install-toplevel 'load  eval-load)
 (install-toplevel 'string?  eval-string-p)
+
 (install-toplevel 'gensym  eval-gensym)
+
 (install-toplevel 'symbol->string  eval-symbol->string)
 (install-toplevel 'null?  eval-null-p)
 (install-toplevel 'memq   eval-memq)
 (install-toplevel 'display eval-display)
 (install-toplevel 'newline eval-newline)
+
+(install-toplevel '> eval-num-more)
+(install-toplevel '< eval-num-less) 
+(install-toplevel 'modulo eval-modulo)
+(install-toplevel 'remainder eval-remainder)
+
 
 
 ;; (newline)
@@ -1542,11 +1499,13 @@
 ;; (newline)
 
 
+
 ;; an initial environment          
 (set! env *toplevel*)
 
 ;; ;; a default continuation for external calls to sicp evaluator
 (define (done) #t)
+
 (set! cont done)
 
 
@@ -1554,6 +1513,11 @@
   (let ((full-path (string-append "/home/terry/lisp/cps-interpreter/util/" filename)))
     (set! exp `(load ,full-path))
     (base-eval)))
+
+
+(load-util "zero.scm")
+(load-util "add1.scm")
+(load-util "sub1.scm")
 
 (load-util "fac.scm")
 (load-util "fib.scm")
@@ -1567,52 +1531,11 @@
 
 
 
-;; (set! exp '(define id (lambda (x) x)))
-;; (base-eval)
-
-;; (set! exp '(define rcons (lambda (x y) (cons y x))))
-;; (base-eval)
-
-;; (set! exp '(define fib (lambda (n) (if (= n 1) 1 (if (= n 2) 1 (+ (fib (- n 1)) (fib (- n 2))))))))
-;; (base-eval)
-
-;; (set! exp '(define fac (lambda (n) (if (= n 1) 1 (* n (fac (- n 1)))))))
-;; (base-eval)
-
-;; (set! exp '(define one-p (lambda (n) (if (= n 1) #t #f))))
-;; (base-eval)
-
-;; (set! exp '(define var-n (lambda (n) (= n 1))))
-;; (base-eval)
-
-
-
-;; (base-eval '(begin
-;; 	      (load "/home/terry/lisp/cps-interpreter/util/not.scm")
-;; 	      (load "/home/terry/lisp/cps-interpreter/util/list.scm")
-;; 	      (load "/home/terry/lisp/cps-interpreter/util/append.scm")
-;; 	      (load "/home/terry/lisp/cps-interpreter/util/length.scm")
-;; 	      (load "/home/terry/lisp/cps-interpreter/util/reverse.scm")      
-;; 	      (load "/home/terry/lisp/cps-interpreter/util/apply.scm")      
-;; 	      (load "/home/terry/lisp/cps-interpreter/util/map.scm")
-;; 	      (load "/home/terry/lisp/cps-interpreter/util/fac.scm")
-;; 	      (load "/home/terry/lisp/cps-interpreter/util/fib.scm")
-;; 	      (load "/home/terry/lisp/cps-interpreter/util/assoc.scm")
-;; 	      ;; -- run the tests --
-;; 	      (load "/home/terry/lisp/cps-interpreter/tests/apply.scm")	      
-;; 	      (load "/home/terry/lisp/cps-interpreter/tests/map.scm")	      
-;; 	      ;;(load "/home/terry/lisp/cps-interpreter/tests/fib.scm")
-;; 	      (display "!! ALL LIBRARIES LOADED OKAY !!")
-;; 	      (newline)
-;; 	      )
-;; 	   environment
-;; 	   (lambda (k)
-;; 	     ;; run the repl if everything went ok
-;; 	     ;; ------ start interactive repl -----
-;; 	     (repl)))
-
-
 (repl)
+
+
+
+
 
 
 

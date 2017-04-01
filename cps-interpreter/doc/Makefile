@@ -5,6 +5,8 @@ all:
 	latex sicp.latex
 	dvips sicp.dvi
 	dvipdf sicp.dvi
-	evince sicp.pdf 
+	gv sicp.pdf 
+
+
 
 

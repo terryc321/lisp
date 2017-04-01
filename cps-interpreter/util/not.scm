@@ -2,7 +2,13 @@
 
 
 
-(define not
-  (lambda (x)
-    (if x x #f)))
+(define (not x)  (if x #f #t))
+
+(display "not defined")
+(newline)
+
+
+
+
+
 

@@ -10,3 +10,10 @@
 			 (else acc)))))
       (rev-acc xs '()))))
 
+(display "reverse defined")
+(newline)
+
+
+
+
+
