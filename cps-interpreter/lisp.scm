@@ -69,23 +69,11 @@
 ;; the machine stack
 (define stack '())
 
-;; bug register - records what went wrong
-(define bug '())
-
-
 ;; give TOPLEVEL some definitions
 ;; also required SET-CAR! , SET-CDR! because they dont work on empty list
 ;; see ev-definition-2 
 (define *toplevel* '(#t #t #f #f))
 
-(define *input-ports* '())
-
-
-
-
-
-(define *initial-input-port* #f)
-(define *initial-output-port* #f)
 
 ;; a unqiue tag for closures
 ;;(define closure-tag (generate-uninterned-symbol "closure"))
@@ -96,14 +84,12 @@
 (define *stack-pops* 0)
 (define *stack-height* 0)
 
-
 (define (stats-reset)
   (set! *stack-max-height* 0)
   (set! *stack-min-height* 0)
   (set! *stack-pushes* 0)
   (set! *stack-pops* 0)
-  (set! *stack-height* 0))
-  
+  (set! *stack-height* 0)) 
 
 (define (stats)
   (newline) (display "*------- stack statistics ---------*") (newline)
@@ -113,13 +99,7 @@
   (display "stack pops   : ") (display *stack-pops* ) (newline)
   (display "stack height    : ") (display *stack-height* ) (newline)
   (display "stack height[2] : ") (display (length stack)) (newline))
-
-
-(define (read-and-macro-expand)
-  (macro-expand (read)))
-
-
-  
+ 
 
 (define (save reg)
   (set! *stack-height* (+ 1 *stack-height*))
@@ -165,53 +145,6 @@
 
 
 
-;; every routine is just a label
-
-;; ;; reverse x 
-;; ((and (pair? exp)
-;;       (eq? (car exp) 'reverse)
-;;       (not (null? (cdr exp))))
-;;  (set! exp (cdr exp))    
-;;  (eval-reverse))
-
-;; ;; pair? x 
-;; ((and (pair? exp)
-;;       (eq? (car exp) 'pair?)
-;;       (not (null? (cdr exp))))
-;;  (set! exp (cdr exp))    
-;;  (eval-pair-p))
-
-;; ;; list ....
-;; ((and (pair? exp)
-;;       (eq? (car exp) 'list))
-;;  (set! exp (cdr exp))    
-;;  (eval-list))   
-
-;; ;; cons x y
-;; ((and (pair? exp)
-;;       (eq? (car exp) 'cons)
-;;       (not (null? (cdr (cdr exp)))))
-;;  (set! exp (cdr exp))
-;;  (eval-cons))   
-
-;; ;; car x
-;; ((and (pair? exp)  (eq? (car exp) 'car))
-;;  (set! exp (cdr exp))   
-;;  (eval-car))
-
-;; ;; cdr x
-;; ((and (pair? exp)  (eq? (car exp) 'cdr))
-;;  (set! exp (cdr exp))    
-;;  (eval-cdr))
-
-;; ;; (procedure? p)
-;; ((and (pair? exp)
-;;       (eq? (car exp) 'procedure?)
-;;       (not (null? (cdr exp))))
-;;  (set! exp (cdr exp))    
-;;  (eval-procedure-p))
-
-
 ;; load up expression register
 ;; load up environment register
 ;; load up cont register
@@ -249,6 +182,7 @@
    ;; ((microcode-procedure? exp)
    ;;  (set! val exp)
    ;;  (cont))
+
    
    ;; machine routines are just code
    ((primitive-procedure? exp)
@@ -272,6 +206,7 @@
     (set! val (lookup-symbol exp env))
     (cont))
 
+   
    ;; if
    ((and (pair? exp)
          (eq? (car exp) 'if))    
@@ -318,11 +253,11 @@
     )))
 
 
-
 ;;eval-application ... evaluate all arguments ... then the procedure ...
 ;; if the procedure is compound - then just call it with argl
 ;; otherwise its a user defined function in language and pass parameters as required and
 ;; evaluate body of lambda in environment of the lambda yada yada yada...
+
 
 ;; eval-dispatch is just base-eval
 (define (eval-dispatch)
@@ -508,13 +443,6 @@
     (eval-error "unknown procedure type"))))
 
 
-
-
-
-
-
-
-
 (define primitive-procedure? compound-procedure?)
 
 (define (primitive-apply)
@@ -535,20 +463,8 @@
   (cont))
 
 
-;; (define (microcode-apply)
-;;   (newline)
-;;   (display " * MICROCODE-APPLY * : ")
-;;   (display proc)
-;;   (display " : ARGS = ")
-;;   (display argl)
-;;   (newline)  
-;;   (restore 'cont)
-;;   (cont))
-
-
 (define (user-apply)
   ;; procedure in PROC register
-
   
   ;; put arguments in correct order
   ;;(set! argl (reverse argl))
@@ -714,9 +630,6 @@
   (cont))
   
 
-
-
-
 ;; debugger
 (define (eval-error msg . args)
   (newline)
@@ -830,16 +743,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
 ;; ;; load-repl
 ;; (define (load-repl)
 ;;   (newline)
@@ -942,20 +845,18 @@
     (e)))
 
 
-;; **************************************************
-(define (microcode-procedure? x)
-  (and (vector? x)
-       (eq? 'microcode (vector-ref x 0)))) 
+;; ;; **************************************************
+;; (define (microcode-procedure? x)
+;;   (and (vector? x)
+;;        (eq? 'microcode (vector-ref x 0)))) 
 
-(define (microcode-routine x)
-  (vector-ref x 1))
+;; (define (microcode-routine x)
+;;   (vector-ref x 1))
 
-(define (make-microcode x)
-  (vector 'microcode x))
+;; (define (make-microcode x)
+;;   (vector 'microcode x))
 
-;; **************************************************
-
-
+;; ;; **************************************************
 
 
 
@@ -1115,20 +1016,6 @@
 
 
 
-
-
-
-
-
-
-  
-
-
-
-
-
-
-
 ;; CONS : argl = (x y)
 ;; evaluate x , save val ... later restore as argl ... then do cons
 (define (eval-cons)  
@@ -1187,6 +1074,7 @@
     (eval-error "CAR : expected a pair"))
    (else (car (car argl)))))
 
+
 ;; CDR
 (define (eval-cdr)
   (cond
@@ -1198,16 +1086,15 @@
     (eval-error "CDR : expected a pair"))
    (else (cdr (car argl)))))
 
-;; REVERSE : exp = (xs)
-(define (eval-reverse)
-  (if (and (pair? argl) (pair? (car argl)))
-      (reverse (car argl))
-      (begin ;; otherwise
-        (eval-error "REVERSE : not a pair"))))
+;; ;; REVERSE : exp = (xs)
+;; (define (eval-reverse)
+;;   (if (and (pair? argl) (pair? (car argl)))
+;;       (reverse (car argl))
+;;       (begin ;; otherwise
+;;         (eval-error "REVERSE : not a pair"))))
 
-
-;; LIST : exp = (...)
-(define (eval-list)  argl)
+;; ;; LIST : exp = (...)
+;; (define (eval-list)  argl)
 
 ;; ;; APPEND
 ;; (define (eval-append)
@@ -1218,13 +1105,13 @@
 ;;   (append-helper argl '()))
 
 
-;; LENGTH : 
-(define (eval-length)
-  (if (and (pair? argl) (or (null? (car argl))
-			   (pair? (car argl))))
-      (length (car argl))
-      (begin ;; otherwise
-        (eval-error "LENGTH : not a pair or empty list"))))
+;; ;; LENGTH : 
+;; (define (eval-length)
+;;   (if (and (pair? argl) (or (null? (car argl))
+;; 			   (pair? (car argl))))
+;;       (length (car argl))
+;;       (begin ;; otherwise
+;;         (eval-error "LENGTH : not a pair or empty list"))))
 
 
 
@@ -1236,7 +1123,8 @@
       (begin ;; otherwise
         (eval-error "EQ? : expected 2 arguments"))))
 
-;; EQV? : 
+
+;; EQV? : (or (eq? a b) (= a b))
 (define (eval-eqv-p)
   (if (and (pair? argl) (pair? (cdr argl)))
       (eqv? (car argl) (car (cdr argl)))
@@ -1246,31 +1134,42 @@
 
 
 ;; < : 
-(define (eval-num-less-than)
-  ;; (display "NUM = : ")
-  ;; (display argl)
-  ;; (newline)
-  (if (and (pair? argl)
-	   (pair? (cdr argl)))
-      (begin
-	(if (or (not (number? (car argl)))
-		(not (number? (car (cdr argl)))))
-	    (eval-error "NUM = : not a number")
-            (if (= (car argl)
-                   (car (cdr argl)))
-                (begin
-                  ;; (1 2 3)
-                  ;; 
-                  (if (null? (cdr (cdr argl)))
-                      (begin
-                        #t)
-                      (begin
-                        (set! argl (cdr argl))
-                        (eval-num-eq))))
-                (begin
-                  #f))))
-      (begin ;; otherwise
-        (eval-error "NUM = : expected 2 arguments"))))
+(define (eval-num-less)  (apply < argl))
+;; > : 
+(define (eval-num-more)  (apply > argl))
+;; modulo 
+(define (eval-modulo)   (apply modulo argl))
+;; remainder
+(define (eval-remainder) (apply remainder argl))
+
+
+
+
+
+  ;; ;; (display "NUM = : ")
+  ;; ;; (display argl)
+  ;; ;; (newline)
+  ;; (if (and (pair? argl)
+  ;; 	   (pair? (cdr argl)))
+  ;;     (begin
+  ;; 	(if (or (not (number? (car argl)))
+  ;; 		(not (number? (car (cdr argl)))))
+  ;; 	    (eval-error "NUM = : not a number")
+  ;;           (if (= (car argl)
+  ;;                  (car (cdr argl)))
+  ;;               (begin
+  ;;                 ;; (1 2 3)
+  ;;                 ;; 
+  ;;                 (if (null? (cdr (cdr argl)))
+  ;;                     (begin
+  ;;                       #t)
+  ;;                     (begin
+  ;;                       (set! argl (cdr argl))
+  ;;                       (eval-num-eq))))
+  ;;               (begin
+  ;;                 #f))))
+  ;;     (begin ;; otherwise
+  ;;       (eval-error "NUM = : expected 2 arguments"))))
 
 
 
@@ -1486,17 +1385,6 @@
 
 
 
-
-
-
-
-
-  
-
-
-
-
-
 ;;*****************************************************************
 ;; primitives should really just return SOME VALUE , which is eventally assigned to VAL register
 ;; or little val register to be more precise.
@@ -1517,8 +1405,6 @@
 
 (define (eval-display) (apply display argl))
 (define (eval-newline) (apply newline argl))
-
-
 
 ;; (define (eval-cadr) (apply cadr argl))
 ;; (define (eval-cddr) (apply cddr argl))
@@ -1554,8 +1440,6 @@
   (set! *toplevel* (cons name (cons val *toplevel*))))
 
 
-
-
 ;;(install-toplevel 'reverse eval-reverse)
 ;;(install-toplevel 'list eval-list)
 ;;(install-toplevel 'append eval-append)
@@ -1563,6 +1447,7 @@
 (install-toplevel 'car eval-car)
 (install-toplevel 'cdr eval-cdr)
 (install-toplevel 'cons eval-cons)
+
 
 (install-toplevel 'procedure? eval-procedure-p)
 (install-toplevel 'pair? eval-pair-p)
@@ -1575,11 +1460,15 @@
 ;;(install-toplevel 'length eval-length)
 (install-toplevel 'eq? eval-eq-p)
 (install-toplevel 'eqv  eval-eqv-p)
+
+
 (install-toplevel '=  eval-num-eq)
 (install-toplevel '+  eval-num-add)
 (install-toplevel '*  eval-num-mul)
 (install-toplevel '-  eval-num-sub)
 (install-toplevel '/  eval-num-div)
+
+
 (install-toplevel 'read-line eval-read-line)
 (install-toplevel 'read-char eval-read-char)
 (install-toplevel 'char?  eval-char-p)
@@ -1588,18 +1477,27 @@
 (install-toplevel 'string->list  eval-string->list)
 (install-toplevel 'load  eval-load)
 (install-toplevel 'string?  eval-string-p)
+
 (install-toplevel 'gensym  eval-gensym)
+
 (install-toplevel 'symbol->string  eval-symbol->string)
 (install-toplevel 'null?  eval-null-p)
 (install-toplevel 'memq   eval-memq)
 (install-toplevel 'display eval-display)
 (install-toplevel 'newline eval-newline)
 
+(install-toplevel '> eval-num-more)
+(install-toplevel '< eval-num-less) 
+(install-toplevel 'modulo eval-modulo)
+(install-toplevel 'remainder eval-remainder)
+
+
 
 ;; (newline)
 ;; (display "*toplevel* = ")
 ;; (display *toplevel*)
 ;; (newline)
+
 
 
 ;; an initial environment          

@@ -1,0 +1,241 @@
+diff --git a/doc/sicp.latex b/doc/sicp.latex
+new file mode 100644
+index 0000000..de6fae5
+--- /dev/null
++++ b/doc/sicp.latex
+@@ -0,0 +1,143 @@
++
++
++this version is new tail recursive as last expression in a begin sequence is
++evaluated without any further added continuations
++also incorporated a safety valve for empty begin expressions
++
++1 (define (eval-begin exp env cont)
++2  (let ((body (cdr exp)))
++3    (eval-sequence body env cont)))
++4
++5 (define (eval-sequence body env cont)
++6  (cond
++7   ;; safety valve - just means (begin) evaluates to false
++8   ((null? body) (cont #f))
++9   ;; last expression has no need to return -- key to tail recursion
++10   ((null? (cdr body))    
++11    (base-eval (car body) env cont))
++12   (else
++13    (base-eval (car body) env
++14	       (lambda (ignored)
++15		 ;; totally ignore the result 
++16		 (eval-sequence (cdr body) env cont))))))
++
++lines 1 to 3
++going evaluate the expressions of the begin sequence
++so seems appropriate to set unev to be the body of the begin sequence
++Line 3 : simple jump to eval sequence
++
++eval-begin :
++(set! unev (cdr exp))
++goto eval-sequence
++
++ev-sequence : 
++Line 8 : if unev is null , meaning nothing to evaluate then the result of whole begin sequence is undefined.
++let it be false #f .
++(if (null? unev) (cont #f))
++
++set! val #f
++goto continue
++
++Line 10 : if this is the last expression , then all we need to do is pass this to base-eval , it never returns.
++
++set! exp (car unev)
++goto eval-dispatch ; which is base-eval
++
++Line 13 : otherwise evaluate the expression in the begin sequence and remember to come back to evaluate the rest
++
++set! exp (car unev)
++we want to come back to somewhere where we can tell it to evaluate the rest , ev-sequence-2 seems appropriate
++set! cont ev-sequence-2
++
++but we need original cont to carry on evaluating the sequence
++we also need original environment
++we also need the other unevaluated arguments also
++
++save-cont
++save-env
++save-unev
++set! exp (car unev)
++set! cont ev-sequence-2
++goto eval-dispatch
++
++ev-sequence-2 :
++line 14 : we observe see each lambda in continuation passing style becomes a new goto label location in register machine
++basic stack discipline , we restore the stack to its original state
++
++restore-unev
++restore-env
++restore-cont
++
++(cdr body)
++set! unev (cdr unev)
++
++line 16 : environment and continuation are the same as they are now , so we jump to ev-sequence
++goto ev-sequence
++
++Here is what the translation looks like 
++
++(define (ev-begin)
++  (set! unev (cdr exp))
++  (ev-sequence))
++
++(define (ev-sequence)
++  (set! exp (car unev))
++  (cond
++   ((null? unev)
++    (set! val #f)
++    (cont))
++   ((null? (cdr unev))
++    (ev-sequence-last-exp))
++   (else
++S1:    (save-cont)      ;; ***
++S2:    (save-env)       ;; ***
++S3:    (save-unev)      ;; ***
++    (set! cont ev-sequence-2)
++    (eval-dispatch))))
++
++(define (ev-sequence-2)
++R3:  (restore-unev)     ;; ***
++R2:  (restore-env)      ;; ***
++R1:  (restore-cont)     ;; ***
++  (set! unev (cdr unev))
++  (ev-sequence))
++
++(define (ev-sequence-last-exp)
++  (eval-dispatch))
++
++
++notice that the saves S1 S2 S3 and restores R3 R2 R1 must happen in reverse order to each other.
++it doesnt matter if we save any cont env or unev , but they must be preserved on restore to
++their original values -- stack discipline.
++
++Observed in SICP book version saves S1 and restores R1 have been hoisted out
++
++(define (ev-begin)
++  (set! unev (cdr exp))
++S1:  (save-cont)        ;; *****
++  (ev-sequence))
++
++(define (ev-sequence)
++  (set! exp (car unev))
++  (cond
++   ((null? unev)
++    (set! val #f)
++    (cont))
++   ((null? (cdr unev))
++    (ev-sequence-last-exp))
++   (else
++S2:    (save-env)
++S3:    (save-unev)
++    (set! cont ev-sequence-2)
++    (eval-dispatch))))
++
++(define (ev-sequence-2)
++R3:  (restore-unev)
++R2:  (restore-env)
++  (set! unev (cdr unev))
++  (ev-sequence))
++
++(define (ev-sequence-last-exp)
++R1:    (restore-cont)   ;; ***** 
++  (eval-dispatch))
++
+diff --git a/sicp.scm b/sicp.scm
+index 6075b79..77f1897 100644
+--- a/sicp.scm
++++ b/sicp.scm
+@@ -1,5 +1,6 @@
+ 
+ 
++
+ ;; sicp evaluator
+ 
+ ;; 1 expression register
+@@ -179,10 +180,11 @@
+   (set! exp (car (cdr (cdr exp))))
+   (save-env)
+   (save-cont)
+-  (set! cont ev-assignment-1)
++  (set! cont ev-assignment-2)
+   (eval-dispatch))
+ 
+-(define (ev-assignment-1)
++
++(define (ev-assignment-2)
+   (restore-cont)
+   (restore-env)
+   (restore-unev)
+@@ -349,37 +351,52 @@
+   (ev-sequence))
+ 
+ 
+-  
++
++
++
+ (define (ev-begin)
+   (set! unev (cdr exp))
+-  (save-cont)
+   (ev-sequence))
+ 
+-
+ (define (ev-sequence)
+   (set! exp (car unev))
+-  (if (null? (cdr unev))
+-      (begin
+-	(ev-sequence-last-exp))
+-      (begin
+-	(save-unev)
+-	(save-env)
+-	(set! cont ev-sequence-continue)
+-	(eval-dispatch))))
++  (cond
++   ((null? unev)
++    (set! val #f)
++    (cont))
++   ((null? (cdr unev))
++    (ev-sequence-last-exp))
++   (else
++    (save-cont)
++    (save-env)
++    (save-unev)
++    (set! cont ev-sequence-2)
++    (eval-dispatch))))
+ 
+-(define (ev-sequence-continue)
+-  (restore-env)
++(define (ev-sequence-2)
+   (restore-unev)
++  (restore-env)
++  (restore-cont)
+   (set! unev (cdr unev))
+   (ev-sequence))
+ 
+ (define (ev-sequence-last-exp)
+-  (restore-cont)
+   (eval-dispatch))
+ 
+ 
+ 
+ 
++
++
++
++
++
++
++
++
++
++
++
+ (define (ev-if)
+   (save-exp)
+   (save-env)

@@ -1,15 +1,274 @@
 
+*******************************************************************************
+
+step012 :
+
+Think CAR and CDR work .
+
+The CONS operation does not work yet.
+Not sure why ?
+
+Pairs are tagged with xxxx001
+so pointer will be to some address aligned on 8 byte boundary, so
+lower 3 bits can be re-tasked.
+
+
+
+
+
+*******************************************************************************
+
+step011 :
+
+
+*******************************************************************************
+
+step010 :
+
+
+
+
+
+*******************************************************************************
+
+step009 :
+
+stack pointer ESP is occupied = it holds top of stack
+on entry , ESP - 4 is available for writing
+
+our push is ESP - 4 , ESP - 8 , ESP - 12 etc.. on 32 bit system
+
+si : represents the FREE SLOT on the STACK
+
+mov [ ESP + SI ] , eax  ; 
+
+mov eax , [ ESP + SI ]  ; 
+
+on 32 bit system , si starts at negative 4 and decrements each time by wordsize , ie 4
+
+actually there are no symbols at runtime ! its all on the stack .
+
+
+*******************************************************************************
+
+step008 :
+
+incorporated a stack index SI into the compiler COMP
+
+rather explicit push / pop we are altering memory directly
+
+-
+*
+=
+char=?
+<
+>
+
+can all be implemented by what we know now.
+
+
+
+
+*******************************************************************************
+
+step007 : reorganised compiler so it calls out to other routines
+
+
+*******************************************************************************
+step006 : unary primitives 
+
+
+boolean mask =  127
+  64 32 16 8 4 2 1
+  1  1   1 1 1 1 1
+(+ 1 2 4 8 16 32 64)  : 127
+
+boolean tag = 31
+  64 32 16 8 4 2 1
+  0  0   1 1 1 1 1
+(+ 1 2 4 8 16)  : 31
+
+boolean-shift = 7
+128  64 32 16 8 4 2 1
+ X   0  0   1 1 1 1 1
+
+ 1   0  0   1 1 1 1 1  : #t true = 159
+ (+ 1 2 4 8 16 128) : 159
+ 
+ 0   0  0   1 1 1 1 1  : #f false = 31
+(+ 1 2 4 8 16)  : 31
+
+----------------------------------------
+(boolean? x)
+----------------------------------------
+and dword eax , boolean-mask
+cmp dword eax , boolean-tag
+mov dword eax , 0
+sete al
+shl dword eax , boolean-shift
+or dword eax , boolean-tag
+----------------------------------------
+
+integer mask = 3
+2 1
+X X
+
+integer tag = 0
+0 0
+
+so if lower two bits are zero then its an integer.
+
+----------------------------------------
+(integer? x)
+----------------------------------------
+and dword eax , integer-mask
+cmp dword eax , integer-tag
+mov dword eax , 0
+sete al
+shl dword eax , boolean-shift
+or dword eax , boolean-tag
+----------------------------------------
+
+
+
+******************************************************************************
+step005
+
+
+******************************************************************************
+step004
+Assumption is EAX register holds correct result type , no checking is done.
+
+integer->char
+int already shifted by 2 bits , is shifted a further 6 bits ,
+result is then tagged with char-tag
+
+(+ 1 2 4 8 )
+(+ 1 2 4 8 16 32 64 128)
+char->integer
+
+******************************************************************************
+step001 putting value into eax register
+step002 tagged small int
+
+step003 addition 1 ,
+remembering we are using a tagged small int representation , need to add 4
+remembering we are using a tagged small int representation , need to subtract 4
+
+./test.py runs an automated test facility and checks output textually against known answers
+using external programs so no confusion if a program fails to compile or run
+on each test , old files are removed and new test setup begins
+
+
 
 
 ******************************************************************************
 
-Nested definitions do not work correctly
+
+
+(+ a b)
+(- a b)
+******************************************************************************
+
+garbage collector - two finger approach using broken hearts .
+
+
+******************************************************************************
+
+32 bit architecture x86
+
+if use a Tagged Architecture with 2 tag bits every pointer is aligned to say every 4 bytes.
+
+lowest 2 bits of address in pointer can be retasked to hold some type information
+
+00  : 0 
+01  : 1 
+10  : 2 
+11  : 3 
+
+if use a Tagged Architecture with 3 tag bits every pointer is aligned to say every 8 bytes .
+
+000  : 0 
+001  : 1 
+010  : 2 
+011  : 3 
+100  : 4 
+101  : 5 
+110  : 6 
+111  : 7
+
+example represent small integer
+
+read in a number , box it up , return it as a result
+printer then unbox it , display it on the screen .
+internally it remains boxed.
+
+(car x)
+(cdr x)
+(cons x y)
+(pair? x)
+
+symbol
+number
+pairs
+
+
+Fixed argument procedure - do not build argument lists ARGL as in SICP machine.
+
+(car x)
+compile x
+do CAR
+
+ok so run through x , now come to do CAR
+check if x is a pair ?
+ if so - 
+ if not - 
+
+
+(unsafe-car x)
+compile x
+do UNSAFE-CAR
+ run x through compiler
+ do action of taking CAR
+
+what register would you like the result ?
+
+
+******************************************************************************
+
+
+
+
+
+
+
+
+
+
+******************************************************************************
+
+32 bit architecture x86
+64 bit architecture x64
+
+******************************************************************************
+
+Beginning to see some file fragmentation as new ideas are brought in.
+
+LISP.SCM     now the defacto file to load into the scheme system
+
+Emacs has been programmed so pressing F5 now launches a scheme interpreter ,
+loads the system and runs it.
+
+******************************************************************************
+
+Nested definitions DO NOT WORK correctly , they may be nested arbitrarily deep.
 
 (define ...
   (define ...)
   (define ...)
 
-need to be translated into letrecs
+need to be manually translated into letrecs , which letrec macro will rewrite as
+lambda and set! 
 
 (define ...
   (letrec ...))
@@ -165,6 +424,9 @@ fixed repl environment bug
 required environment be mutated in place , at exact memory location initial
 environment is pointing at.
 
+also needs remembering the environment ENV register before EVAL-DISPATCH
+and continuing repl-print , which restores original ENV register.
+
 
 
 ******************************************************************************
@@ -185,9 +447,7 @@ f -> 3
 (g 10)
 f -> 10
 
-environment in place is still the one that got constructed when called the procedure.
-
-
+environment in place is still the one that got constructed when called the procedure
 
 ******************************************************************************
 
@@ -248,8 +508,6 @@ boolean?	:
 symbol?		:
 number?		:
 
-
-
 *****************************************************************************
 
 ** some of this section is clearly not useful now , as got right evaluator from SICP **
@@ -264,7 +522,6 @@ here is observation -- this observation is quite important
 
 these are functions , meaning they evaluate all their arguments
 CONS CAR CDR LIST PAIR? REVERSE PROCEDURE? BOOLEAN?
-
 
 these are macros , Not functions so do not exist at runtime
 OR AND WHEN

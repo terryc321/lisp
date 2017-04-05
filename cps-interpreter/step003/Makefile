@@ -1,0 +1,17 @@
+
+
+all:	
+	rm -f driver
+	nasm -f elf -o entry.o entry.asm
+	gcc -O3 -o driver driver.c entry.o
+
+
+
+
+
+
+
+
+
+
+
