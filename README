@@ -1,4 +1,57 @@
 
+
+Thu  6 Apr 00:13:26 BST 2017
+
+CPS-INTERPRETER / STEP013 contains really basic x86 32bit scheme compiler
+
+Main hurdle has been to realise that C compiler is NOT suitable for detailed memory
+mangling.
+
+if coming up against problems , write utility in assembler and it should fix the issue.
+
+There is a test suite in python3
+cd cps-interpreter/step013/
+then run ./test.py
+
+should state all tests PASS
+
+Type TAG Pointer Encoding Scheme is a little FUNKY , but works as long as understand
+limitations of C compiler.
+****************************************************************
+
+scheme compiler in file called comp.scm
+
+At the moment , it only handles a few basic primitives
+
+add1
+sub1
++	addition fixnums
+-	subtract fixnums
+cons
+car
+cdr
+eq?
+null?
+
+
+fixnums encoded in pointer
+pairs stored on the heap , again pairs encoded using tag of 1
+all pointers have 3 bit type tag
+
+ tags
+ 000  - number lower 2 bits zero 
+ 001  - pointer
+ 010  -    vectors  * to do *
+ 011  -    strings  * to do *
+ 100  - number lower 2 bits zero
+ 101  -    symbols  * to do *
+ 110  -    closures  * to do *
+ 111  -  empty list , booleans and characters
+
+
+********************************************************************************
+
+
 the best part is under CPS-INTERPRETER directory
 
 there is a file called repl.scm
