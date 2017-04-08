@@ -43,7 +43,8 @@ void pretty_print(unsigned int val){
   tag  = 0
   */
   if ((val & FIXNUM_MASK) == FIXNUM_TAG) {
-    printf("%d", val >> FIXNUM_SHIFT);
+    int signed_val = (int) val;
+    printf("%d", signed_val >> FIXNUM_SHIFT);
   }
 
   /*

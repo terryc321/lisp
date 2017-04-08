@@ -6,6 +6,7 @@ import subprocess
 global results
 
 results = []
+fails = []
 
 
 def test_section(title):
@@ -55,13 +56,14 @@ def test_case(expr,expected):
 
 def test_reset():
     global results
+    global fails
+    fails = []
     results = []
     
    
         
 # simple testing infrastructure
 test_reset()
-
 
 
 test_section("fixnums")
@@ -194,9 +196,23 @@ test_case("(car (cons (cons 1 2) (cons 3 4)))" , "(1 . 2)")
 test_case("(cdr (cons (cons 1 2) (cons 3 4)))" , "(3 . 4)")
 
 
+test_section(" check negative number prints correctly ")
+test_case("-32","-32")
+
 
 # show results 
 for r in results:
     print(r)
+if fails == []:
+    print ("\nCONGRATULATIONS - * * * ALL TESTS PASS * * *\n")
+else:
+    print("\n***************** ERROR ******************\n")
+    print("\n***************** ERROR ******************\n")
+    print("\n***************** ERROR ******************\n")
+    for f in fails:
+        print(f)
+
+        
 
 
+    

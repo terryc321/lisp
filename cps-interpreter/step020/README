@@ -1,0 +1,10 @@
+
+
+Problem with C Language was down to Fault in Handling Addresses
+
+to take car want to dereference with an address - 1 byte from POINTER
+to take cdr want to dereference with an address + 3 byte from POINTER
+
+issue solved by coding in assembler , side stepping C language altogether.
+
+
