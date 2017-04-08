@@ -1,4 +1,26 @@
 
+
+
+*******************************************************************************
+
+step023 :
+
+dont really understand the calling mechanism , like i think i guess it
+works , but cant really tell.
+
+think need get good at GDB so as to display a nice LISP debugger
+
+
+
+*******************************************************************************
+
+step022 :
+
+TAK
+FIB
+FAC
+(* x y)  fixnum multiply 
+
 *******************************************************************************
 
 step021 :

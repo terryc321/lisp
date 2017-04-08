@@ -159,6 +159,7 @@ mov dword eax , [ esp -12]
 ret
 scheme_entry: nop 
 mov dword esi , [ esp + 4 ] 
+scheme_heap_in_esi: nop
 nop ; TAK call now 
 mov dword eax , 72
 mov dword [ esp -8] , eax 

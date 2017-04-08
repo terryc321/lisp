@@ -191,17 +191,24 @@ int main(int argc, char **argv){
     return 1;
   }
 
-  
   int i = 0 ;
 
   
   for (i = 0 ; i < (HEAP_SIZE) ; i ++){
     ptr[i] = 0;
   }
+
+  FILE *fp = fopen("test.log","w");
+  if (!fp){
+    return 2;
+  }
+  fprintf(fp,"\nDriver.c THe HEAP address is [ %p ] \n", (void *)ptr);
+  fflush(fp);
+
+  fclose(fp);
   
 
-  //printf("\nHEAP address is [ %p ] \n", (void *)ptr);
-
+  
   
   //  for (i = 0 ; i < 100 ; i ++){
   unsigned int val = scheme_entry(ptr);

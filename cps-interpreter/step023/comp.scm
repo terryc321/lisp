@@ -818,6 +818,8 @@
 
 
 
+
+
 (define (comp-fib x si env)
   ;; (FIB n)
 
@@ -992,6 +994,7 @@
 	      (emit "scheme_entry: nop ")	      
 	      ;; HEAP is passed as 1st argument
 	      (emit "mov dword esi , [ esp + 4 ] ")
+	      (emit "scheme_heap_in_esi: nop")
 	      
 	      (comp expr stack-index initial-environment)	      
 	      (emit "ret"))
