@@ -749,22 +749,29 @@
 
 
 
-
-
-
-
-
-
-
 (define (comp-tak-def x si env)
   ;; E[x]
+  (emit "")
+  (emit "tak1: nop")
+  (emit "      jmp tak")
+  (emit "")  
+  (emit "tak2: nop")
+  (emit "      jmp tak")
+  (emit "")    
+  (emit "tak3: nop")
+  (emit "      jmp tak")
+  (emit "")
+  (emit "tak4: nop")
+  (emit "      jmp tak")
+  (emit "")
+  
   (emit "tak: nop")
   (comp '(begin
 	   ;;(debug-tak)
 	   (if (< y x)
-	       (tak (tak (- x 1) y z)
-		    (tak (- y 1) z x)
-		    (tak (- z 1) x y))
+	       (tak4 (tak1 (- x 1) y z)
+		     (tak2 (- y 1) z x)
+		     (tak3 (- z 1) x y))
 	       z))
 	;; 3 args = 4 wordsize huh.
   	(- (* 4 *wordsize*))
@@ -772,7 +779,39 @@
   (emit "ret"))
 
 
+(define (comp-tak x si env)
+  ;; (TAK x y z)
+  ;; si = keep empty for ESP to go into.
+  ;;(emit "nop ; starts TAK here")
+  ;; E[x]  si - 4
+  (comp (car (cdr x)) (- si (* 1 *wordsize*)) env)
+  (emit "mov dword [ esp " (- si (* 1 *wordsize*)) "] , eax ; save X ")
+  ;; E[y]  si - 8 
+  (comp (car (cdr (cdr x))) (- si (* 2 *wordsize*)) env)
+  (emit "mov dword [ esp " (- si (* 2 *wordsize*)) "] , eax ; save Y")
+  ;; E[z]  si - 12
+  (comp (car (cdr (cdr (cdr x)))) (- si (* 3 *wordsize*)) env)
+  (emit "mov dword [ esp " (- si (* 3 *wordsize*)) "] , eax ; save Z" )
+  (emit "add dword esp , " (+ si *wordsize*) "; adjust esp")
+  (emit "call tak ; " (- si (* 3 *wordsize*)))
+  (emit "sub dword esp , " (+ si *wordsize*) "; restore esp"))
 
+(define (comp-tak-generic nth-tak x si env)
+  ;; (TAK x y z)
+  ;; si = keep empty for ESP to go into.
+  ;;(emit "nop ; starts TAK here")
+  ;; E[x]  si - 4
+  (comp (car (cdr x)) (- si (* 1 *wordsize*)) env)
+  (emit "mov dword [ esp " (- si (* 1 *wordsize*)) "] , eax ; save X ")
+  ;; E[y]  si - 8 
+  (comp (car (cdr (cdr x))) (- si (* 2 *wordsize*)) env)
+  (emit "mov dword [ esp " (- si (* 2 *wordsize*)) "] , eax ; save Y")
+  ;; E[z]  si - 12
+  (comp (car (cdr (cdr (cdr x)))) (- si (* 3 *wordsize*)) env)
+  (emit "mov dword [ esp " (- si (* 3 *wordsize*)) "] , eax ; save Z" )
+  (emit "add dword esp , " (+ si *wordsize*) "; adjust esp")
+  (emit "call tak" nth-tak " ; " (- si (* 3 *wordsize*)))
+  (emit "sub dword esp , " (+ si *wordsize*) "; restore esp"))
 
 
 (define (comp-debug-tak x si env)
@@ -783,35 +822,6 @@
   (emit "popad"))
 
 
-
-(define (comp-tak x si env)
-  ;; (TAK x y z)
-
-  ;; si = keep empty for ESP to go into.
-  (emit "nop ; TAK call now ")
-  
-  ;; E[x]  si - 4
-  (comp (car (cdr x)) (- si (* 1 *wordsize*)) env)
-    ;; save onto stack
-  (emit "mov dword [ esp " (- si (* 1 *wordsize*)) "] , eax ")
-  
-  ;; E[y]  si - 8 
-  (comp (car (cdr (cdr x))) (- si (* 2 *wordsize*)) env)
-  ;; save onto stack
-  (emit "mov dword [ esp " (- si (* 2 *wordsize*)) "] , eax ")
-  
-  ;; E[z]  si - 12
-  (comp (car (cdr (cdr (cdr x)))) (- si (* 3 *wordsize*)) env)
-  ;; save onto stack
-  (emit "mov dword [ esp " (- si (* 3 *wordsize*)) "] , eax ")
-
-  ;; adjust ESP   
-  (emit "add dword esp , " (+ si *wordsize*))
-  
-  ;; do the CALL
-  (emit "call tak")
-  
-  (emit "sub dword esp , " (+ si *wordsize*)))
 
 
 
@@ -943,6 +953,11 @@
 
    ;; tak 
    ((and (pair? x) (eq? (car x) 'tak)) (comp-tak x si env))
+   
+   ((and (pair? x) (eq? (car x) 'tak1)) (comp-tak-generic 1 x si env))
+   ((and (pair? x) (eq? (car x) 'tak2)) (comp-tak-generic 2 x si env))
+   ((and (pair? x) (eq? (car x) 'tak3)) (comp-tak-generic 3 x si env))
+   ((and (pair? x) (eq? (car x) 'tak4)) (comp-tak-generic 4 x si env))
 
    ;; f3[xyz] x y z
    ((and (pair? x) (eq? (car x) 'f3x)) (comp-f3x x si env))
@@ -984,12 +999,11 @@
 
 	      (comp-tak-def #f stack-index initial-environment)
 
-	      (comp-fib-def #f stack-index initial-environment)
-	      (comp-fac-def #f stack-index initial-environment)
-
-	      (comp-f3x-def #f stack-index initial-environment)
-	      (comp-f3y-def #f stack-index initial-environment)
-	      (comp-f3z-def #f stack-index initial-environment)
+	      ;; (comp-fib-def #f stack-index initial-environment)
+	      ;; (comp-fac-def #f stack-index initial-environment)
+	      ;; (comp-f3x-def #f stack-index initial-environment)
+	      ;; (comp-f3y-def #f stack-index initial-environment)
+	      ;; (comp-f3z-def #f stack-index initial-environment)
 	      
 	      (emit "scheme_entry: nop ")	      
 	      ;; HEAP is passed as 1st argument
