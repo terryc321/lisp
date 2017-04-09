@@ -1,5 +1,72 @@
 
 
+*******************************************************************************
+
+step024 :
+
+writing the tail recursive part for TAK4
+
+(define (tak x y z)
+	(if (< y x)
+	    (tak4 (tak1 (- x 1) y z)
+    	        (tak2 (- y 1) z x)
+      	    	(tak3 (- z 1) x y))
+		     z))
+
+well that went better than expected , it was a few minutes changing a few lines.
+re used EAX register since all arguments have been evaluated its now free to use.
+
+ideas for instrumenting the compiler
+e.g how can we be sure it is maintaining tail recursive
+what is maximum depth of the stack ?
+how many multiplies were carried out ?
+other nefarious facts about the code
+
+
+compiling for effect
+
+(if (< y x)
+   do-this
+   or-do-that)
+
+there is no need to build the boolean 
+
+this is what beginning of TAK looks like if we build the boolean
+
+tak: nop
+mov dword eax , [ esp -8] 
+mov dword [ esp -16] , eax 
+mov dword eax , [ esp -4] 
+cmp dword [ esp -16] , eax ; here is the (< y x) test
+mov dword eax , 0 
+setl al
+shl dword eax , 7
+or dword eax , 31  ; built boolean in EAX register
+cmp dword eax , 31 ; test it 
+je if3044
+
+
+and now heres the code with the boolean building stuff pulled out
+
+tak: nop
+mov dword eax , [ esp -8] 
+mov dword [ esp -16] , eax 
+mov dword eax , [ esp -4] 
+cmp dword [ esp -16] , eax ; here is the (< y x) test
+;; mov dword eax , 0 
+;; setl al
+;; shl dword eax , 7
+;; or dword eax , 31  ; built boolean in EAX register
+;; cmp dword eax , 31 ; test it 
+jl if3044
+
+
+compiling for value
+
+? (> 10 2)
+#t
+
+
 
 *******************************************************************************
 
@@ -10,6 +77,9 @@ works , but cant really tell.
 
 think need get good at GDB so as to display a nice LISP debugger
 
+verified TAK inputs look good
+
+not sure how verify TAK outputs are correct ?
 
 
 *******************************************************************************
@@ -34,9 +104,6 @@ step020 :
 
 added begin construct to compiler
 simply compiles each form one after another
-
-
-
 
 
 *******************************************************************************
