@@ -1,5 +1,39 @@
 
 
+
+*******************************************************************************
+
+comp.scm	.........	x86 compiler for subset of scheme
+
+*******************************************************************************
+
+step026 :
+
+try the free variable identification , should be a simple recursive function ,
+seen some nice implementations somewhere online.
+union set
+union intersect
+
+then also theres the closures ....
+
+closure creation - very similar to vector-ref , vector-set!
+
+(lambda args ....body .... )
+
+free variable algorithm on ... body ... then able to build closure object.
+so we can explicitly pass in the free variable symobls to the closure.
+(closure args free-vars body)
+
+also CPS conversion which we can try.
+
+
+
+*******************************************************************************
+
+step025 :
+
+fixed few emits
+
 *******************************************************************************
 
 step024 :
