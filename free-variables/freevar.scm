@@ -106,7 +106,8 @@
   (let ((bindings (car (cdr e)))
 	(body (cdr (cdr e))))
     (fv-body body (set-union bindings b) f k)))
-
+;; add extra continuation onto k here ,
+;; and show all the free variables of the lambda expressions
 
 
 
