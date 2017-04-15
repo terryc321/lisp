@@ -63,14 +63,18 @@
 ;; if given symbol is in the list , 
 
 
-
 ;;  symbol -> gensyms  ->  \ a . b [ new-symbol  new-gensyms ] ....
 (define (ac-gensym-1 sym gens kab)
-  (let ((n (assoc sym gens)))
-    (if n
+  (let ((var-n (assoc sym gens)))
+    (if var-n
 	;; 
 	(begin
-	  (kab (ac-gensym sym (+ n 1))(cons (cons sym (+ n 1)) gens)))
+	  ;; (display "ac-gensym-1 : n = ")
+	  ;; (display n)
+	  ;; (newline)
+	  (let ((n2 (+ 1 (cdr var-n))))
+	    (kab (ac-gensym sym n2)
+		 (cons (cons sym n2) gens))))
 	;; 
 	(begin 
 	  (kab (ac-gensym sym 1) (cons (cons sym 1) gens))))))
@@ -154,16 +158,6 @@
 						 exp2)
 					 env
 					 gens3))))))))
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -256,6 +250,8 @@
 (define (test7)
   (alpha-convert '((define a (a b c))(define y (d e f a y))(define z (a b c))(cons 1 2))))
 
+(define (test8)
+  (alpha-convert '(lambda (x) (lambda (x) (lambda (x) x) x) x)))
 
 
 
