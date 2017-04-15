@@ -2,31 +2,37 @@
 \documentclass[a4paper,12pt]{article}
 \begin{document}
 
+\begin{verbatim}
+
+
+\end{verbatim}
+
+
+
+\newpage
+
 Development of these notes is in reverse order.
 
 The spill phase - pass 1 identify free variables
 
-\begin{verbatim}
 
 Assuming really that these lambdas are just labels to jump to in code.
 
 No higher order procedures here, no closures being created.
 
+
+\begin{verbatim}
 (define (ktak x y z k)
-            (k< y x
-x y z            (lambda ()   (k- x 1
-x y z	         (lambda (x1) (ktak x1 y z
-x y z 	         (lambda (t1) (k- y 1
-x y z :	         (lambda (y1) (ktak y1 z x
-z x y t1 t2 k :  (lambda (t2) (k- z 1
-x y t1 t2 k   :   (lambda (z1) (ktak z1 x y
-t1 t2 k       :   (lambda (t3) (ktak t1 t2 t3 k))))))))))))))
-z             : (lambda () (k z))))
+k x y z       : (k< y x
+k x y z          :  (lambda ()   (k- x 1
+k x y z	       :   (lambda (x1) (ktak x1 y z
+k x y z 	       :   (lambda (t1) (k- y 1
+k x y z :	       :   (lambda (y1) (ktak y1 z x
+k t1 t2 x y z :  (lambda (t2) (k- z 1
+x y t1 t2 k    :   (lambda (z1) (ktak z1 x y
+t1 t2 k        :   (lambda (t3) (ktak t1 t2 t3 k))))))))))))))
+k z            : (lambda () (k z))))
 \end{verbatim}
-
-
-
-
 
 
 ktak is known , this is procedure being compiled.
