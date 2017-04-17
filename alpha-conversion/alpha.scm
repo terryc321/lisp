@@ -209,24 +209,25 @@
   (alpha-convert '(lambda (x) (+ x y))))
 
 (define (test4)
-  (alpha-convert '(define ktak
-	       (lambda (x y z k)
-		 (k< y x
-		     (lambda () ; (< y x)
-		       (k- x 1
-			   (lambda (x1) 
-			     (ktak x1 y z
-				   (lambda (t1)
-				     (k- y 1
-					 (lambda (y1) 
-					   (ktak y1 z x
-						 (lambda (t2)
-						   (k- z 1
-						       (lambda (z1) 
-							 (ktak z1 x y
-							       (lambda (t3)
-								 (ktak t1 t2 t3 k))))))))))))))
-		     (lambda () (k z)))))))
+  (alpha-convert
+   '(define ktak
+      (lambda (x y z k)
+	(k< y x
+	    (lambda () ; (< y x)
+	      (k- x 1
+		  (lambda (x1) 
+		    (ktak x1 y z
+			  (lambda (t1)
+			    (k- y 1
+				(lambda (y1) 
+				  (ktak y1 z x
+					(lambda (t2)
+					  (k- z 1
+					      (lambda (z1) 
+						(ktak z1 x y
+						      (lambda (t3)
+							(ktak t1 t2 t3 k))))))))))))))
+	    (lambda () (k z)))))))
 
 
 (define (test5)
