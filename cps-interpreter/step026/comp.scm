@@ -1,5 +1,11 @@
 
+;; assume input is a closed source file
+;; read in definitions
+;; last expression is one that fires it off ??
+;; define = toplevel definition
 
+;; ignoring letrecs for now
+;; internal define is a letrec which is let + set!
 
 
 ;; on 32bit system *wordsize* is 4 , as 4 bytes 4 x 8bits per byte = 32 bits in total
@@ -923,6 +929,20 @@
 
 
 
+;; define 
+(define (comp-define x si env)
+  (let ((var (car (cdr x)))
+	(val (car (cdr (cdr x)))))
+    ;; compile the val
+
+    ;; assign it to var
+
+    ;; var now bound to val in toplevel environment
+    ))
+
+
+
+    
 
 
 
@@ -968,7 +988,9 @@
    ((and (pair? x) (eq? (car x) '<=)) (comp-num<= x si env))
    ((and (pair? x) (eq? (car x) '>=)) (comp-num>= x si env))
 
-   
+   ;; define
+   ((and (pair? x) (eq? (car x) 'define)) (comp-define x si env))
+
    ;; begin
    ((and (pair? x) (eq? (car x) 'begin)) (comp-begin x si env))
 

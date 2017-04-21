@@ -1,5 +1,37 @@
 
 
+
+
+
+
+
+
+****************************************************************
+
+tak x y z
+
+compile x
+save x
+compile y
+save y
+compile z
+save z
+call or jmp to TAK
+
+
+****************************************************************
+
+compilation of primitive cons
+
+(cons A B)
+
+compile A
+save A
+compile B
+do cons primitive
+
+****************************************************************
+
 Thu  6 Apr 00:13:26 BST 2017
 
 CPS-INTERPRETER / STEP013 contains really basic x86 32bit scheme compiler
