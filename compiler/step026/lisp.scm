@@ -4,7 +4,7 @@
 
 ;;; mit specific stuff
 ;;(define (gensym args) (cons 'gensym args)) ;;generate-uninterned-symbol)
-(define gensym generate-uninterned-symbol)
+;;(define gensym generate-uninterned-symbol)
 
 ;;quasiquotation
 (load  	  "/home/terry/lisp/quasiquote/quasiquote.scm")
@@ -143,7 +143,7 @@
       (call-with-output-file outfile
 	(lambda (p)
 	  (set-emit-output-port! p)
-	  
+
 	  (emit "")
 	  (emit "extern debug_stack")
 	  (emit "global scheme_entry")
@@ -167,6 +167,10 @@
 	    (emit "scheme_heap_in_esi: nop")
 
 	    (map (lambda (expr)
+		   (display "compiling expr => ")
+		   (display expr)
+		   (newline)
+		   
 		   (comp expr stack-index initial-environment))
 		 ordered-forms)
 
@@ -174,9 +178,8 @@
 	    (emit "ret")))))))
 
 
-
-;;
-(stage-4 "/home/terry/lisp/demo/tak/tak.scm" "entry.asm")
+;; 
+;;(stage-4 "/home/terry/lisp/demo/tak/tak.scm" "entry.asm")
 
 
 

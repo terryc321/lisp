@@ -783,6 +783,52 @@
   (emit "call tak ; " (- si (* 3 *wordsize*)))
   (emit "sub dword esp , " (+ si *wordsize*) "; restore esp"))
 
+
+
+;; compile arg one by one and push onto stack
+(define (comp-application-helper args si index env)
+  (cond
+   ((null? args) #f)
+   (else (begin
+	   (comp (car args) (- si (* index *wordsize*)) env)
+	   (emit "mov dword [ esp " (- si (* index *wordsize*)) "] , eax ; save arg " index)
+	   (comp-application-helper (cdr args) si (+ index 1) env)))))
+
+
+(define (comp-application x si env)
+    
+  ;; (F x y z)
+  ;; si = keep empty for ESP to go into.
+  ;;(emit "nop ; starts TAK here")
+  ;; E[x]  si - 4
+
+  
+  ;; (comp (car (cdr x)) (- si (* 1 *wordsize*)) env)
+  ;; (emit "mov dword [ esp " (- si (* 1 *wordsize*)) "] , eax ; save X ")
+  ;; ;; E[y]  si - 8 
+  ;; (comp (car (cdr (cdr x))) (- si (* 2 *wordsize*)) env)
+  ;; (emit "mov dword [ esp " (- si (* 2 *wordsize*)) "] , eax ; save Y")
+  ;; ;; E[z]  si - 12
+  ;; (comp (car (cdr (cdr (cdr x)))) (- si (* 3 *wordsize*)) env)
+  ;; (emit "mov dword [ esp " (- si (* 3 *wordsize*)) "] , eax ; save Z" )
+
+  (comp-application-helper (cdr x) si 1 env)
+
+  
+  (emit "add dword esp , " (+ si *wordsize*) "; adjust esp")
+  (emit "call " (car x))
+  (emit "sub dword esp , " (+ si *wordsize*) "; restore esp")
+
+  )
+
+
+
+
+
+
+
+
+
 (define (comp-tak-tail-recursive x si env)
   ;; (TAK x y z)
   ;; si = keep empty for ESP to go into.
@@ -929,16 +975,69 @@
 
 
 
-;; define 
+;; assume x is a lambda 
+;; define f x
 (define (comp-define x si env)
   (let ((var (car (cdr x)))
 	(val (car (cdr (cdr x)))))
     ;; compile the val
+    (if (and (pair? val)
+	     (eq? (car val) 'lambda))
+	(comp-define-lambda x si env)
+	#f)))
 
-    ;; assign it to var
-    #f
-    ;; var now bound to val in toplevel environment
-    ))
+
+;; assume all toplevel defines are procedures
+;; generate a jump label
+;; jump over definition as theres nothing to do here...
+;; definitions dont do anything as such ...
+;;
+;; we could generate closure and so forth ,
+;; but at toplevel no need since everything already in scope
+;;
+;; (lambda (x y z)
+;;  x = -4 
+;;  y = -8
+;;  z = -12
+;;   on entry
+
+(define (comp-define-helper args index)
+  (cond
+   ((null? args) '())
+   (else (cons (cons (car args) index)
+	       (comp-define-helper (cdr args) (- index *wordsize*))))))
+
+
+
+(define (comp-define-lambda x si env)
+  (let ((name (car (cdr x)))
+	(proc (car (cdr (cdr x))))
+	(after-label (gensym "after")))
+    (let ((args (car (cdr proc)))
+	  (body (cdr (cdr proc))))
+      (let ((n-args (length args)))
+	(let ((extra-env (comp-define-helper args (- *wordsize*))))
+
+	  
+	  (display "* comp-define-lambda * : ")
+	  (display "extra env = ")
+	  (display extra-env)
+	  (newline)
+	
+	(emit "jmp " after-label)    
+	(emit name ": nop")
+	;; compile the definition here
+	(comp `(begin ,@body)
+	      (- (* (+ n-args 1) *wordsize*))
+	      (append extra-env env))
+	;; final return 
+	(emit "ret")
+	;; jump over definition
+	(emit after-label ": nop"))))))
+
+
+
+
 
 
 
@@ -999,28 +1098,32 @@
    ((and (pair? x) (eq? (car x) 'begin)) (comp-begin x si env))
 
    ;; tak 
-   ((and (pair? x) (eq? (car x) 'tak)) (comp-tak x si env))
+   ;;((and (pair? x) (eq? (car x) 'tak)) (comp-tak x si env))
    
-   ((and (pair? x) (eq? (car x) 'tak1)) (comp-tak-generic 1 x si env))
-   ((and (pair? x) (eq? (car x) 'tak2)) (comp-tak-generic 2 x si env))
-   ((and (pair? x) (eq? (car x) 'tak3)) (comp-tak-generic 3 x si env))
-   ((and (pair? x) (eq? (car x) 'tak4)) (comp-tak-generic 4 x si env))
+   ;;((and (pair? x) (eq? (car x) 'tak1)) (comp-tak-generic 1 x si env))
+   ;;((and (pair? x) (eq? (car x) 'tak2)) (comp-tak-generic 2 x si env))
+   ;;((and (pair? x) (eq? (car x) 'tak3)) (comp-tak-generic 3 x si env))
+   ;;((and (pair? x) (eq? (car x) 'tak4)) (comp-tak-generic 4 x si env))
 
    ;; f3[xyz] x y z
-   ((and (pair? x) (eq? (car x) 'f3x)) (comp-f3x x si env))
-   ((and (pair? x) (eq? (car x) 'f3y)) (comp-f3y x si env))
-   ((and (pair? x) (eq? (car x) 'f3z)) (comp-f3z x si env))
+   ;;((and (pair? x) (eq? (car x) 'f3x)) (comp-f3x x si env))
+   ;;((and (pair? x) (eq? (car x) 'f3y)) (comp-f3y x si env))
+   ;;((and (pair? x) (eq? (car x) 'f3z)) (comp-f3z x si env))
 
    ;; fib
-   ((and (pair? x) (eq? (car x) 'fib)) (comp-fib x si env))
+   ;;((and (pair? x) (eq? (car x) 'fib)) (comp-fib x si env))
 
    ;; factorial fac
-   ((and (pair? x) (eq? (car x) 'fac)) (comp-fac x si env))
+   ;;((and (pair? x) (eq? (car x) 'fac)) (comp-fac x si env))
 
    ;; debug-tak
-   ((and (pair? x) (eq? (car x) 'debug-tak)) (comp-debug-tak x si env))
+   ;;((and (pair? x) (eq? (car x) 'debug-tak)) (comp-debug-tak x si env))
 
+   ((pair? x) (comp-application x si env))
+   
    (else #f)))
+
+
 
 
 (define (set-emit-output-port! p)

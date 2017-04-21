@@ -38,7 +38,7 @@ def test_case(expr,expected):
     subprocess.run(['rm', '-f' , "entry.o" ])    
     subprocess.run(['rm', '-f' , "c-help.o" ])    
     
-    subprocess.run(['guile', '-c' , "(begin (load \"comp.scm\") (compile-program \"work.temp\" \"entry.asm\"))" ])
+    subprocess.run(['guile', '-c' , "(begin (load \"lisp.scm\") (stage-4 \"work.temp\" \"entry.asm\"))" ])
     subprocess.run(['make'])
     result = subprocess.run(['./driver'] , stdout=subprocess.PIPE)
     result = result.stdout
@@ -70,24 +70,24 @@ def test_reset():
 test_reset()
 
 
-# test_section("fixnums")
-# test_case("(+ 1 (+ 2 (+ 3 4)))","10")
+test_section("fixnums")
+test_case("(+ 1 (+ 2 (+ 3 4)))","10")
 
-# test_section("addition by 1")
-# test_case("(add1 3)","4")
-# test_case("(add1 255)","256")
+test_section("addition by 1")
+test_case("(add1 3)","4")
+test_case("(add1 255)","256")
 
-# test_section("subtraction by 1")
-# test_case("(sub1 3)","2")
-# test_case("(sub1 0)","-1")
+test_section("subtraction by 1")
+test_case("(sub1 3)","2")
+test_case("(sub1 0)","-1")
 
-# test_section("integer->char ch")
-# test_case("(integer->char 65)","#\\A")
-# test_case("(integer->char 97)","#\\a")
+test_section("integer->char ch")
+test_case("(integer->char 65)","#\\A")
+test_case("(integer->char 97)","#\\a")
 
-# test_section("char->integer ")
-# test_case("(char->integer #\\A)","65")
-# test_case("(char->integer #\\a)","97")
+#test_section("char->integer ")
+#test_case("(char->integer #\\A)","65")
+#test_case("(char->integer #\\a)","97")
 
 
 # test_case("(add1 (char->integer #\\a))","98")
@@ -101,9 +101,9 @@ test_reset()
 # test_case("(char->integer (integer->char 65))","65")
 
 
-# test_section(" booleans ")
-# test_case("#t","#t")
-# test_case("#f","#f")
+test_section(" booleans ")
+test_case("#t","#t")
+test_case("#f","#f")
 
 # test_section(" the empty list ")
 # test_case("()","()")
@@ -318,10 +318,9 @@ test_reset()
 # test_case("(let ((x 1)) (fib 6))" , "8")
 
 
-
-#test_section(" MULTIPLY tests ")
-#test_case("(* 2 3)" , "6")
-#test_case("(* -1 5)" , "-5")
+# test_section(" MULTIPLY tests ")
+# test_case("(* 2 3)" , "6")
+# test_case("(* -1 5)" , "-5")
 
 # test_section(" FAC tests ")
 # test_case("(fac 1)" , "1")

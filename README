@@ -1,6 +1,18 @@
 
 
 
+compiler takes a very simplistic view of program
+
+either
+toplevel definition - procedure takes a fixed number of args  , no rest args
+
+(define f (lambda (a b c) ...))
+
+applications are coded as calls to f after arguments have been put on stack
+
+
+
+
 
 
 
