@@ -34,8 +34,6 @@
 		      (string->list (symbol->string symbol))))))
 
 
-
-
 (define *out* (current-output-port))
 
 (define the-empty-list-value 47)
@@ -1156,6 +1154,7 @@
    ((pair? x) (comp-application x si env))
    
    (else #f)))
+
 
 
 
