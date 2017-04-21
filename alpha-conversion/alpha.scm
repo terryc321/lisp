@@ -77,7 +77,10 @@
 		 (cons (cons sym n2) gens))))
 	;; 
 	(begin 
-	  (kab (ac-gensym sym 1) (cons (cons sym 1) gens))))))
+	  (kab sym ;;(ac-gensym sym 1)
+	       (cons (cons sym 1) gens))))))
+
+
 
 
 
@@ -154,10 +157,11 @@
 				 new-gensyms
 				 (lambda (exp2 env2 gens3)
 				   ;; re-install the original environment env 
-				   (cont (append (list 'lambda_ new-lambda-vars)
+				   (cont (append (list 'lambda new-lambda-vars)
 						 exp2)
 					 env
 					 gens3))))))))
+
 
 
 

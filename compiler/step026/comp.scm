@@ -936,13 +936,17 @@
     ;; compile the val
 
     ;; assign it to var
-
+    #f
     ;; var now bound to val in toplevel environment
     ))
 
 
 
-    
+
+
+
+
+
 
 
 
@@ -1019,6 +1023,10 @@
    (else #f)))
 
 
+(define (set-emit-output-port! p)
+  (set! *out* p))
+
+
 
 
 
@@ -1028,7 +1036,7 @@
       (let ((expr (read in-port)))
 	(call-with-output-file output
 	  (lambda (port)
-	    (set! *out* port)
+	    (set-emit-output-port! port)
 	    
 	    (emit "")
 	    (emit "extern debug_stack")
@@ -1059,6 +1067,11 @@
 	    (emit "")
 	    (emit "")
 	    (emit "")))))))
+
+
+
+
+
 
 
 

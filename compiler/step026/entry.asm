@@ -14,6 +14,3 @@ add dword esp , 0; adjust esp
 call tak ; -16
 sub dword esp , 0; restore esp
 ret
-
-
-
