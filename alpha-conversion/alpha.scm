@@ -42,12 +42,14 @@
   (or (null? exp)
       (number? exp)
       (boolean? exp)
+      (char? exp)
       (string? exp)))
+
+
 
 (define (ac-bound? exp env)
   (and (symbol? exp)
        (assoc exp env)))
-
 
 
 
@@ -179,7 +181,14 @@
 
 
 (define (ac-begin exp env gens cont)
-  (ac-body (cdr exp) '() env gens cont))
+  (ac-body (cdr exp) '() env gens (lambda (exp2 env2 gens2)
+				    (cont `(begin ,@exp2)
+					  env2
+					  gens2))))
+
+
+
+
 
 
 

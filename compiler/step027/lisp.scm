@@ -85,13 +85,18 @@
     (newline)
     (display me)
     (newline)
-    (let ((ac (alpha-convert me)))
-      (newline)
-      (display "stage-1: alpha-converted:")
-      (newline)
-      (display ac)
-      (newline)
-      ac)))
+    me))
+
+
+
+
+    ;; (let ((ac (alpha-convert me)))
+    ;;   (newline)
+    ;;   (display "stage-1: alpha-converted:")
+    ;;   (newline)
+    ;;   (display ac)
+    ;;   (newline)
+    ;;   ac)))
 
 
       

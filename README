@@ -1,5 +1,12 @@
 
 
+is it possible to detect tail calls ?
+
+
+
+
+****************************************************************
+
 
 compiler takes a very simplistic view of program
 
@@ -9,11 +16,6 @@ toplevel definition - procedure takes a fixed number of args  , no rest args
 (define f (lambda (a b c) ...))
 
 applications are coded as calls to f after arguments have been put on stack
-
-
-
-
-
 
 
 
@@ -49,7 +51,8 @@ Thu  6 Apr 00:13:26 BST 2017
 CPS-INTERPRETER / STEP013 contains really basic x86 32bit scheme compiler
 
 Main hurdle has been to realise that C compiler is NOT suitable for detailed memory
-mangling.
+mangling - rather the c compiler is SO COMPLEX that it is not practical to do anything ,
+because its all random flags, rather than clean semantics.
 
 if coming up against problems , write utility in assembler and it should fix the issue.
 
