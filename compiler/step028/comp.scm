@@ -17,6 +17,9 @@
 (define *wordsize*  4)
 
 
+;; binding forms are
+;; comp-let-bindings  (list the-sym 'local  si)
+;; comp-lookup 
 
 
 ;; only allow a-z A-Z 0-9
@@ -250,7 +253,7 @@
 				body
 				(- si *wordsize*)
 				env
-				(cons (cons the-sym si) local-env)))))))
+				(cons (list the-sym 'local si) local-env)))))))
 
 
 
@@ -262,15 +265,25 @@
 	 (comp-implicit-sequence (cdr x) si env))))
 
 
+(define (local-binding? x)
+  (and (= (length x) 3)
+       (eq? (car (cdr x)) 'local)))
+
+(define (binding-stack-index x)
+  (car (cdr (cdr x))))
 
 
+;; assume lookup is for a local symbol
 (define (comp-lookup x si env)
   (let ((binding (assoc x env)))
-    (if (pair? binding)
+    (if (local-binding? binding)
 	(begin
-	  (emit "mov dword eax , [ esp " (cdr binding)  "] "))
+	  (emit "mov dword eax , [ esp " (binding-stack-index binding)  "] "))
 	(begin
 	  (error "comp-lookup : no binding for symbol " x)))))
+
+
+
 
 
 
@@ -1031,8 +1044,9 @@
 (define (comp-define-helper args index)
   (cond
    ((null? args) '())
-   (else (cons (cons (car args) index)
-	       (comp-define-helper (cdr args) (- index *wordsize*))))))
+   (else (let ((sym (car args)))
+	   (cons (list sym 'local index)
+		 (comp-define-helper (cdr args) (- index *wordsize*)))))))
 
 
 
@@ -1165,44 +1179,45 @@
 
 
 
+;; compilation is driven from another file [ lisp.scm ]
 
-(define (compile-program input output)
-  (call-with-input-file input
-    (lambda (in-port)
-      (let ((expr (read in-port)))
-	(call-with-output-file output
-	  (lambda (port)
-	    (set-emit-output-port! port)
+;; (define (compile-program input output)
+;;   (call-with-input-file input
+;;     (lambda (in-port)
+;;       (let ((expr (read in-port)))
+;; 	(call-with-output-file output
+;; 	  (lambda (port)
+;; 	    (set-emit-output-port! port)
 	    
-	    (emit "")
-	    (emit "extern debug_stack")
-	    (emit "global scheme_entry")
+;; 	    (emit "")
+;; 	    (emit "extern debug_stack")
+;; 	    (emit "global scheme_entry")
 	    
-	    ;; here compile the expression
-	    ;; initial stack index is negative wordsize
-	    ;; as [ esp - 4 ] , since esp holds return address.
-	    (let ((initial-environment '())
-		  (stack-index (- *wordsize*)))
+;; 	    ;; here compile the expression
+;; 	    ;; initial stack index is negative wordsize
+;; 	    ;; as [ esp - 4 ] , since esp holds return address.
+;; 	    (let ((initial-environment '())
+;; 		  (stack-index (- *wordsize*)))
 
-	      ;;(comp-tak-def #f stack-index initial-environment)
+;; 	      ;;(comp-tak-def #f stack-index initial-environment)
 
-	      ;; (comp-fib-def #f stack-index initial-environment)
-	      ;; (comp-fac-def #f stack-index initial-environment)
-	      ;; (comp-f3x-def #f stack-index initial-environment)
-	      ;; (comp-f3y-def #f stack-index initial-environment)
-	      ;; (comp-f3z-def #f stack-index initial-environment)
+;; 	      ;; (comp-fib-def #f stack-index initial-environment)
+;; 	      ;; (comp-fac-def #f stack-index initial-environment)
+;; 	      ;; (comp-f3x-def #f stack-index initial-environment)
+;; 	      ;; (comp-f3y-def #f stack-index initial-environment)
+;; 	      ;; (comp-f3z-def #f stack-index initial-environment)
 	      
-	      (emit "scheme_entry: nop ")	      
-	      ;; HEAP is passed as 1st argument
-	      (emit "mov dword esi , [ esp + 4 ] ")
-	      (emit "scheme_heap_in_esi: nop")
+;; 	      (emit "scheme_entry: nop ")	      
+;; 	      ;; HEAP is passed as 1st argument
+;; 	      (emit "mov dword esi , [ esp + 4 ] ")
+;; 	      (emit "scheme_heap_in_esi: nop")
 	      
-	      (comp expr stack-index initial-environment)	      
-	      (emit "ret"))
+;; 	      (comp expr stack-index initial-environment)	      
+;; 	      (emit "ret"))
 	    
-	    (emit "")
-	    (emit "")
-	    (emit "")))))))
+;; 	    (emit "")
+;; 	    (emit "")
+;; 	    (emit "")))))))
 
 
 

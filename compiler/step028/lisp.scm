@@ -100,43 +100,78 @@
 
 
       
+;; if no toplevel , no slots used , then -4 result
+;; if one slot used then -8
+;; two slots -12
+;; and so on...
+;; or we could just say : (* *wordsize* (+ 1 (length slots)))
+(define (next-toplevel-stack-index-available slots)
+  (define (search slots index)
+    (cond
+     ((null? slots) (- index *wordsize*))
+     (else (search (cdr slots) (binding-stack-index (car slots))))))
+  ;; if no toplevel , then default to -4 stack index
+  (search slots 0))
 
+   
+
+
+
+(define (toplevel-non-definitions forms)
+  (define (toplevel-helper forms non-defs)
+    (cond
+     ((null? forms) (reverse non-defs))
+     ((and (pair? (car forms))
+	   (eq? 'define (car (car forms)))
+	   (symbol? (car (cdr (car forms)))))
+      ;; its a toplevel definition
+      (toplevel-helper (cdr forms) non-defs))
+     (else
+      (toplevel-helper (cdr forms) (cons (car forms) non-defs)))))
+  (toplevel-helper forms '()))
 
 
 
 (define (toplevel-definitions forms)
-  (define (toplevel-helper forms defs non-defs)
-    (newline)
-    (display "FORMS = ")
-    (display forms)
-    (newline)
-    
+  (define (toplevel-helper forms defs)
     (cond
-     ((null? forms) (append (reverse defs) (reverse non-defs)))
-     ((pair? (car forms))
-      (let ((form (car forms)))
-	(newline)
-	(display "FORM = ")
-	(display form)
-	(newline)
-	
-	(if (and (pair? form)
-		 (eq? 'define (car form))
-		 (symbol? (car (cdr form))))
-	    (begin ;; its a toplevel definition
-	      (toplevel-helper (cdr forms) (cons form defs) non-defs))
-	    (begin  ;; its not a toplevel definition
-	      (toplevel-helper (cdr forms) defs (cons form non-defs))))))
-     (else (toplevel-helper (cdr forms) defs (cons (car forms) non-defs)))))
-  (toplevel-helper forms '() '()))
+     ((null? forms) (reverse defs))
+     ((and (pair? forms)
+	   (pair? (car forms))
+	   (eq? 'define (car (car forms)))
+	   (symbol? (car (cdr (car forms)))))
+      ;; its a toplevel definition
+      (toplevel-helper (cdr forms) (cons (car forms) defs)))
+     (else
+      (toplevel-helper (cdr forms) defs))))
+  (toplevel-helper forms '()))
 
 
 
 
 
 
+(define (assign-global-stack-index syms index)
+  (cond
+   ((null? syms) '())
+   (else (let ((sym (car syms)))
+	   (cons (list sym 'global index)
+		 (assign-global-stack-index (cdr syms) (- index *wordsize*)))))))
 
 
+
+;; maybe try using EBP as base pointer to global environment , some initial stack space
+;; which is reserved for globals.
+
+;; only interested in (define f x)
+;; toplevel environmnet will contain these f's
+;; assign a unique stack index for these also
+(define (toplevel-environment forms)
+  
+     ;; -4 is initial empty slot on stack index 
+  (assign-global-stack-index (map (lambda (x) (car (cdr x)))
+			   (toplevel-definitions forms))
+		      -4))
 
 
 ;; collect toplevel procedure arities
@@ -182,14 +217,35 @@
 
 (define (stage-4b forms outfile)
     (let ((arity (toplevel-procedures forms))
-	  (ordered-forms (toplevel-definitions forms)))
+	  (def-forms (toplevel-definitions forms))
+	  (non-def-forms (toplevel-non-definitions forms))
+	  (top-environment (toplevel-environment forms)))
+      (let ((last-stack-index (next-toplevel-stack-index-available top-environment)))
+	
 
       (newline)
-      (display "stage-4b: ordered-forms:")
+      (display "stage-4b: definitions:")
       (newline)
-      (map (lambda (of) (display of) (newline)) ordered-forms)
+      (map (lambda (of) (display of) (newline)) def-forms)
       (newline)
 
+      (newline)
+      (display "stage-4b: non definitions:")
+      (newline)
+      (map (lambda (of) (display of) (newline)) non-def-forms)
+      (newline)
+
+      
+      (newline)
+      (display "stage-4b: top environment:")
+      (newline)
+      (map (lambda (of) (display of) (newline)) top-environment)
+      (newline)
+
+      (newline)
+      (display "stage-4b: first open stack index = :")
+      (display last-stack-index)
+      (newline)
       
       (call-with-output-file outfile
 	(lambda (p)
@@ -198,13 +254,16 @@
 	  (emit "")
 	  (emit "extern debug_stack")
 	  (emit "global scheme_entry")
+
 	  
 	  ;; here compile the expression
 	  ;; initial stack index is negative wordsize
 	  ;; as [ esp - 4 ] , since esp holds return address.
 	  (let ((initial-environment '())
-		(stack-index (- *wordsize*)))
+		(stack-index last-stack-index)) ;; (- *wordsize*))) was -4
+		;;(stack-index -8))
 
+	    
 	    ;;(comp-tak-def #f stack-index initial-environment)
 	    ;; (comp-fib-def #f stack-index initial-environment)
 	    ;; (comp-fac-def #f stack-index initial-environment)
@@ -217,16 +276,27 @@
 	    (emit "mov dword esi , [ esp + 4 ] ")
 	    (emit "scheme_heap_in_esi: nop")
 
+	    
 	    (map (lambda (expr)
 		   (begin
 		     (display "compiling expr => ")
 		     (display expr)
 		     (newline)		   
 		     (comp expr stack-index initial-environment)))
-		 ordered-forms)
+		 def-forms)
 
+	    (map (lambda (expr)
+		   (begin
+		     (display "compiling expr => ")
+		     (display expr)
+		     (newline)		   
+		     (comp expr stack-index initial-environment)))
+		 non-def-forms)
+	    
 	    ;; final return 
-	    (emit "ret"))))))
+	    (emit "ret")))))))
+
+
 
 ;; 
 ;;(stage-4 "/home/terry/lisp/demo/tak/tak.scm" "entry.asm")
