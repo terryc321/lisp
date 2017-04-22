@@ -6,25 +6,35 @@ push ebp
 mov	ebp, esp
 mov dword esi , [ esp + 8 ] 
 scheme_heap_in_esi: nop
-jmp after143
-fn_tak: nop
+jmp after144
+lambda143: nop
 mov dword eax , [ esp -8] 
-mov dword [ esp -16] , eax 
-mov dword eax , [ esp -4] 
-cmp dword [ esp -16] , eax 
-mov dword eax , 0 
-setl al
-shl dword eax , 7
-or dword eax , 31
-cmp dword eax , 31
-je if150
-mov dword eax , [ esp -4] 
-mov dword [ esp -32] , eax 
-mov dword eax , 4
-sub dword [ esp -32] , eax 
-mov dword eax , [ esp -32] 
-mov dword [ esp -32] , eax ; save arg 2
+mov dword [ esp -12] , eax 
 mov dword eax , [ esp -8] 
-mov dword [ esp -36] , eax ; save arg 3
-mov dword eax , [ esp -12] 
-mov dword [ esp -40] , eax ; save arg 4
+shr dword eax , 2 
+mov dword ebx , [esp -12]
+shr dword ebx , 2 
+mul dword ebx
+shl dword eax , 2 
+ret
+after144: nop
+mov dword ebx , esi
+mov dword [ esi ] , lambda143
+add dword esi , 8 
+mov dword eax , ebx
+add dword eax , 110b 
+mov dword [esp -4] , eax 
+mov dword eax , 8
+mov dword [esp -8] , eax 
+mov dword eax , 20
+mov dword [ esp -20] , eax ; save arg 2
+mov dword eax , [ ebp -4] 
+sub dword eax , 110b ; untag closure 
+mov dword [esp -16] ,eax  ; raw closure ptr 
+mov dword eax , [eax] ; load procedure ptr from raw closure 
+add dword esp , -8; adjust stack
+call eax ; call closure
+sub dword esp , -8; restore esp
+mov	esp, ebp
+pop	ebp
+ret

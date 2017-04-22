@@ -151,12 +151,12 @@
 
 
 
-(define (assign-global-stack-index syms index)
+(define (assign-toplevel-stack-index syms index)
   (cond
    ((null? syms) '())
    (else (let ((sym (car syms)))
-	   (cons (list sym 'global index)
-		 (assign-global-stack-index (cdr syms) (- index *wordsize*)))))))
+	   (cons (list sym 'toplevel index)
+		 (assign-toplevel-stack-index (cdr syms) (- index *wordsize*)))))))
 
 
 
@@ -166,12 +166,12 @@
 ;; only interested in (define f x)
 ;; toplevel environmnet will contain these f's
 ;; assign a unique stack index for these also
-(define (toplevel-environment forms)
-  
+(define (toplevel-environment forms)  
      ;; -4 is initial empty slot on stack index 
-  (assign-global-stack-index (map (lambda (x) (car (cdr x)))
+  (assign-toplevel-stack-index (map (lambda (x) (car (cdr x)))
 			   (toplevel-definitions forms))
 		      -4))
+
 
 
 ;; collect toplevel procedure arities
@@ -259,7 +259,7 @@
 	  ;; here compile the expression
 	  ;; initial stack index is negative wordsize
 	  ;; as [ esp - 4 ] , since esp holds return address.
-	  (let ((initial-environment '())
+	  (let ((initial-environment top-environment)
 		(stack-index last-stack-index)) ;; (- *wordsize*))) was -4
 		;;(stack-index -8))
 
@@ -285,6 +285,7 @@
 	    (emit "mov dword esi , [ esp + 8 ] ")
 	    (emit "scheme_heap_in_esi: nop")
 	    ;; esp - 4 = first FREE slot on stack    
+
 	    
 	    (map (lambda (expr)
 		   (begin

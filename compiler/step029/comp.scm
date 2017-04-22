@@ -301,6 +301,11 @@
 	 (comp-implicit-sequence (cdr x) si env))))
 
 
+(define (toplevel-binding? x)
+  (and (= (length x) 3)
+       (eq? (car (cdr x)) 'toplevel)))
+
+
 (define (local-binding? x)
   (and (= (length x) 3)
        (eq? (car (cdr x)) 'local)))
@@ -315,7 +320,10 @@
   (car (cdr (cdr x))))
 
 
-;; assume lookup is for a local symbol
+;; 1 . local binding = from LET and on STACK
+;; 2 . closure binding = from LAMBDA and on STACK through RAW untagged CLOSURE POINTER
+;; 3 . toplevel binding = from DEFINE 
+
 (define (comp-lookup x si env)
   (let ((binding (assoc x env)))
     (cond
@@ -324,14 +332,10 @@
      ((closure-binding? binding)
       (emit "mov dword eax , [ esp - 4 ] ; move closure ptr into eax")
       (emit "mov dword eax , [ eax + " (binding-stack-index binding) "] "))
+     ((toplevel-binding? binding)
+      (emit "mov dword eax , [ ebp " (binding-stack-index binding)  "] "))
      (else
       (error "comp-lookup : no binding for symbol " x)))))
-
-
-
-
-
-
 
 
 
@@ -1116,15 +1120,31 @@
 
 ;; assume x is a lambda 
 ;; define f x
+;; should really be called TOPLEVEL-DEFINE
 (define (comp-define x si env)
   (let ((var (car (cdr x)))
 	(val (car (cdr (cdr x)))))
     ;; compile the val
-    (if (and (pair? val)
-	     (eq? (car val) 'lambda))
-	(comp-define-lambda x si env)
-	#f)))
+    (comp val si env)
+    ;; find global index for the var
+    (let ((binding (assoc var env)))
+      (cond
+       ((toplevel-binding? binding)
+	;; stuff value onto stack in known location
+	(emit "mov dword [esp " (binding-stack-index binding)  "] , eax "))
+       (else
+	(error "comp-define : no SLOT for TOPLEVEL DEFINE found " var))))))
 
+
+
+
+    
+
+    ;; (if (and (pair? val)
+    ;; 	     (eq? (car val) 'lambda))
+    ;; 	(comp-define-lambda x si env)
+    ;; 	#f)))
+    
 
 ;; assume all toplevel defines are procedures
 ;; generate a jump label
@@ -1140,38 +1160,39 @@
 ;;  z = -12
 ;;   on entry
 
-(define (comp-define-helper args index)
-  (cond
-   ((null? args) '())
-   (else (let ((sym (car args)))
-	   (cons (list sym 'local index)
-		 (comp-define-helper (cdr args) (- index *wordsize*)))))))
+;; (define (comp-define-helper args index)
+;;   (cond
+;;    ((null? args) '())
+;;    (else (let ((sym (car args)))
+;; 	   (cons (list sym 'local index)
+;; 		 (comp-define-helper (cdr args) (- index *wordsize*)))))))
 
 
-(define (comp-define-lambda x si env)
-  (let ((name (car (cdr x)))
-	(proc (car (cdr (cdr x))))
-	(after-label (gensym "after")))
-    (let ((args (car (cdr proc)))
-	  (body (cdr (cdr proc))))
-      (let ((n-args (length args)))
-	(let ((extra-env (comp-define-helper args (- *wordsize*))))
+;; (define (comp-define-lambda x si env)
+;;   (let ((name (car (cdr x)))
+;; 	(proc (car (cdr (cdr x))))
+;; 	(after-label (gensym "after")))
+;;     (let ((args (car (cdr proc)))
+;; 	  (body (cdr (cdr proc))))
+;;       (let ((n-args (length args)))
+;; 	(let ((extra-env (comp-define-helper args (- *wordsize*))))
 	  
-	  (display "* comp-define-lambda * : ")
-	  (display "extra env = ")
-	  (display extra-env)
-	  (newline)
+;; 	  (display "* comp-define-lambda * : ")
+;; 	  (display "extra env = ")
+;; 	  (display extra-env)
+;; 	  (newline)
 	
-	(emit "jmp " after-label)    
-	(emit (tidy-proc-name name) ": nop")
-	;; compile the definition here
-	(comp `(begin ,@body)
-	      (- (* (+ n-args 1) *wordsize*))
-	      (append extra-env env))
-	;; final return 
-	(emit "ret")
-	;; jump over definition
-	(emit after-label ": nop"))))))
+;; 	(emit "jmp " after-label)    
+;; 	(emit (tidy-proc-name name) ": nop")
+;; 	;; compile the definition here
+;; 	(comp `(begin ,@body)
+;; 	      (- (* (+ n-args 1) *wordsize*))
+;; 	      (append extra-env env))
+;; 	;; final return 
+;; 	(emit "ret")
+;; 	;; jump over definition
+;; 	(emit after-label ": nop"))))))
+
 
 
 (define (comp-lambda-helper args index)
@@ -1207,6 +1228,19 @@
 	       (cons var (remove-primitives (cdr vars))))))))
 
 
+(define (remove-toplevel vars env)
+  (cond
+   ((null? vars) '())
+   (else (let ((var (car vars)))
+	   (if (and (assoc var env)
+		    (toplevel-binding? (assoc var env)))
+	       (begin ;; ignore this as its toplevel bound	       
+		 (remove-toplevel (cdr vars) env))
+	       (begin ;; include it - not toplevel bound
+		 (cons var (remove-toplevel (cdr vars) env))))))))
+
+
+
 
 
 ;; for each formal parameter [ <args> ]  of the lambda expression
@@ -1216,12 +1250,11 @@
 	(args (car (cdr x)))
 	(body (cdr (cdr x)))
 	(after-label (gensym "after"))
-	(free-variables (remove-primitives (freevars x))))
+	(free-variables (remove-toplevel (remove-primitives (freevars x)) env)))
       (let ((n-args (length args)))
-	(let ((extra-env (comp-lambda-helper args (- *wordsize*)))
+	(let ((extra-env (comp-lambda-helper args -8)) ;; 0 = retip -4 = closure ptr -8 : arg1
 	      (free-env  (comp-closure-helper free-variables 8 ))) ;; (* 2 *wordsize*))))
-	  (let ((new-env (append extra-env free-env)));; env)))
-	  
+	  (let ((new-env (append extra-env free-env env )));; env)))
 	      
 	  (display "* comp-lambda * : ")
 	  (display "extra env = ")
@@ -1259,7 +1292,6 @@
 	  ;; ptr to start of closure
 	  (emit "mov dword ebx , esi")
 	  ;;(emit "push dword eax ")
-	  
 	  
 	  ;; construct closure
 	  ;; 1st CODE ptr to anon-name
