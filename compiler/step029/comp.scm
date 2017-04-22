@@ -49,6 +49,7 @@
     begin
     lambda
     quote
+    not
     ))
 
 

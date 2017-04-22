@@ -27,6 +27,7 @@
   (not n))
 
 
+
 ;;(begin
 ;;  (seq 100)
   
@@ -41,6 +42,8 @@
 		  (toggle-every-helper m m (cdr xs))))
    (else (cons (car xs)
 	       (toggle-every-helper (- n 1) m (cdr xs))))))
+
+
 
 
 (define (toggle-every n xs)
@@ -59,36 +62,21 @@
    ((car xs) (cons n (tog-to-n (+ n 1) (cdr xs))))
    (else (tog-to-n (+ n 1) (cdr xs)))))
 
+
+;;(toggle-nth 1 (seq 100))
+
+;; wrong arity !!
 ;;(toggle-every 1 1 (seq 100))
 ;;(toggle-every 2 2 (seq 100))
+
+;;(toggle-every 1 (seq 100))
+;;(toggle-every 2 (seq 100))
 
 ;; all initially closed - ie #f closed door , #t open door
 
 ;;(toggle-nth 1 (seq 1000))
 
 (tog-to-n 1 (toggle-nth 1 (seq 100)))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

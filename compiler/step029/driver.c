@@ -39,7 +39,7 @@ extern unsigned int scheme_cdr(unsigned int ptr);
 
 
 /* heap size should be a multiple of 8 bytes  */
-#define HEAP_SIZE  10000000
+#define HEAP_SIZE  100000000
 
 
 void debug_stack(unsigned int *ptr){
