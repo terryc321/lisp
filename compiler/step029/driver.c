@@ -20,12 +20,22 @@ extern unsigned int scheme_cdr(unsigned int ptr);
 #define BOOL_SHIFT 8
 #define BOOL_BIT  128
 
-#define PAIR_MASK  7
-#define PAIR_TAG   1
+#define PAIR_MASK    7
+#define PAIR_TAG     1
 
-#define VECTOR_MASK 7
+#define VECTOR_MASK  7
 #define VECTOR_TAG   2
 
+#define STRING_MASK  7
+#define STRING_TAG   3
+
+
+#define SYMBOL_MASK  7
+#define SYMBOL_TAG   5
+
+
+#define CLOSURE_MASK 7
+#define CLOSURE_TAG  6
 
 
 /* heap size should be a multiple of 8 bytes  */
@@ -166,7 +176,12 @@ void pretty_print(unsigned int val){
     }    
     printf("]");    
     
-  }    
+  }
+  else if ((val & CLOSURE_MASK ) == CLOSURE_TAG ) {
+    int *ptr = (int *)(val - CLOSURE_TAG);
+    printf("#<closure>"); //, (void *)ptr);    
+  }
+  
   else {
     /*
     dont know , dont ask me.

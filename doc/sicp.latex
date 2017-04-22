@@ -2,6 +2,14 @@
 \documentclass[a4paper,12pt]{article}
 \begin{document}
 
+Every pointer to a heap-
+allocated object is tagged by a 3-bit tag (001 b for pairs, 010 b for
+vectors, 011 b for strings, 101 b for symbols, and 110 b for closures;
+000 b , 100 b and 111 b were already used for fixnums and the other
+immediate objects).
+
+
+
 Macro expansion . 
 
 Alpha conversion .

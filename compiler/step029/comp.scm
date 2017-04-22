@@ -17,6 +17,41 @@
 (define *wordsize*  4)
 
 
+
+(define *primitives*
+  '(add1
+    sub1
+    integer->char
+    char->integer
+    zero?
+    null?
+    boolean?
+    integer?
+    *
+    +
+    -
+    let
+    if
+    cons
+    car
+    cdr
+    make-vector
+    div2
+    mul3+1
+    odd?
+    even?
+    =
+    >
+    <
+    <=
+    >=
+    define
+    begin
+    lambda
+    quote
+    ))
+
+
 ;; binding forms are
 ;; comp-let-bindings  (list the-sym 'local  si)
 ;; comp-lookup 
@@ -33,7 +68,8 @@
 			 ((and (char>=? x #\a) (char<=? x #\z)) x)
 			 ((and (char>=? x #\A) (char<=? x #\Z)) x)
 			 ((and (char>=? x #\0) (char<=? x #\9)) x)
-			 (else (error "comp.scm: tidy-proc-name : symbol contains non-alpha characters" symbol))))
+			 (else (error "comp.scm: tidy-proc-name : "
+				      "symbol contains non-alpha characters" symbol))))
 		      (string->list (symbol->string symbol))))))
 
 
@@ -269,6 +305,12 @@
   (and (= (length x) 3)
        (eq? (car (cdr x)) 'local)))
 
+
+(define (closure-binding? x)
+  (and (= (length x) 3)
+       (eq? (car (cdr x)) 'closure)))
+
+
 (define (binding-stack-index x)
   (car (cdr (cdr x))))
 
@@ -276,11 +318,19 @@
 ;; assume lookup is for a local symbol
 (define (comp-lookup x si env)
   (let ((binding (assoc x env)))
-    (if (local-binding? binding)
-	(begin
-	  (emit "mov dword eax , [ esp " (binding-stack-index binding)  "] "))
-	(begin
-	  (error "comp-lookup : no binding for symbol " x)))))
+    (cond
+     ((local-binding? binding)
+      (emit "mov dword eax , [ esp " (binding-stack-index binding)  "] "))
+     ((closure-binding? binding)
+      (emit "mov dword eax , [ esp - 4 ] ; move closure ptr into eax")
+      (emit "mov dword eax , [ eax + " (binding-stack-index binding) "] "))
+     (else
+      (error "comp-lookup : no binding for symbol " x)))))
+
+
+
+
+
 
 
 
@@ -820,7 +870,45 @@
 
 
 
+
 ;; compile arg one by one and push onto stack
+
+;; (F x y z)
+;; si = keep empty for ESP to go into.
+;;(emit "nop ; starts TAK here")
+;; E[x]  si - 4
+
+;; (comp (car (cdr x)) (- si (* 1 *wordsize*)) env)
+;; (emit "mov dword [ esp " (- si (* 1 *wordsize*)) "] , eax ; save X ")
+;; ;; E[y]  si - 8 
+;; (comp (car (cdr (cdr x))) (- si (* 2 *wordsize*)) env)
+;; (emit "mov dword [ esp " (- si (* 2 *wordsize*)) "] , eax ; save Y")
+;; ;; E[z]  si - 12
+;; (comp (car (cdr (cdr (cdr x)))) (- si (* 3 *wordsize*)) env)
+;; (emit "mov dword [ esp " (- si (* 3 *wordsize*)) "] , eax ; save Z" )
+
+;; leave 2 slots free
+;;
+;; si is overwhelmingly negative
+;;
+;; si - 0  : return address goes here  * slot 1 *
+;; si - 4  : closure ptr untagged      * slot 2 *
+;; si - 8  : arg 1
+;; si - 12 : arg 2
+;; si - 16 : arg 3
+
+
+
+;; before call ESP = si + 4
+;;  when CALL opcode executed ESP decremented then 
+
+;; si + 4   :  before DO the CALL
+;; si       :  where return address will go 
+;; si - 4   :  closure ptr
+;; si - 8   :  arg1
+;; si - 12  :  arg2
+;; si - 16  :  arg3
+;;
 (define (comp-application-helper args si index env)
   (cond
    ((null? args) #f)
@@ -830,36 +918,47 @@
 	   (comp-application-helper (cdr args) si (+ index 1) env)))))
 
 
+
+
+
 (define (comp-application x si env)
-    
-  ;; (F x y z)
-  ;; si = keep empty for ESP to go into.
-  ;;(emit "nop ; starts TAK here")
-  ;; E[x]  si - 4
+
+  ;; compile arguments and move them into stack positions 
+  (comp-application-helper (cdr x) si 2 env)
+
+  ;; evaluate operator
+  (comp (car x) si env)
+
+  ;; presumably there is a closure left in EAX register
+  ;; untag it
+  (emit "sub dword eax , 110b ; untag closure ")
+
+  ;; save raw closure onto stack
+  (emit "mov dword [esp " (- si *wordsize*) "] ,eax  ; raw closure ptr ")
+
+  ;; obtain procedure CODE address
+  (emit "mov dword eax , [eax] ; load procedure ptr from raw closure ")
+  (emit "add dword esp , " (+ si *wordsize*) "; adjust stack")
+  (emit "call eax ; call closure")
+  (emit "sub dword esp , " (+ si *wordsize*) "; restore esp"))
+
+
+
+
+
 
   
-  ;; (comp (car (cdr x)) (- si (* 1 *wordsize*)) env)
-  ;; (emit "mov dword [ esp " (- si (* 1 *wordsize*)) "] , eax ; save X ")
-  ;; ;; E[y]  si - 8 
-  ;; (comp (car (cdr (cdr x))) (- si (* 2 *wordsize*)) env)
-  ;; (emit "mov dword [ esp " (- si (* 2 *wordsize*)) "] , eax ; save Y")
-  ;; ;; E[z]  si - 12
-  ;; (comp (car (cdr (cdr (cdr x)))) (- si (* 3 *wordsize*)) env)
-  ;; (emit "mov dword [ esp " (- si (* 3 *wordsize*)) "] , eax ; save Z" )
+  ;; ;; avoid adding zero to esp , since that does not change esp .
+  ;; (if (not (= 0 (+ si *wordsize*)))
+  ;;     (begin
+  ;; 	(emit "add dword esp , " (+ si *wordsize*) "; adjust esp")
+  ;; 	(emit "call " (tidy-proc-name (car x)))
+  ;; 	(emit "sub dword esp , " (+ si *wordsize*) "; restore esp"))
+  ;;     (begin
+  ;; 	(emit "call " (tidy-proc-name (car x)))))
 
-  (comp-application-helper (cdr x) si 1 env)
 
-  ;; avoid adding zero to esp , since that does not change esp .
-  (if (not (= 0 (+ si *wordsize*)))
-      (begin
-	(emit "add dword esp , " (+ si *wordsize*) "; adjust esp")
-	(emit "call " (tidy-proc-name (car x)))
-	(emit "sub dword esp , " (+ si *wordsize*) "; restore esp"))
-      (begin
-	(emit "call " (tidy-proc-name (car x)))))
-      
 
-  )
 
 
 
@@ -1049,7 +1148,6 @@
 		 (comp-define-helper (cdr args) (- index *wordsize*)))))))
 
 
-
 (define (comp-define-lambda x si env)
   (let ((name (car (cdr x)))
 	(proc (car (cdr (cdr x))))
@@ -1058,7 +1156,6 @@
 	  (body (cdr (cdr proc))))
       (let ((n-args (length args)))
 	(let ((extra-env (comp-define-helper args (- *wordsize*))))
-
 	  
 	  (display "* comp-define-lambda * : ")
 	  (display "extra env = ")
@@ -1075,6 +1172,131 @@
 	(emit "ret")
 	;; jump over definition
 	(emit after-label ": nop"))))))
+
+
+(define (comp-lambda-helper args index)
+  (cond
+   ((null? args) '())
+   (else (let ((sym (car args)))
+	   (cons (list sym 'local index)
+		 (comp-lambda-helper (cdr args) (- index *wordsize*)))))))
+
+
+;; suppose free variables are a b c d
+;; assigns closure offsets of multiples of 8 byte boundary.
+;; a : 8
+;; b : 16
+;; c : 24
+;; d : 32
+;;
+(define (comp-closure-helper args index)
+  (cond
+   ((null? args) '())
+   (else (let ((sym (car args)))
+	   (cons (list sym 'closure index)
+		 (comp-closure-helper (cdr args) (+ index (* 2 *wordsize*))))))))
+
+
+
+(define (remove-primitives vars)
+  (cond
+   ((null? vars) '())
+   (else (let ((var (car vars)))
+	   (if (member var *primitives*)
+	       (remove-primitives (cdr vars))
+	       (cons var (remove-primitives (cdr vars))))))))
+
+
+
+
+;; for each formal parameter [ <args> ]  of the lambda expression
+;; (lambda <args> body)
+(define (comp-lambda x si env)
+  (let ((anon-name (gensym "lambda"))	
+	(args (car (cdr x)))
+	(body (cdr (cdr x)))
+	(after-label (gensym "after"))
+	(free-variables (remove-primitives (freevars x))))
+      (let ((n-args (length args)))
+	(let ((extra-env (comp-lambda-helper args (- *wordsize*)))
+	      (free-env  (comp-closure-helper free-variables 8 ))) ;; (* 2 *wordsize*))))
+	  (let ((new-env (append extra-env free-env)));; env)))
+	  
+	      
+	  (display "* comp-lambda * : ")
+	  (display "extra env = ")
+	  (display extra-env)
+	  (newline)
+
+	  (display "* comp-lambda * : ")
+	  (display "free = ")
+	  (display free-variables)
+	  (newline)
+	  (display "free-env = ")
+	  (display free-env)
+	  (newline)
+
+	  (display "* comp-lambda * : ")
+	  (display "new-env = ")
+	  (display new-env)
+	  (newline)
+	  
+	  (emit "jmp " after-label)
+	  ;; lambda has no name 
+	  (emit anon-name ": nop")
+	  ;; compile the definition here with extra formals and free variables
+	  (comp `(begin ,@body)
+		(- (* (+ n-args 2) *wordsize*))
+		new-env)
+	  ;; final return 
+	  (emit "ret")
+	  ;; jump over definition
+	  (emit after-label ": nop")
+
+	  ;; ??
+	  ;;(emit "push dword esi")
+	  
+	  ;; ptr to start of closure
+	  (emit "mov dword ebx , esi")
+	  ;;(emit "push dword eax ")
+	  
+	  
+	  ;; construct closure
+	  ;; 1st CODE ptr to anon-name
+	  ;; closure ptr	  
+	  (emit "mov dword [ esi ] , " anon-name)
+	  ;; bump - 8 byte boundary
+	  (emit "add dword esi , 8 ")
+
+	  ;; for each free variable ,
+	  ;; 1st .. closure arg 0 
+	  ;; 2nd .. closure arg 1
+	  ;; 3rd .. closure arg 2
+	  ;; 4th .. closure arg 3
+	  ;; reserve 1 slot for the HEAP ESI POINTER ... reason for (- si *wordsize*)
+	  (map (lambda (f)
+		 (begin
+		   (comp-lookup f (- si *wordsize*) env)
+		   ;; bump
+		   (emit "mov dword [ esi ] , eax")
+		   (emit "add dword esi , 8 ")))
+	       free-variables)
+	  
+	  ;; ??
+	  ;;(emit "pop dword eax")
+	  (emit "mov dword eax , ebx")
+	  ;; tag as closure
+	  (emit "add dword eax , 110b ")
+	  	  
+	  
+	  )))))
+
+
+
+
+
+
+
 
 
 
@@ -1143,6 +1365,10 @@
    ;; begin
    ((and (pair? x) (eq? (car x) 'begin)) (comp-begin x si env))
 
+   ;; explicit lambda
+   ((and (pair? x) (eq? (car x) 'lambda)) (comp-lambda x si env))
+
+   
    ;; tak 
    ;;((and (pair? x) (eq? (car x) 'tak)) (comp-tak x si env))
    
@@ -1167,8 +1393,8 @@
 
    ((pair? x) (comp-application x si env))
    
-   (else #f)))
-
+   (else
+    (error "comp : unknown expression : " x))))
 
 
 

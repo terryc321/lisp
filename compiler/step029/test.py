@@ -70,7 +70,6 @@ def test_reset():
 test_reset()
 
 
-
 test_section("fixnums")
 test_case("(+ 1 (+ 2 (+ 3 4)))","10")
 
@@ -531,7 +530,23 @@ test_case("(begin #f)","#f")
 test_case("(begin 1 2 3)","3")
 test_case("(begin (cons 1 2)(cons 3 4)(cons 5 6)(cons 7 8)(cons 9 10))","(9 . 10)")
 
+test_case("(lambda () (+ 1 2))","#<closure>")
+test_case("((lambda () (+ 1 2)))","3")
 
+test_case("(let ((x 5)) (+ x x))","10")
+
+test_case("((let ((x 5)) (lambda () (+ x x))))","10")
+test_case("((let ((x 5)(y 6)) (lambda () (+ x x))))","10")
+
+test_case("((let ((a 1)(b 2)(c 3)(d 4)) (lambda () a)))","1")
+test_case("((let ((a 1)(b 2)(c 3)(d 4)) (lambda () b)))","2")
+test_case("((let ((a 1)(b 2)(c 3)(d 4)) (lambda () c)))","3")
+test_case("((let ((a 1)(b 2)(c 3)(d 4)) (lambda () d)))","4")
+
+
+test_case("((let ((a 1)(b 2)(c 3)(d 4)(e 5)(f 6)(g 7)) (lambda () e)))","5")
+test_case("((let ((a 1)(b 2)(c 3)(d 4)(e 5)(f 6)(g 7)) (lambda () f)))","6")
+test_case("((let ((a 1)(b 2)(c 3)(d 4)(e 5)(f 6)(g 7)) (lambda () g)))","7")
 
 
 
