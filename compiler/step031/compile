@@ -1,0 +1,8 @@
+#!/bin/bash
+
+guile -c "(begin (load \"lisp.scm\")(stage-4 \"$1\" \"entry.asm\"))"
+
+make
+
+./driver
+
