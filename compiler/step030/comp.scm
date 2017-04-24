@@ -699,200 +699,200 @@
 
 
 
-;; (tak x y z)
-;; (if (< y x)
-;;      (tak (tak (- x 1) y z)
-;;           (tak (- y 1) z x)
-;;           (tak (- z 1) x y))
-;;      z)
-(define (comp-f3x-def x si env)
-  ;; E[x]
-  (emit "f3x: nop")
-  (comp 'x
-	si
-	(append '((x . -4)(y . -8)(z . -12)) env))
-  (emit "ret"))
+;; ;; (tak x y z)
+;; ;; (if (< y x)
+;; ;;      (tak (tak (- x 1) y z)
+;; ;;           (tak (- y 1) z x)
+;; ;;           (tak (- z 1) x y))
+;; ;;      z)
+;; (define (comp-f3x-def x si env)
+;;   ;; E[x]
+;;   (emit "f3x: nop")
+;;   (comp 'x
+;; 	si
+;; 	(append '((x . -4)(y . -8)(z . -12)) env))
+;;   (emit "ret"))
 
 
-(define (comp-f3y-def x si env)
-  ;; E[x]
-  (emit "f3y: nop")
-  (comp 'y
-	si
-	(append '((x . -4)(y . -8)(z . -12)) env))
-  (emit "ret"))
+;; (define (comp-f3y-def x si env)
+;;   ;; E[x]
+;;   (emit "f3y: nop")
+;;   (comp 'y
+;; 	si
+;; 	(append '((x . -4)(y . -8)(z . -12)) env))
+;;   (emit "ret"))
 
 
-(define (comp-f3z-def x si env)
-  ;; E[x]
-  (emit "f3z: nop")
-  (comp 'z
-	si
-	(append '((x . -4)(y . -8)(z . -12)) env))
-  (emit "ret"))
+;; (define (comp-f3z-def x si env)
+;;   ;; E[x]
+;;   (emit "f3z: nop")
+;;   (comp 'z
+;; 	si
+;; 	(append '((x . -4)(y . -8)(z . -12)) env))
+;;   (emit "ret"))
 
 
-(define (comp-f3x x si env)
-  ;; E[x]  si - 4
-  (comp (car (cdr x)) (- si (* 1 *wordsize*)) env)
-    ;; save onto stack
-  (emit "mov dword [ esp " (- si (* 1 *wordsize*)) "] , eax ")
+;; (define (comp-f3x x si env)
+;;   ;; E[x]  si - 4
+;;   (comp (car (cdr x)) (- si (* 1 *wordsize*)) env)
+;;     ;; save onto stack
+;;   (emit "mov dword [ esp " (- si (* 1 *wordsize*)) "] , eax ")
   
-  ;; E[y]  si - 8 
-  (comp (car (cdr (cdr x))) (- si (* 2 *wordsize*)) env)
-  ;; save onto stack
-  (emit "mov dword [ esp " (- si (* 2 *wordsize*)) "] , eax ")
+;;   ;; E[y]  si - 8 
+;;   (comp (car (cdr (cdr x))) (- si (* 2 *wordsize*)) env)
+;;   ;; save onto stack
+;;   (emit "mov dword [ esp " (- si (* 2 *wordsize*)) "] , eax ")
   
-  ;; E[z]  si - 12
-  (comp (car (cdr (cdr (cdr x)))) (- si (* 3 *wordsize*)) env)
-  ;; save onto stack
-  (emit "mov dword [ esp " (- si (* 3 *wordsize*)) "] , eax ")
+;;   ;; E[z]  si - 12
+;;   (comp (car (cdr (cdr (cdr x)))) (- si (* 3 *wordsize*)) env)
+;;   ;; save onto stack
+;;   (emit "mov dword [ esp " (- si (* 3 *wordsize*)) "] , eax ")
 
-  ;; adjust ESP , si is negative multiple of 4 :  -4 , -8 , -12 , -16, -20
-  (emit "add dword esp , " (+ si 4))
+;;   ;; adjust ESP , si is negative multiple of 4 :  -4 , -8 , -12 , -16, -20
+;;   (emit "add dword esp , " (+ si 4))
 
-  ;; do the CALL
-  (emit "call f3x")
+;;   ;; do the CALL
+;;   (emit "call f3x")
 
-  ;; 
-  (emit "add dword esp , " (- (+ si 4))))
-
-
+;;   ;; 
+;;   (emit "add dword esp , " (- (+ si 4))))
 
 
-(define (comp-f3y x si env)
-  ;; E[x]  si - 4
-  (comp (car (cdr x)) (- si (* 1 *wordsize*)) env)
-    ;; save onto stack
-  (emit "mov dword [ esp " (- si (* 1 *wordsize*)) "] , eax ")
+
+
+;; (define (comp-f3y x si env)
+;;   ;; E[x]  si - 4
+;;   (comp (car (cdr x)) (- si (* 1 *wordsize*)) env)
+;;     ;; save onto stack
+;;   (emit "mov dword [ esp " (- si (* 1 *wordsize*)) "] , eax ")
   
-  ;; E[y]  si - 8 
-  (comp (car (cdr (cdr x))) (- si (* 2 *wordsize*)) env)
-  ;; save onto stack
-  (emit "mov dword [ esp " (- si (* 2 *wordsize*)) "] , eax ")
+;;   ;; E[y]  si - 8 
+;;   (comp (car (cdr (cdr x))) (- si (* 2 *wordsize*)) env)
+;;   ;; save onto stack
+;;   (emit "mov dword [ esp " (- si (* 2 *wordsize*)) "] , eax ")
   
-  ;; E[z]  si - 12
-  (comp (car (cdr (cdr (cdr x)))) (- si (* 3 *wordsize*)) env)
-  ;; save onto stack
-  (emit "mov dword [ esp " (- si (* 3 *wordsize*)) "] , eax ")
+;;   ;; E[z]  si - 12
+;;   (comp (car (cdr (cdr (cdr x)))) (- si (* 3 *wordsize*)) env)
+;;   ;; save onto stack
+;;   (emit "mov dword [ esp " (- si (* 3 *wordsize*)) "] , eax ")
 
-  ;; adjust ESP , si is negative multiple of 4 :  -4 , -8 , -12 , -16, -20
-  (emit "add dword esp , " (+ si 4))
+;;   ;; adjust ESP , si is negative multiple of 4 :  -4 , -8 , -12 , -16, -20
+;;   (emit "add dword esp , " (+ si 4))
 
-  ;; do the CALL
-  (emit "call f3y")
+;;   ;; do the CALL
+;;   (emit "call f3y")
 
-  ;; 
-  (emit "add dword esp , " (- (+ si 4))))
+;;   ;; 
+;;   (emit "add dword esp , " (- (+ si 4))))
 
 
-(define (comp-f3z x si env)
-  ;; E[x]  si - 4
-  (comp (car (cdr x)) (- si (* 1 *wordsize*)) env)
-    ;; save onto stack
-  (emit "mov dword [ esp " (- si (* 1 *wordsize*)) "] , eax ")
+;; (define (comp-f3z x si env)
+;;   ;; E[x]  si - 4
+;;   (comp (car (cdr x)) (- si (* 1 *wordsize*)) env)
+;;     ;; save onto stack
+;;   (emit "mov dword [ esp " (- si (* 1 *wordsize*)) "] , eax ")
   
-  ;; E[y]  si - 8 
-  (comp (car (cdr (cdr x))) (- si (* 2 *wordsize*)) env)
-  ;; save onto stack
-  (emit "mov dword [ esp " (- si (* 2 *wordsize*)) "] , eax ")
+;;   ;; E[y]  si - 8 
+;;   (comp (car (cdr (cdr x))) (- si (* 2 *wordsize*)) env)
+;;   ;; save onto stack
+;;   (emit "mov dword [ esp " (- si (* 2 *wordsize*)) "] , eax ")
   
-  ;; E[z]  si - 12
-  (comp (car (cdr (cdr (cdr x)))) (- si (* 3 *wordsize*)) env)
-  ;; save onto stack
-  (emit "mov dword [ esp " (- si (* 3 *wordsize*)) "] , eax ")
+;;   ;; E[z]  si - 12
+;;   (comp (car (cdr (cdr (cdr x)))) (- si (* 3 *wordsize*)) env)
+;;   ;; save onto stack
+;;   (emit "mov dword [ esp " (- si (* 3 *wordsize*)) "] , eax ")
 
-  ;; adjust ESP , si is negative multiple of 4 :  -4 , -8 , -12 , -16, -20
-  (emit "add dword esp , " (+ si 4))
+;;   ;; adjust ESP , si is negative multiple of 4 :  -4 , -8 , -12 , -16, -20
+;;   (emit "add dword esp , " (+ si 4))
 
-  ;; do the CALL
-  (emit "call f3z")
+;;   ;; do the CALL
+;;   (emit "call f3z")
 
-  ;; 
-  (emit "add dword esp , " (- (+ si 4))))
-
-
+;;   ;; 
+;;   (emit "add dword esp , " (- (+ si 4))))
 
 
-(define (comp-fib-def x si env)
-  ;; E[x]
-  (emit "fib: nop")
-  (comp '(if (= n 1)
-	     1
-	     (if (= n 2)
-		 1
-		 (+ (fib (- n 1))
-		    (fib (- n 2)))))
-	;;  1 arg = 2 wordsizes 
-  	(- (* 2 *wordsize*))
-  	(append '((n . -4)) env))
-  (emit "ret"))
 
 
+;; (define (comp-fib-def x si env)
+;;   ;; E[x]
+;;   (emit "fib: nop")
+;;   (comp '(if (= n 1)
+;; 	     1
+;; 	     (if (= n 2)
+;; 		 1
+;; 		 (+ (fib (- n 1))
+;; 		    (fib (- n 2)))))
+;; 	;;  1 arg = 2 wordsizes 
+;;   	(- (* 2 *wordsize*))
+;;   	(append '((n . -4)) env))
+;;   (emit "ret"))
 
 
 
 
 
-(define (comp-fac-def x si env)
-  ;; E[x]
-  (emit "fac: nop")
-  (comp '(if (= n 1)
-	     1
-	     (* n (fac (- n 1))))
-	;;  1 arg = 2 wordsizes  huh.
-  	(- (* 2 *wordsize*))
-  	(append '((n . -4)) env))
-  (emit "ret"))
+
+
+;; (define (comp-fac-def x si env)
+;;   ;; E[x]
+;;   (emit "fac: nop")
+;;   (comp '(if (= n 1)
+;; 	     1
+;; 	     (* n (fac (- n 1))))
+;; 	;;  1 arg = 2 wordsizes  huh.
+;;   	(- (* 2 *wordsize*))
+;;   	(append '((n . -4)) env))
+;;   (emit "ret"))
 
 
 
-(define (comp-tak-def x si env)
-  ;; E[x]
-  (emit "")
-  (emit "tak1: nop")
-  (emit "      jmp tak")
-  (emit "")  
-  (emit "tak2: nop")
-  (emit "      jmp tak")
-  (emit "")    
-  (emit "tak3: nop")
-  (emit "      jmp tak")
-  (emit "")
-  (emit "tak4: nop")
-  (emit "      jmp tak")
-  (emit "")
+;; (define (comp-tak-def x si env)
+;;   ;; E[x]
+;;   (emit "")
+;;   (emit "tak1: nop")
+;;   (emit "      jmp tak")
+;;   (emit "")  
+;;   (emit "tak2: nop")
+;;   (emit "      jmp tak")
+;;   (emit "")    
+;;   (emit "tak3: nop")
+;;   (emit "      jmp tak")
+;;   (emit "")
+;;   (emit "tak4: nop")
+;;   (emit "      jmp tak")
+;;   (emit "")
   
-  (emit "tak: nop")
-  (comp '(begin
-	   ;;(debug-tak)
-	   (if (< y x)
-	       (tak4 (tak1 (- x 1) y z)
-		     (tak2 (- y 1) z x)
-		     (tak3 (- z 1) x y))
-	       z))
-	;; 3 args = 4 wordsize huh.
-  	(- (* 4 *wordsize*))
-  	(append '((x . -4)(y . -8)(z . -12)) env))
-  (emit "ret"))
+;;   (emit "tak: nop")
+;;   (comp '(begin
+;; 	   ;;(debug-tak)
+;; 	   (if (< y x)
+;; 	       (tak4 (tak1 (- x 1) y z)
+;; 		     (tak2 (- y 1) z x)
+;; 		     (tak3 (- z 1) x y))
+;; 	       z))
+;; 	;; 3 args = 4 wordsize huh.
+;;   	(- (* 4 *wordsize*))
+;;   	(append '((x . -4)(y . -8)(z . -12)) env))
+;;   (emit "ret"))
 
 
-(define (comp-tak x si env)
-  ;; (TAK x y z)
-  ;; si = keep empty for ESP to go into.
-  ;;(emit "nop ; starts TAK here")
-  ;; E[x]  si - 4
-  (comp (car (cdr x)) (- si (* 1 *wordsize*)) env)
-  (emit "mov dword [ esp " (- si (* 1 *wordsize*)) "] , eax ; save X ")
-  ;; E[y]  si - 8 
-  (comp (car (cdr (cdr x))) (- si (* 2 *wordsize*)) env)
-  (emit "mov dword [ esp " (- si (* 2 *wordsize*)) "] , eax ; save Y")
-  ;; E[z]  si - 12
-  (comp (car (cdr (cdr (cdr x)))) (- si (* 3 *wordsize*)) env)
-  (emit "mov dword [ esp " (- si (* 3 *wordsize*)) "] , eax ; save Z" )
-  (emit "add dword esp , " (+ si *wordsize*) "; adjust esp")
-  (emit "call tak ; " (- si (* 3 *wordsize*)))
-  (emit "sub dword esp , " (+ si *wordsize*) "; restore esp"))
+;; (define (comp-tak x si env)
+;;   ;; (TAK x y z)
+;;   ;; si = keep empty for ESP to go into.
+;;   ;;(emit "nop ; starts TAK here")
+;;   ;; E[x]  si - 4
+;;   (comp (car (cdr x)) (- si (* 1 *wordsize*)) env)
+;;   (emit "mov dword [ esp " (- si (* 1 *wordsize*)) "] , eax ; save X ")
+;;   ;; E[y]  si - 8 
+;;   (comp (car (cdr (cdr x))) (- si (* 2 *wordsize*)) env)
+;;   (emit "mov dword [ esp " (- si (* 2 *wordsize*)) "] , eax ; save Y")
+;;   ;; E[z]  si - 12
+;;   (comp (car (cdr (cdr (cdr x)))) (- si (* 3 *wordsize*)) env)
+;;   (emit "mov dword [ esp " (- si (* 3 *wordsize*)) "] , eax ; save Z" )
+;;   (emit "add dword esp , " (+ si *wordsize*) "; adjust esp")
+;;   (emit "call tak ; " (- si (* 3 *wordsize*)))
+;;   (emit "sub dword esp , " (+ si *wordsize*) "; restore esp"))
 
 
 
