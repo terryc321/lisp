@@ -3,4 +3,4 @@
   (if (= n 1) 1
       (* n (fac (- n 1)))))
 
-        (fac 5)
+        (fac (+ (fac (fac 1)) (fac (fac 2))))

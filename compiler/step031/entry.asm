@@ -24,12 +24,12 @@ if148: nop
 mov dword eax , [ esp -8] 
 mov dword [ esp -12] , eax 
 mov dword eax , [ ebp -4] 
-mov dword [esp -20] ,eax  ; raw closure ptr 
 sub dword eax , 110b ; untag closure 
+mov dword [esp -20] ,eax  ; raw closure ptr 
 mov dword eax , [eax] ; load procedure ptr from raw closure 
-add dword esp , -12; adjust stack
+sub dword esp , -20; adjust stack
 call eax ; call closure
-sub dword esp , -12; restore esp
+add dword esp , -20; restore esp
 shr dword eax , 2 
 mov dword ebx , [esp -12]
 shr dword ebx , 2 
@@ -47,12 +47,12 @@ mov dword eax , ebx
 or dword eax , 110b 
 mov dword [esp -4] , eax 
 mov dword eax , [ ebp -4] 
-mov dword [esp -12] ,eax  ; raw closure ptr 
 sub dword eax , 110b ; untag closure 
+mov dword [esp -12] ,eax  ; raw closure ptr 
 mov dword eax , [eax] ; load procedure ptr from raw closure 
-add dword esp , -4; adjust stack
+sub dword esp , -12; adjust stack
 call eax ; call closure
-sub dword esp , -4; restore esp
+add dword esp , -12; restore esp
 mov	esp, ebp
 pop	ebp
 ret

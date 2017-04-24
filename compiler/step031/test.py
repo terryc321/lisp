@@ -576,19 +576,19 @@ def fac_test(a,b):
 
         """ + a , b)
 
-# fac_test("(fac 1)" , "1")
-# fac_test("(fac 2)" , "2")
-# fac_test("(fac 3)" , "6")
-# fac_test("(fac 4)" , "24")
+fac_test("(fac 1)" , "1")
+fac_test("(fac 2)" , "2")
+fac_test("(fac 3)" , "6")
+fac_test("(fac 4)" , "24")
 fac_test("(fac 5)" , "120")
-# fac_test("(fac 6)" , "720")
-# fac_test("(fac 10)" , "3628800")
-# fac_test("(fac 11)" , "39916800")
-# fac_test("(+ (fac 1) (fac 2))" , "3")
-# fac_test("(+ (fac (fac 1)) (fac 2))" , "3")
-# fac_test("(+ (fac (fac 1)) (fac (fac 2)))" , "3")
-# fac_test("(+ (fac (fac 1)) (fac (fac 3)))" , "721")
-# fac_test("(fac (+ (fac (fac 1)) (fac (fac 2))))" , "6")
+fac_test("(fac 6)" , "720")
+fac_test("(fac 10)" , "3628800")
+fac_test("(fac 11)" , "39916800")
+fac_test("(+ (fac 1) (fac 2))" , "3")
+fac_test("(+ (fac (fac 1)) (fac 2))" , "3")
+fac_test("(+ (fac (fac 1)) (fac (fac 2)))" , "3")
+fac_test("(+ (fac (fac 1)) (fac (fac 3)))" , "721")
+fac_test("(fac (+ (fac (fac 1)) (fac (fac 2))))" , "6")
 
 
 

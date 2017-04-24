@@ -949,9 +949,16 @@
 
 
 
-
-
-
+;;
+;; when processor does a CALL , it decrements ESP by 4 
+;; writes slot where IP should continue after call
+;; then jumps to CALL location
+;;
+;; si + 4  :   before do CALL  ESP= si + 4
+;; si      : < where IP goes >
+;; si - 4  : closure ptr
+;; si - 8  : arg 1
+;; si - 12 : arg 2
 (define (comp-application x si env)
   (let ((fn (car x))
 	(args (cdr (cdr x))))
@@ -964,33 +971,46 @@
     (display "* ARGS * = ")
     (display args)
     (newline)
+
+    ;;
+    
     
     ;; compile arguments and move them into stack positions 
     (comp-application-helper args si 2 env)
+
+    (comp fn (- si *wordsize*) env)
     
-    (comp fn (- si (* (+ 3 (length args))
-		      *wordsize*))
-	  env)
+    ;; 
+    ;;(comp fn (- si (* (+ 2 (length args)) *wordsize*)) env)
 
     ;; presumably there is a closure left in EAX register
         
     ;;(emit "mov dword eax , [esp " (- si *wordsize*) "] ; closure ptr ")   
     ;; save closure ptr
     ;;(emit "mov dword [esp - 4 ] , eax ; closure ptr ")
-        
-    ;; save closure onto stack
-    (emit "mov dword [esp " (- si *wordsize*) "] ,eax  ; raw closure ptr ")
 
     ;; untag it
     (emit "sub dword eax , 110b ; untag closure ")
     
+    ;; save closure onto stack
+    (emit "mov dword [esp " (- si *wordsize*) "] ,eax  ; raw closure ptr ")
+    
     ;; obtain procedure CODE address
     (emit "mov dword eax , [eax] ; load procedure ptr from raw closure ")
     
-    (let ((adjust (+ si *wordsize*)))
-      (emit "add dword esp , " adjust "; adjust stack")
-      (emit "call eax ; call closure")
-      (emit "sub dword esp , " adjust "; restore esp"))))
+    ;;(let ((adjust (+ si *wordsize*)))
+    (emit "sub dword esp , " (- si 4) "; adjust stack")
+    (emit "call eax ; call closure")
+    (emit "add dword esp , " (- si 4) "; restore esp")))
+
+
+
+
+
+
+
+
+
 
 
 
