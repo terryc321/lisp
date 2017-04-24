@@ -11,6 +11,8 @@
 ;; ignoring letrecs for now
 ;; internal define is a letrec which is let + set!
 
+;; closure uses HEAP
+;; vector uses HEAP
 
 ;; on 32bit system *wordsize* is 4 , as 4 bytes 4 x 8bits per byte = 32 bits in total
 ;; on 64bit system *wordsize* is 8 , as 8 bytes 8 x 8bits per byte = 64 bits in total
@@ -138,6 +140,17 @@
   ;; dont need map here , can just iterate over args
   (map (lambda (x) (display x *out*)) args)
   (newline *out*))
+
+
+(define (emit-align-heap-pointer)
+  (emit "add dword eax , 8")
+  (emit "and dword eax , (-8) "))
+
+
+
+
+
+
 
 
 (define (comp-null x si env)
@@ -428,28 +441,36 @@
   ;; size
   (emit "mov dword [ esi ] , eax ")
   (emit "mov dword [ esi + 4 ] , " the-false-value)
+  
   ;; size in EBX tagged
   (emit "mov dword ebx , eax ")
+
   ;; size in EBX un tagged
   (emit "shr dword ebx , 2")
+
   ;; margin just add 2 , so if greater than 2 then keep going
   (emit "add dword ebx , 4")
+    
   ;; the result in EAX
   (emit "mov dword eax , esi ")
-  (emit "add dword eax , 2 ")
+  (emit "or dword eax , 2 ") ;; add dword eax , 2  --- was add
   (emit "push dword eax")
+  
   ;; bump 
   (emit "add dword esi , " (* 2 *wordsize*))
   
   ;; bump
   (let ((bump-label (gensym "bump")))
     (emit bump-label ": mov dword [ esi ] , " the-false-value)
-    (emit "mov dword [ esi + 4 ] , " the-false-value)
-    (emit "add dword esi , " (* 2 *wordsize*))
+    ;;(emit "mov dword [ esi + 4 ] , " the-false-value)
+    ;;(emit "add dword esi , " (* 2 *wordsize*))
+    (emit "add dword esi , " *wordsize*)
+    ;;(emit "dec dword ebx ")    
     (emit "dec dword ebx ")    
-    (emit "dec dword ebx ")    
-    (emit "cmp dword ebx , 2 ") 
+    (emit "cmp dword ebx , 0 ") 
     (emit "ja " bump-label))
+
+  (emit-align-heap-pointer)
   
   (emit "pop dword eax"))
 
@@ -1211,12 +1232,14 @@
 ;; c : 24
 ;; d : 32
 ;;
+
 (define (comp-closure-helper args index)
   (cond
    ((null? args) '())
    (else (let ((sym (car args)))
 	   (cons (list sym 'closure index)
-		 (comp-closure-helper (cdr args) (+ index (* 2 *wordsize*))))))))
+		 (comp-closure-helper (cdr args) (+ index *wordsize*)))))))
+
 
 
 
@@ -1254,7 +1277,7 @@
 	(free-variables (remove-toplevel (remove-primitives (freevars x)) env)))
       (let ((n-args (length args)))
 	(let ((extra-env (comp-lambda-helper args -8)) ;; 0 = retip -4 = closure ptr -8 : arg1
-	      (free-env  (comp-closure-helper free-variables 8 ))) ;; (* 2 *wordsize*))))
+	      (free-env  (comp-closure-helper free-variables 4 ))) ;; (* 2 *wordsize*))))
 	  (let ((new-env (append extra-env free-env env )));; env)))
 	      
 	  (display "* comp-lambda * : ")
@@ -1298,31 +1321,36 @@
 	  ;; 1st CODE ptr to anon-name
 	  ;; closure ptr	  
 	  (emit "mov dword [ esi ] , " anon-name)
-	  ;; bump - 8 byte boundary
-	  (emit "add dword esi , 8 ")
-
+	  	  
+	  ;; bump heap 
+	  (emit "add dword esi , 4 ")
+	  
 	  ;; for each free variable ,
-	  ;; 1st .. closure arg 0 
-	  ;; 2nd .. closure arg 1
-	  ;; 3rd .. closure arg 2
-	  ;; 4th .. closure arg 3
-	  ;; reserve 1 slot for the HEAP ESI POINTER ... reason for (- si *wordsize*)
+	  ;; 1st .. closure arg 0 ... + 4 
+	  ;; 2nd .. closure arg 1 ... + 8
+	  ;; 3rd .. closure arg 2 ... + 12
+	  ;; 4th .. closure arg 3 ... + 16
 	  (map (lambda (f)
 		 (begin
 		   (comp-lookup f (- si *wordsize*) env)
-		   ;; bump
+		   ;; 
 		   (emit "mov dword [ esi ] , eax")
-		   (emit "add dword esi , 8 ")))
+		   ;; bump esi
+		   (emit "add dword esi , 4 ")
+		   ))
 	       free-variables)
+
+	  ;;
+	  (emit-align-heap-pointer)
 	  
-	  ;; ??
 	  ;;(emit "pop dword eax")
 	  (emit "mov dword eax , ebx")
 	  ;; tag as closure
-	  (emit "add dword eax , 110b ")
+	  (emit "or dword eax , 110b ") ;;(emit "add dword eax , 110b ")
 	  	  
 	  
 	  )))))
+
 
 
 

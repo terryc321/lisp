@@ -20,9 +20,11 @@ ret
 after144: nop
 mov dword ebx , esi
 mov dword [ esi ] , lambda143
-add dword esi , 8 
+add dword esi , 4 
+add dword eax , 8
+and dword eax , (-8) 
 mov dword eax , ebx
-add dword eax , 110b 
+or dword eax , 110b 
 mov dword [esp -4] , eax 
 mov dword eax , 8
 mov dword [esp -8] , eax 

@@ -1,0 +1,3 @@
+
+terry@ubuntu:~/lisp/compiler/align8$ ./test 8 > add8.txt
+terry@ubuntu:~/lisp/compiler/align8$ ./test 11 > add8.txt
