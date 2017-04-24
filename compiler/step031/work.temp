@@ -1,1 +1,6 @@
-(define square (lambda (x) (* x x))) (define g 2) (square 5) 
+
+(define (fac n)
+  (if (= n 1) 1
+      (* n (fac (- n 1)))))
+
+        (fac 5)

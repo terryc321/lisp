@@ -52,6 +52,7 @@
     lambda
     quote
     not
+    tailcall
     ))
 
 
@@ -172,7 +173,10 @@
 
 (define (comp-integer x si env)
   (emit "mov dword eax , " 
-	(shift-left x fixnum-shift)))
+	(shift-left x fixnum-shift)
+	" ; integer " x))
+
+
 
 (define (comp-add1 x si env)
   (comp (car (cdr x)) si env)
@@ -947,41 +951,119 @@
 
 
 
+
 (define (comp-application x si env)
+  (let ((fn (car x))
+	(args (cdr (cdr x))))
 
+    (display "* regular function call *")
+    (newline)
+    (display "* FN * = ")
+    (display fn)
+    (newline)
+    (display "* ARGS * = ")
+    (display args)
+    (newline)
+    
+    ;; compile arguments and move them into stack positions 
+    (comp-application-helper args si 2 env)
+    
+    (comp fn (- si (* (+ 3 (length args))
+		      *wordsize*))
+	  env)
+
+    ;; presumably there is a closure left in EAX register
+        
+    ;;(emit "mov dword eax , [esp " (- si *wordsize*) "] ; closure ptr ")   
+    ;; save closure ptr
+    ;;(emit "mov dword [esp - 4 ] , eax ; closure ptr ")
+        
+    ;; save closure onto stack
+    (emit "mov dword [esp " (- si *wordsize*) "] ,eax  ; raw closure ptr ")
+
+    ;; untag it
+    (emit "sub dword eax , 110b ; untag closure ")
+    
+    ;; obtain procedure CODE address
+    (emit "mov dword eax , [eax] ; load procedure ptr from raw closure ")
+    
+    (let ((adjust (+ si *wordsize*)))
+      (emit "add dword esp , " adjust "; adjust stack")
+      (emit "call eax ; call closure")
+      (emit "sub dword esp , " adjust "; restore esp"))))
+
+
+
+
+
+(define (comp-tailcall-collapse args si index env)
+  (cond
+   ((null? args) #f)
+   (else (begin
+	   (let ((offset (* index *wordsize*)))
+	     (if (>= (- si offset) 0)
+		 (begin
+		   (emit "mov dword eax , [ esp " (- si offset) "] ; collapse element " index))
+		 (begin
+		   (emit "mov dword eax , [ esp - " (- si offset) "] ; collapse element " index)))
+	     (if (>= offset 0)
+		 (begin ; offset positive
+		   (emit "mov dword [ esp " offset "] , eax "))
+		 (begin ; offset negative
+		   (emit "mov dword [ esp - " offset "] , eax ")))
+	     (comp-tailcall-collapse (cdr args) si (+ index 1) env))))))
+
+
+
+;; x = (tailcall (fn . args))
+(define (comp-tailcall-application x si env)
+  (let ((fn (car (car (cdr x))))
+	(args (cdr (car (cdr x)))))
+    
+    (display "* tail call optimisation *") (newline)
+    (display "* FN * = ")
+    (display fn)
+    (newline)
+    (display "* ARGS * = ")
+    (display args)
+    (newline)
+    
   ;; compile arguments and move them into stack positions 
-  (comp-application-helper (cdr x) si 2 env)
-
+  (comp-application-helper args si 2 env)
+    
   ;; evaluate operator
-  (comp (car x) si env)
+  (comp fn (- si (* (+ 2 (length args)) *wordsize*)) env)
 
   ;; presumably there is a closure left in EAX register
   ;; untag it
-  (emit "sub dword eax , 110b ; untag closure ")
-
-  ;; save raw closure onto stack
+  ;;(emit "sub dword eax , 110b ; untag closure ")
+  
+  ;; save closure onto stack
   (emit "mov dword [esp " (- si *wordsize*) "] ,eax  ; raw closure ptr ")
+  
+  ;; collapse arguments
+  (emit "nop ; collapse arguments by " si)
+  
+  ;;(comp-tailcall-collapse (cons 'dummy args) si 2 env)
+  ;;(comp-tailcall-collapse (cons 'dummy (cons 'dummy2 args)) si 1 env)
+  (comp-tailcall-collapse args si 2 env)
 
-  ;; obtain procedure CODE address
-  (emit "mov dword eax , [eax] ; load procedure ptr from raw closure ")
-  (emit "add dword esp , " (+ si *wordsize*) "; adjust stack")
-  (emit "call eax ; call closure")
-  (emit "sub dword esp , " (+ si *wordsize*) "; restore esp"))
-
-
-
-
-
+  (emit "mov dword eax , [esp " (- si *wordsize*) "] ; closure ptr ")
 
   
-  ;; ;; avoid adding zero to esp , since that does not change esp .
-  ;; (if (not (= 0 (+ si *wordsize*)))
-  ;;     (begin
-  ;; 	(emit "add dword esp , " (+ si *wordsize*) "; adjust esp")
-  ;; 	(emit "call " (tidy-proc-name (car x)))
-  ;; 	(emit "sub dword esp , " (+ si *wordsize*) "; restore esp"))
-  ;;     (begin
-  ;; 	(emit "call " (tidy-proc-name (car x)))))
+  ;; save closure ptr
+  (emit "mov dword [esp - 4 ] , eax ; closure ptr ")
+  
+  ;; untag the closure
+  (emit "sub dword eax , 110b ; untag closure ")
+  
+  ;; obtain procedure CODE address
+  (emit "mov dword eax , [eax] ; load procedure ptr from raw closure ")
+  
+  ;; now the tail call
+  (emit "jmp eax ;  tailcall")))
+
+
 
 
 
@@ -1007,6 +1089,7 @@
   ;; E[z]  si - 12
   (comp (car (cdr (cdr (cdr x)))) (- si (* 3 *wordsize*)) env)
   (emit "mov dword [ esp " (- si (* 3 *wordsize*)) "] , eax ; save Z" )
+  
   (emit "nop ; collapse arguments by " si)
   
   (emit "mov dword eax , [esp  " (- si (* 1 *wordsize*)) "] ; collapse X ")
@@ -1429,6 +1512,8 @@
    ;; explicit lambda
    ((and (pair? x) (eq? (car x) 'lambda)) (comp-lambda x si env))
 
+   ;; explicit tailcall
+   ((and (pair? x) (eq? (car x) 'tailcall)) (comp-tailcall-application x si env))
    
    ;; tak 
    ;;((and (pair? x) (eq? (car x) 'tak)) (comp-tak x si env))

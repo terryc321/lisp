@@ -570,8 +570,6 @@ test_case("(define f 1) (define g 2) f " , "1")
 
 test_case("(define square (lambda (x) (* x x))) (define g 2) (square 5) " , "25")
 
-
-
  
 
 #(* 18 4)
