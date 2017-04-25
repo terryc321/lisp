@@ -45,7 +45,8 @@ tak:	push dword ebp
 	mov dword eax , [ebp + 16] ; z = done
 	jmp tak_exit
 
-	
+
+	;; TAK : ARG Z
 tak_2:  mov dword eax , [ebp + 16] ; z 
 	dec dword eax 		; z - 1
 	mov dword ebx , [ebp + 8] ; x
@@ -57,6 +58,8 @@ tak_2:  mov dword eax , [ebp + 16] ; z
 	add dword esp , 12 	; drop z y x-1
 	;; tak z-1 x y in EAX register
 	push dword eax
+
+	;; TAK : ARG Y
 	
 	;; x y z all add 4 to get originals
 	mov dword eax , [ebp + 12] ; y 
@@ -72,7 +75,7 @@ tak_2:  mov dword eax , [ebp + 16] ; z
 	;; tak y-1 z x in EAX register
 	push dword eax
 
-	
+	;; TAK : ARG X
 	mov dword eax , [ebp + 8] ; x 
 	dec dword eax 		; x - 1
 	mov dword ebx , [ebp + 12] ; y
@@ -85,9 +88,11 @@ tak_2:  mov dword eax , [ebp + 16] ; z
 	;; tak x-1 y z in EAX register
 	push dword eax
 
+	;; TAK : (TAK ARGX)(TAK ARGY)(TAK ARGZ)
 	call tak
 	add dword esp , 12 	; drop TAKs
-		
+
+	;; result in EAX register
 
 tak_exit:  	mov dword esp , ebp	  ; exit prolog
 	pop dword ebp

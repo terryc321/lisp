@@ -17,10 +17,18 @@ int main(int argc, char **argv){
   printf("y = %d \n" , tak2(x,y,z));
   printf("z = %d \n" , tak3(x,y,z));
 
-  printf("TAK %d %d %d = %d \n" , x ,y , z , tak(x,y,z));
-  
+  for (x= 1 ; x <= 12; x++){
+    for (y = 1 ; y <= 8 ; y++){
+      for (z = 1; z <= 8 ; z ++){
+	printf("TAK %d %d %d = %d\n" , x ,y , z , tak(x,y,z));
+      }
+    }
+  }
+  printf("\n");
   return 0;
 }
+
+
 
 
 
