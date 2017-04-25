@@ -61,6 +61,8 @@
 ;; comp-lookup 
 
 
+
+
 ;; only allow a-z A-Z 0-9
 (define (tidy-proc-name symbol)
   (apply string
@@ -394,8 +396,8 @@
 
 
 
-
-
+;;; problem with function call 
+;;; using cons
 (define (comp-cons x si env)
   ;; (cons x y)
   ;; E[x]
@@ -415,6 +417,9 @@
   (emit "inc dword eax")
   ;; bump esi
   (emit "add dword esi , "  (* 2 *wordsize*)))
+
+
+
 
 
 
@@ -950,6 +955,9 @@
 
 
 
+
+
+
 ;;
 ;; when processor does a CALL , it decrements ESP by 4 
 ;; writes slot where IP should continue after call
@@ -1017,9 +1025,10 @@
 
 (define (esp n)
   (if (< n 0)
-      (number->string n)
-      (string-append "+" (number->string n))))
-
+      (begin
+	(number->string n))
+      (begin
+	(string-append "+" (number->string n)))))
 
 
 
@@ -1027,9 +1036,9 @@
   (cond
    ((null? args) #f)
    (else (begin
-	   (let ((offset (- si (* index *wordsize*))))
+	   (let ((offset (* index *wordsize*)))
 	     (emit "mov dword eax , [ esp " (esp (- si offset)) "] ; collapse element " index)
-	     (emit "mov dword [ esp " (esp offset) "] , eax ")
+	     (emit "mov dword [ esp - " offset "] , eax ")
 	     (comp-tailcall-collapse (cdr args) si (+ index 1) env))))))
 
 
@@ -1040,7 +1049,9 @@
 (define (comp-tailcall-application x si env)
   (let ((fn (car (car (cdr x))))
 	(args (cdr (car (cdr x)))))
-    
+
+    (begin
+      
     (display "* tail call optimisation *") (newline)
     (display "* FN * = ")
     (display fn)
@@ -1048,6 +1059,8 @@
     (display "* ARGS * = ")
     (display args)
     (newline)
+
+    (emit " nop ; tailcall application ")
     
   ;; compile arguments and move them into stack positions 
   (comp-application-helper args si 2 env)
@@ -1071,10 +1084,9 @@
 
   (emit "mov dword eax , [esp " (- si *wordsize*) "] ; closure ptr ")
   (emit "mov dword [esp " (- *wordsize*) "] , eax ; closure ptr ")
-  
-  
+    
   ;; save closure ptr
-  (emit "mov dword [esp - 4 ] , eax ; closure ptr ")
+  ;;(emit "mov dword [esp - 4 ] , eax ; closure ptr ")
   
   ;; untag the closure
   (emit "sub dword eax , 110b ; untag closure ")
@@ -1083,7 +1095,11 @@
   (emit "mov dword eax , [eax] ; load procedure ptr from raw closure ")
   
   ;; now the tail call
-  (emit "jmp eax ;  tailcall")))
+  (emit "jmp eax ;  tailcall"))))
+
+
+
+
 
 
 
@@ -1403,9 +1419,10 @@
 	  (display new-env)
 	  (newline)
 	  
+	  
 	  (emit "jmp " after-label)
 	  ;; lambda has no name 
-	  (emit anon-name ": nop")
+	  (emit anon-name ": nop ; comp-lambda ")
 	  ;; compile the definition here with extra formals and free variables
 	  (comp `(begin ,@body)
 		(- (* (+ n-args 2) *wordsize*))

@@ -7,7 +7,7 @@ mov	ebp, esp
 mov dword esi , [ esp + 8 ] 
 scheme_heap_in_esi: nop
 jmp after144
-lambda143: nop
+lambda143: nop ; comp-lambda 
 mov dword eax , [ esp -8] 
 mov dword [ esp -16] , eax 
 mov dword eax , 4 ; integer 1
@@ -21,6 +21,7 @@ je if148
 mov dword eax , [ esp -12] 
 jmp if149
 if148: nop
+ nop ; tailcall application 
 mov dword eax , [ esp -8] 
 mov dword [ esp -24] , eax 
 mov dword eax , 4 ; integer 1
