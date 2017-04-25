@@ -511,21 +511,6 @@ test_reset()
 # test_case("((lambda () (+ 1 2)))","3")
 
 # test_case("(let ((x 5)) (+ x x))","10")
-
-# test_case("((let ((x 5)) (lambda () (+ x x))))","10")
-# test_case("((let ((x 5)(y 6)) (lambda () (+ x x))))","10")
-
-# test_case("((let ((a 1)(b 2)(c 3)(d 4)) (lambda () a)))","1")
-# test_case("((let ((a 1)(b 2)(c 3)(d 4)) (lambda () b)))","2")
-# test_case("((let ((a 1)(b 2)(c 3)(d 4)) (lambda () c)))","3")
-# test_case("((let ((a 1)(b 2)(c 3)(d 4)) (lambda () d)))","4")
-
-
-
-# test_case("((let ((a 1)(b 2)(c 3)(d 4)(e 5)(f 6)(g 7)) (lambda () e)))","5")
-# test_case("((let ((a 1)(b 2)(c 3)(d 4)(e 5)(f 6)(g 7)) (lambda () f)))","6")
-# test_case("((let ((a 1)(b 2)(c 3)(d 4)(e 5)(f 6)(g 7)) (lambda () g)))","7")
-# test_case("((lambda (a b c) (+ a (+ b c))) 1 2 3)","6")
 # test_case("(define f 1)(define g 2) ((lambda (a b c) (+ a (+ b c))) 1 2 3)","6")
 
 # test_case("(define f 1) f" , "1")
@@ -533,38 +518,37 @@ test_reset()
 
 # test_case("(define square (lambda (x) (* x x))) (define g 2) (square 5) " , "25")
 
+# # test_section("TAILCALL TAK tests ")
 
-# test_section("TAILCALL TAK tests ")
-
-# def tail_tak_test(a,b):
-#     global test_case
-#     test_case(
-#         """
-#         (define tak (lambda (x y z) 
-# 	       (if (< y x) 
-# 		   (tailcall (tak (tak (- x 1) y  z) 
-#              	             (tak (- y 1) z x) 
-# 			     (tak (- z 1) x y)))
-# 		   z)))
-#         """ + a , b)
+# # def tail_tak_test(a,b):
+# #     global test_case
+# #     test_case(
+# #         """
+# #         (define tak (lambda (x y z) 
+# # 	       (if (< y x) 
+# # 		   (tailcall (tak (tak (- x 1) y  z) 
+# #              	             (tak (- y 1) z x) 
+# # 			     (tak (- z 1) x y)))
+# # 		   z)))
+# #         """ + a , b)
 
 
     
 
-# tail_tak_test("(tak 5 3 1)","2")
-# tail_tak_test("(tak 7 3 1)","2")
-# tail_tak_test("(tak 9 3 1)","2")
-# tail_tak_test("(tak 11 3 1)","2")
-# tail_tak_test("(tak 6 4 1)","2")
-# tail_tak_test("(tak 8 4 1)","2")
-# tail_tak_test("(tak 10 4 1)","2")
-# tail_tak_test("(tak 12 4 1)","2")
-# tail_tak_test("(tak 7 5 1)","2")
-# tail_tak_test("(tak 18 12 6)","7")
+# # tail_tak_test("(tak 5 3 1)","2")
+# # tail_tak_test("(tak 7 3 1)","2")
+# # tail_tak_test("(tak 9 3 1)","2")
+# # tail_tak_test("(tak 11 3 1)","2")
+# # tail_tak_test("(tak 6 4 1)","2")
+# # tail_tak_test("(tak 8 4 1)","2")
+# # tail_tak_test("(tak 10 4 1)","2")
+# # tail_tak_test("(tak 12 4 1)","2")
+# # tail_tak_test("(tak 7 5 1)","2")
+# # tail_tak_test("(tak 18 12 6)","7")
 
 
 
-test_section(" FAC tests ")
+# test_section(" FAC tests ")
 
 def fac_test(a,b):
     global test_case
@@ -576,19 +560,34 @@ def fac_test(a,b):
 
         """ + a , b)
 
-fac_test("(fac 1)" , "1")
-fac_test("(fac 2)" , "2")
-fac_test("(fac 3)" , "6")
-fac_test("(fac 4)" , "24")
+#fac_test("(fac 1)" , "1")
+#fac_test("(fac 2)" , "2")
+#fac_test("(fac 3)" , "6")
+#fac_test("(fac 4)" , "24")
 fac_test("(fac 5)" , "120")
-fac_test("(fac 6)" , "720")
-fac_test("(fac 10)" , "3628800")
-fac_test("(fac 11)" , "39916800")
-fac_test("(+ (fac 1) (fac 2))" , "3")
-fac_test("(+ (fac (fac 1)) (fac 2))" , "3")
-fac_test("(+ (fac (fac 1)) (fac (fac 2)))" , "3")
-fac_test("(+ (fac (fac 1)) (fac (fac 3)))" , "721")
-fac_test("(fac (+ (fac (fac 1)) (fac (fac 2))))" , "6")
+#fac_test("(fac 6)" , "720")
+# fac_test("(fac 10)" , "3628800")
+# fac_test("(fac 11)" , "39916800")
+# fac_test("(+ (fac 1) (fac 2))" , "3")
+# fac_test("(+ (fac (fac 1)) (fac 2))" , "3")
+# fac_test("(+ (fac (fac 1)) (fac (fac 2)))" , "3")
+# fac_test("(+ (fac (fac 1)) (fac (fac 3)))" , "721")
+# fac_test("(fac (+ (fac (fac 1)) (fac (fac 2))))" , "6")
+
+
+# test_case("((lambda (a b c) (+ a (+ b c))) 1 2 3)","6")
+
+
+# test_case("((let ((x 5)) (lambda () (+ x x))))","10")
+# test_case("((let ((x 5)(y 6)) (lambda () (+ x x))))","10")
+# test_case("((let ((a 1)(b 2)(c 3)(d 4)) (lambda () a)))","1")
+# test_case("((let ((a 1)(b 2)(c 3)(d 4)) (lambda () b)))","2")
+# test_case("((let ((a 1)(b 2)(c 3)(d 4)) (lambda () c)))","3")
+# test_case("((let ((a 1)(b 2)(c 3)(d 4)) (lambda () d)))","4")
+# test_case("((let ((a 1)(b 2)(c 3)(d 4)(e 5)(f 6)(g 7)) (lambda () e)))","5")
+# test_case("((let ((a 1)(b 2)(c 3)(d 4)(e 5)(f 6)(g 7)) (lambda () f)))","6")
+# test_case("((let ((a 1)(b 2)(c 3)(d 4)(e 5)(f 6)(g 7)) (lambda () g)))","7")
+
 
 
 
@@ -616,23 +615,23 @@ fac_test("(fac (+ (fac (fac 1)) (fac (fac 2))))" , "6")
 # tail_fac_test("(fac 10)" , "3628800")
 
 
-# def tail_fac_test2(a,b):
-#     global test_case
-#     test_case(
-#         """
-# (define (fac2 n m)
-#   (if (= n 1) 
-#         m
-#       (tailcall (fac2 (- n 1) (* n m)))))
-#         """ + a , b)   
+def tail_fac_test2(a,b):
+    global test_case
+    test_case(
+        """
+(define (fac2 n m)
+  (if (= n 1) 
+        m
+      (tailcall (fac2 (- n 1) (* n m)))))
+        """ + a , b)   
 
-# tail_fac_test2("(fac2 1 1)" , "1")
-# tail_fac_test2("(fac2 2 1)" , "2")
-# tail_fac_test2("(fac2 3 1)" , "6")
-# tail_fac_test2("(fac2 4 1)" , "24")
-# tail_fac_test2("(fac2 5 1)" , "120")
-# tail_fac_test2("(fac2 6 1)" , "720")
-# tail_fac_test2("(fac2 10 1)" , "3628800")
+#tail_fac_test2("(fac2 1 1)" , "1")
+#tail_fac_test2("(fac2 2 1)" , "2")
+#tail_fac_test2("(fac2 3 1)" , "6")
+#tail_fac_test2("(fac2 4 1)" , "24")
+tail_fac_test2("(fac2 5 1)" , "120")
+#tail_fac_test2("(fac2 6 1)" , "720")
+#tail_fac_test2("(fac2 10 1)" , "3628800")
 
 
 

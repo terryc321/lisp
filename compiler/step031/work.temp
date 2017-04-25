@@ -1,6 +1,6 @@
 
-(define (fac n)
-  (if (= n 1) 1
-      (* n (fac (- n 1)))))
-
-        (fac (+ (fac (fac 1)) (fac (fac 2))))
+(define (fac2 n m)
+  (if (= n 1) 
+        m
+      (tailcall (fac2 (- n 1) (* n m)))))
+        (fac2 5 1)
