@@ -1,6 +1,5 @@
 
 
-(tak 18 12 6)
 
 (define (tak x y z)
   (if (< y x)
@@ -8,6 +7,8 @@
 	   (tak (- y 1) z x)
 	   (tak (- z 1) x y))
       z))
+
+(tak 18 12 6)
 
 
 ;;  (display `(tak ,x ,y ,z))
