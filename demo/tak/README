@@ -1,0 +1,9 @@
+
+C calling convention put arguments in reverse order on stack
+so first argument is ESP + 4
+or if using EBP entry exit prologue EBP + 8
+
+ctak using EBP as base pointer
+
+ctak2 without using EBP as base pointer
+
