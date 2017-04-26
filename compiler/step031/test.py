@@ -77,7 +77,6 @@ test_case("()","()")
 test_case("#t","#t")
 test_case("#f","#f")
 
-
 # comp-char
 test_case("#\\a","#\\a")
 test_case("#\\A","#\\A")
@@ -552,36 +551,36 @@ test_case("(>= -5 -3)","#f")
 # test_case("(- 10 -10)","20")
 
 
-# test_section(" FIB tests ")
-# def fib_test(a,b):
-#     global test_case
-#     test_case(
-#         """
+test_section(" FIB tests ")
+def fib_test(a,b):
+    global test_case
+    test_case(
+        """
 
-# (define (fib n)
-#   (if (= n 0) 0
-#       (if (= n 1) 1
-#           (if (= n 2) 1
-#               (+ (fib (- n 1)) (fib (- n 2)))))))
+(define (fib n)
+  (if (= n 0) 0
+      (if (= n 1) 1
+          (if (= n 2) 1
+              (+ (fib (- n 1)) (fib (- n 2)))))))
 
-#         """ + a , b)
+        """ + a , b)
 
-# fib_test("(fib 1)" , "1")
-# fib_test("(fib 2)" , "1")
-# fib_test("(fib 3)" , "2")
-# fib_test("(fib 4)" , "3")
-# fib_test("(fib 5)" , "5")
-# fib_test("(fib 6)" , "8")
-# fib_test("(fib 7)" , "13")
-# fib_test("(fib 8)" , "21")
-# fib_test("(fib 9)" ,  "34")
-# fib_test("(fib 10)" , "55")
-# fib_test("(fib 11)" , "89")
-# fib_test("(fib 12)" , "144")
-# fib_test("(fib 13)" , "233")
-# fib_test("(fib 14)" , "377")
-# fib_test("(fib 15)" , "610")
-# fib_test("(let ((x 1)) (fib 6))" , "8")
+fib_test("(fib 1)" , "1")
+fib_test("(fib 2)" , "1")
+fib_test("(fib 3)" , "2")
+fib_test("(fib 4)" , "3")
+fib_test("(fib 5)" , "5")
+fib_test("(fib 6)" , "8")
+fib_test("(fib 7)" , "13")
+fib_test("(fib 8)" , "21")
+fib_test("(fib 9)" ,  "34")
+fib_test("(fib 10)" , "55")
+fib_test("(fib 11)" , "89")
+fib_test("(fib 12)" , "144")
+fib_test("(fib 13)" , "233")
+fib_test("(fib 14)" , "377")
+fib_test("(fib 15)" , "610")
+fib_test("(let ((x 1)) (fib 6))" , "8")
 
 
 
@@ -594,16 +593,20 @@ test_case("(>= -5 -3)","#f")
 # test_case("(begin 1 2 3)","3")
 # test_case("(begin (cons 1 2)(cons 3 4)(cons 5 6)(cons 7 8)(cons 9 10))","(9 . 10)")
 
-# test_case("(lambda () (+ 1 2))","#<closure>")
+#test_case("(lambda () (+ 1 2))","#<closure>")
 test_case("((lambda () (+ 1 2)))","3")
+test_case("((let ((a 5)) (lambda () (+ a a))))","10")
+test_case("(let ((x 5)) (+ x x))","10")
+test_case("(define square (lambda (x) (* x x))) (define g 2) (square 5) " , "25")
 
-# test_case("(let ((x 5)) (+ x x))","10")
-# test_case("(define f 1)(define g 2) ((lambda (a b c) (+ a (+ b c))) 1 2 3)","6")
+test_case("(define f 1)(define g 2) ((lambda (a b c) (+ a (+ b c))) 1 2 3)","6")
+test_case("(define f 1) f" , "1")
+test_case("(define f 1) (define g 2) f " , "1")
+test_case("((lambda (a b c) a) 1 2 3)","1")
+test_case("((lambda (a b c) b) 1 2 3)","2")
+test_case("((lambda (a b c) c) 1 2 3)","3")
 
-# test_case("(define f 1) f" , "1")
-# test_case("(define f 1) (define g 2) f " , "1")
 
-#test_case("(define square (lambda (x) (* x x))) (define g 2) (square 5) " , "25")
 
 
 # # test_section("TAILCALL TAK tests ")
@@ -621,7 +624,7 @@ test_case("((lambda () (+ 1 2)))","3")
 # #         """ + a , b)
 
 
-    
+
 
 # # tail_tak_test("(tak 5 3 1)","2")
 # # tail_tak_test("(tak 7 3 1)","2")
@@ -648,33 +651,33 @@ def fac_test(a,b):
 
         """ + a , b)
 
-#fac_test("(fac 1)" , "1")
-#fac_test("(fac 2)" , "2")
-#fac_test("(fac 3)" , "6")
-#fac_test("(fac 4)" , "24")
-#fac_test("(fac 5)" , "120")
-#fac_test("(fac 6)" , "720")
-# fac_test("(fac 10)" , "3628800")
-# fac_test("(fac 11)" , "39916800")
-# fac_test("(+ (fac 1) (fac 2))" , "3")
-# fac_test("(+ (fac (fac 1)) (fac 2))" , "3")
-# fac_test("(+ (fac (fac 1)) (fac (fac 2)))" , "3")
-# fac_test("(+ (fac (fac 1)) (fac (fac 3)))" , "721")
-# fac_test("(fac (+ (fac (fac 1)) (fac (fac 2))))" , "6")
+fac_test("(fac 1)" , "1")
+fac_test("(fac 2)" , "2")
+fac_test("(fac 3)" , "6")
+fac_test("(fac 4)" , "24")
+fac_test("(fac 5)" , "120")
+fac_test("(fac 6)" , "720")
+fac_test("(fac 10)" , "3628800")
+fac_test("(fac 11)" , "39916800")
+fac_test("(+ (fac 1) (fac 2))" , "3")
+fac_test("(+ (fac (fac 1)) (fac 2))" , "3")
+fac_test("(+ (fac (fac 1)) (fac (fac 2)))" , "3")
+fac_test("(+ (fac (fac 1)) (fac (fac 3)))" , "721")
+fac_test("(fac (+ (fac (fac 1)) (fac (fac 2))))" , "6")
 
 
-# test_case("((lambda (a b c) (+ a (+ b c))) 1 2 3)","6")
+test_case("((lambda (a b c) (+ a (+ b c))) 1 2 3)","6")
 
 
-# test_case("((let ((x 5)) (lambda () (+ x x))))","10")
-# test_case("((let ((x 5)(y 6)) (lambda () (+ x x))))","10")
-# test_case("((let ((a 1)(b 2)(c 3)(d 4)) (lambda () a)))","1")
-# test_case("((let ((a 1)(b 2)(c 3)(d 4)) (lambda () b)))","2")
-# test_case("((let ((a 1)(b 2)(c 3)(d 4)) (lambda () c)))","3")
-# test_case("((let ((a 1)(b 2)(c 3)(d 4)) (lambda () d)))","4")
-# test_case("((let ((a 1)(b 2)(c 3)(d 4)(e 5)(f 6)(g 7)) (lambda () e)))","5")
-# test_case("((let ((a 1)(b 2)(c 3)(d 4)(e 5)(f 6)(g 7)) (lambda () f)))","6")
-# test_case("((let ((a 1)(b 2)(c 3)(d 4)(e 5)(f 6)(g 7)) (lambda () g)))","7")
+test_case("((let ((x 5)) (lambda () (+ x x))))","10")
+test_case("((let ((x 5)(y 6)) (lambda () (+ x x))))","10")
+test_case("((let ((a 1)(b 2)(c 3)(d 4)) (lambda () a)))","1")
+test_case("((let ((a 1)(b 2)(c 3)(d 4)) (lambda () b)))","2")
+test_case("((let ((a 1)(b 2)(c 3)(d 4)) (lambda () c)))","3")
+test_case("((let ((a 1)(b 2)(c 3)(d 4)) (lambda () d)))","4")
+test_case("((let ((a 1)(b 2)(c 3)(d 4)(e 5)(f 6)(g 7)) (lambda () e)))","5")
+test_case("((let ((a 1)(b 2)(c 3)(d 4)(e 5)(f 6)(g 7)) (lambda () f)))","6")
+test_case("((let ((a 1)(b 2)(c 3)(d 4)(e 5)(f 6)(g 7)) (lambda () g)))","7")
 
 
 

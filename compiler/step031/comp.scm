@@ -3,6 +3,8 @@
 ;;
 
 
+
+
 ;; assume input is a closed source file
 ;; read in definitions
 ;; last expression is one that fires it off ??
@@ -427,6 +429,9 @@
 				(cons (list the-sym 'local si) local-env)))))))
 
 
+
+
+
 (define (toplevel-binding? x)
   (and (= (length x) 3)
        (eq? (car (cdr x)) 'toplevel)))
@@ -446,21 +451,36 @@
   (car (cdr (cdr x))))
 
 
+(define (binding-index x)
+  (car (cdr (cdr x))))
+
+
+
+
+
 ;; 1 . local binding = from LET and on STACK
 ;; 2 . closure binding = from LAMBDA and on STACK through RAW untagged CLOSURE POINTER
 ;; 3 . toplevel binding = from DEFINE 
-(define (comp-lookup x si env)
-  (let ((binding (assoc x env)))
+(define (comp-lookup var si env)
+  (let ((binding (assoc var env)))
     (cond
      ((local-binding? binding)
-      (emit "mov dword eax , [ ebp - " (binding-stack-index binding)  "] "))
+      (emit "mov dword eax , [ ebp + " (binding-stack-index binding)  "] "))
      ((closure-binding? binding)
-      (emit "mov dword eax , [ ebp - 4 ] ; move closure ptr into eax")
-      (emit "mov dword eax , [ ebx + " (binding-stack-index binding) "] "))
+      (emit "mov dword eax , [ ebp + 8 ] ; move closure ptr into eax")
+      (emit "mov dword eax , [ eax + " (binding-stack-index binding) "] "))
      ((toplevel-binding? binding)
-      (emit "mov dword eax , [ ebp - " (binding-stack-index binding)  "] "))
+	;; toplevel definitions live in data section
+	(emit "mov dword ebx , toplevel ;; toplevel define " var)
+	(emit "mov dword eax , [ebx + " (binding-index binding)"]"))
      (else
-      (error "comp-lookup : no binding for symbol " x)))))
+      (error "comp-lookup : no binding for symbol " var)))))
+
+
+
+
+
+
 
 
 
@@ -1019,37 +1039,38 @@
     (display "* ARGS * = ")
     (display args)
     (newline)
-
+        
     ;; compile arguments and move them into stack positions 
     ;;(comp-application-helper args si 0 env)
-    (comp-application-helper args si env)
+    (comp-application-helper (reverse args) si env)
 
     ;;    
-    (comp fn (+ si (* (+ 2 (length args)) word)) env)
-    
+    (comp fn (+ si (* (+ 2 (length args)) word)) env)   
     
     ;; untag the closure in EAX 
     (emit "and dword eax , -8 ; untag closure -8 is binary 11...1111000  lower 3 bits zero")
 
+    ;; save un- tagged - closure on stack
+    (emit "push dword eax")
     
     ;;(emit "sub dword eax , 110b ; untag closure ")
     ;;(emit "mov dword [esp " (+ si wordsize) " ] , eax ; closure ptr ")
     
     ;;(emit "mov dword [ebp - " (+ si 4) " ] , eax ; closure ptr ")   
         
-    ;;(comp fn (- si (* (+ 2 (length args)) *wordsize*)) env)
+    ;;(comp fn (- si (* (+ 2 (length args)) word)) env)
     ;; presumably there is a closure left in EAX register
-    ;;(emit "mov dword eax , [esp " (- si *wordsize*) "] ; closure ptr ")   
+    ;;(emit "mov dword eax , [esp " (- si word) "] ; closure ptr ")   
     ;; save closure ptr
     ;;(emit "mov dword [esp - 4 ] , eax ; closure ptr ")
     ;; get closure into eax
-    ;;(emit "mov dword eax , [esp " (- si *wordsize*) "]  ; untag closure ")
+    ;;(emit "mov dword eax , [esp " (- si word) "]  ; untag closure ")
     ;; save closure onto stack
-    ;;(emit "mov dword [esp " (- si *wordsize*) "] ,eax  ; raw closure ptr ")
+    ;;(emit "mov dword [esp " (- si word) "] ,eax  ; raw closure ptr ")
     ;; obtain procedure CODE address
     (emit "mov dword eax , [eax] ; load CODE address ")
     
-    ;;(let ((adjust (+ si *wordsize*)))
+    ;;(let ((adjust (+ si word)))
     
     ;;(emit "sub dword esp , " (+ si 4) "; adjust stack")
     (emit "call eax ; call closure")))
@@ -1079,7 +1100,7 @@
   (cond
    ((null? args) #f)
    (else (begin
-	   (let ((offset (* index *wordsize*)))
+	   (let ((offset (* index word)))
 	     (emit "mov dword eax , [ esp " (esp (- si offset)) "] ; collapse element " index)
 	     (emit "mov dword [ esp - " offset "] , eax ")
 	     (comp-tailcall-collapse (cdr args) si (+ index 1) env))))))
@@ -1088,57 +1109,57 @@
 
 
 
-;; x = (tailcall (fn . args))
-(define (comp-tailcall-application x si env)
-  (let ((fn (car (car (cdr x))))
-	(args (cdr (car (cdr x)))))
+;; ;; x = (tailcall (fn . args))
+;; (define (comp-tailcall-application x si env)
+;;   (let ((fn (car (car (cdr x))))
+;; 	(args (cdr (car (cdr x)))))
 
-    (begin
+;;     (begin
       
-    (display "* tail call optimisation *") (newline)
-    (display "* FN * = ")
-    (display fn)
-    (newline)
-    (display "* ARGS * = ")
-    (display args)
-    (newline)
+;;     (display "* tail call optimisation *") (newline)
+;;     (display "* FN * = ")
+;;     (display fn)
+;;     (newline)
+;;     (display "* ARGS * = ")
+;;     (display args)
+;;     (newline)
 
-    (emit " nop ; tailcall application ")
+;;     (emit " nop ; tailcall application ")
     
-  ;; compile arguments and move them into stack positions 
-  (comp-application-helper args si 2 env)
+;;   ;; compile arguments and move them into stack positions 
+;;   (comp-application-helper args si 2 env)
     
-  ;; evaluate operator
-  (comp fn (- si (* (+ 2 (length args)) *wordsize*)) env)
+;;   ;; evaluate operator
+;;   (comp fn (- si (* (+ 2 (length args)) word)) env)
 
-  ;; presumably there is a closure left in EAX register
-  ;; untag it
-  ;;(emit "sub dword eax , 110b ; untag closure ")
+;;   ;; presumably there is a closure left in EAX register
+;;   ;; untag it
+;;   ;;(emit "sub dword eax , 110b ; untag closure ")
   
-  ;; save closure onto stack
-  (emit "mov dword [esp " (- si *wordsize*) "] ,eax  ; raw closure ptr ")
+;;   ;; save closure onto stack
+;;   (emit "mov dword [esp " (- si word) "] ,eax  ; raw closure ptr ")
   
-  ;; collapse arguments
-  (emit "nop ; collapse arguments by " si)
+;;   ;; collapse arguments
+;;   (emit "nop ; collapse arguments by " si)
   
-  ;;(comp-tailcall-collapse (cons 'dummy args) si 2 env)
-  ;;(comp-tailcall-collapse (cons 'dummy (cons 'dummy2 args)) si 1 env)
-  (comp-tailcall-collapse args si 2 env)
+;;   ;;(comp-tailcall-collapse (cons 'dummy args) si 2 env)
+;;   ;;(comp-tailcall-collapse (cons 'dummy (cons 'dummy2 args)) si 1 env)
+;;   (comp-tailcall-collapse args si 2 env)
 
-  (emit "mov dword eax , [esp " (- si *wordsize*) "] ; closure ptr ")
-  (emit "mov dword [esp " (- *wordsize*) "] , eax ; closure ptr ")
+;;   (emit "mov dword eax , [esp " (- si word) "] ; closure ptr ")
+;;   (emit "mov dword [esp " (- word) "] , eax ; closure ptr ")
     
-  ;; save closure ptr
-  ;;(emit "mov dword [esp - 4 ] , eax ; closure ptr ")
+;;   ;; save closure ptr
+;;   ;;(emit "mov dword [esp - 4 ] , eax ; closure ptr ")
   
-  ;; untag the closure
-  (emit "sub dword eax , 110b ; untag closure ")
+;;   ;; untag the closure
+;;   (emit "sub dword eax , 110b ; untag closure ")
   
-  ;; obtain procedure CODE address
-  (emit "mov dword eax , [eax] ; load procedure ptr from raw closure ")
+;;   ;; obtain procedure CODE address
+;;   (emit "mov dword eax , [eax] ; load procedure ptr from raw closure ")
   
-  ;; now the tail call
-  (emit "jmp eax ;  tailcall"))))
+;;   ;; now the tail call
+;;   (emit "jmp eax ;  tailcall"))))
 
 
 
@@ -1157,74 +1178,71 @@
 
 
 
-(define (comp-tak-tail-recursive x si env)
-  ;; (TAK x y z)
-  ;; si = keep empty for ESP to go into.
-  ;;(emit "nop ; starts TAK here")
-  ;; E[x]  si - 4
-  (comp (car (cdr x)) (- si (* 1 *wordsize*)) env)
-  (emit "mov dword [ esp " (- si (* 1 *wordsize*)) "] , eax ; save X ")
-  ;; E[y]  si - 8 
-  (comp (car (cdr (cdr x))) (- si (* 2 *wordsize*)) env)
-  (emit "mov dword [ esp " (- si (* 2 *wordsize*)) "] , eax ; save Y")
-  ;; E[z]  si - 12
-  (comp (car (cdr (cdr (cdr x)))) (- si (* 3 *wordsize*)) env)
-  (emit "mov dword [ esp " (- si (* 3 *wordsize*)) "] , eax ; save Z" )
+;; (define (comp-tak-tail-recursive x si env)
+;;   ;; (TAK x y z)
+;;   ;; si = keep empty for ESP to go into.
+;;   ;;(emit "nop ; starts TAK here")
+;;   ;; E[x]  si - 4
+;;   (comp (car (cdr x)) (- si (* 1 word)) env)
+;;   (emit "mov dword [ esp " (- si (* 1 word)) "] , eax ; save X ")
+;;   ;; E[y]  si - 8 
+;;   (comp (car (cdr (cdr x))) (- si (* 2 word)) env)
+;;   (emit "mov dword [ esp " (- si (* 2 word)) "] , eax ; save Y")
+;;   ;; E[z]  si - 12
+;;   (comp (car (cdr (cdr (cdr x)))) (- si (* 3 word)) env)
+;;   (emit "mov dword [ esp " (- si (* 3 word)) "] , eax ; save Z" )
   
-  (emit "nop ; collapse arguments by " si)
+;;   (emit "nop ; collapse arguments by " si)
   
-  (emit "mov dword eax , [esp  " (- si (* 1 *wordsize*)) "] ; collapse X ")
-  (emit "mov dword [esp  " (- (* 1 *wordsize*)) "] , eax ")
+;;   (emit "mov dword eax , [esp  " (- si (* 1 word)) "] ; collapse X ")
+;;   (emit "mov dword [esp  " (- (* 1 word)) "] , eax ")
 
-  (emit "mov dword eax , [esp  " (- si (* 2 *wordsize*)) "] ; collapse Y")
-  (emit "mov dword [esp  " (- (* 2 *wordsize*)) "] , eax ")
+;;   (emit "mov dword eax , [esp  " (- si (* 2 word)) "] ; collapse Y")
+;;   (emit "mov dword [esp  " (- (* 2 word)) "] , eax ")
 
-  (emit "mov dword eax , [esp  " (- si (* 3 *wordsize*)) "] ; collapse Z")
-  (emit "mov dword [esp  " (- (* 3 *wordsize*)) "] , eax ")
+;;   (emit "mov dword eax , [esp  " (- si (* 3 word)) "] ; collapse Z")
+;;   (emit "mov dword [esp  " (- (* 3 word)) "] , eax ")
   
-  ;;(emit "add dword esp , " (+ si *wordsize*) "; adjust esp")
-  (emit "jmp tak4 ; allow for gdb to record ARGS to TAK")
-  ;;(emit "sub dword esp , " (+ si *wordsize*) "; restore esp")
-  )
+;;   ;;(emit "add dword esp , " (+ si word) "; adjust esp")
+;;   (emit "jmp tak4 ; allow for gdb to record ARGS to TAK")
+;;   ;;(emit "sub dword esp , " (+ si word) "; restore esp")
+;;   )
 
 
 
 
 
-(define (comp-tak-generic nth-tak x si env)
-  (cond
-   ((= nth-tak 4) ;; TAK4 is tail recursive
-    (comp-tak-tail-recursive x si env))
-   ;;(#f #f)
-   (else
-    (begin
-      ;; (TAK x y z)
-      ;; si = keep empty for ESP to go into.
-      ;;(emit "nop ; starts TAK here")
-      ;; E[x]  si - 4
-      (comp (car (cdr x)) (- si (* 1 *wordsize*)) env)
-      (emit "mov dword [ esp " (- si (* 1 *wordsize*)) "] , eax ; save X ")
-      ;; E[y]  si - 8 
-      (comp (car (cdr (cdr x))) (- si (* 2 *wordsize*)) env)
-      (emit "mov dword [ esp " (- si (* 2 *wordsize*)) "] , eax ; save Y")
-      ;; E[z]  si - 12
-      (comp (car (cdr (cdr (cdr x)))) (- si (* 3 *wordsize*)) env)
-      (emit "mov dword [ esp " (- si (* 3 *wordsize*)) "] , eax ; save Z" )
-      (emit "add dword esp , " (+ si *wordsize*) "; adjust esp")
-      (emit "call tak" nth-tak " ; " (- si (* 3 *wordsize*)))
-      (emit "sub dword esp , " (+ si *wordsize*) "; restore esp")))))
+;; (define (comp-tak-generic nth-tak x si env)
+;;   (cond
+;;    ((= nth-tak 4) ;; TAK4 is tail recursive
+;;     (comp-tak-tail-recursive x si env))
+;;    ;;(#f #f)
+;;    (else
+;;     (begin
+;;       ;; (TAK x y z)
+;;       ;; si = keep empty for ESP to go into.
+;;       ;;(emit "nop ; starts TAK here")
+;;       ;; E[x]  si - 4
+;;       (comp (car (cdr x)) (- si (* 1 word)) env)
+;;       (emit "mov dword [ esp " (- si (* 1 word)) "] , eax ; save X ")
+;;       ;; E[y]  si - 8 
+;;       (comp (car (cdr (cdr x))) (- si (* 2 word)) env)
+;;       (emit "mov dword [ esp " (- si (* 2 word)) "] , eax ; save Y")
+;;       ;; E[z]  si - 12
+;;       (comp (car (cdr (cdr (cdr x)))) (- si (* 3 word)) env)
+;;       (emit "mov dword [ esp " (- si (* 3 word)) "] , eax ; save Z" )
+;;       (emit "add dword esp , " (+ si word) "; adjust esp")
+;;       (emit "call tak" nth-tak " ; " (- si (* 3 word)))
+;;       (emit "sub dword esp , " (+ si word) "; restore esp")))))
 
 
-;; this debug code is not used
-(define (comp-debug-tak x si env)
-  (emit "pushad")
-  (emit "push dword esp")
-  (emit "call debug_stack")
-  (emit "add dword esp , 4")
-  (emit "popad"))
-
-
-
+;; ;; this debug code is not used
+;; (define (comp-debug-tak x si env)
+;;   (emit "pushad")
+;;   (emit "push dword esp")
+;;   (emit "call debug_stack")
+;;   (emit "add dword esp , 4")
+;;   (emit "popad"))
 
 
 
@@ -1232,39 +1250,40 @@
 
 
 
-(define (comp-fib x si env)
-  ;; (FIB n)
 
-  ;; si = keep empty for ESP to go into.
-  ;;(emit "nop ; FIB call now ")
+
+
+;; (define (comp-fib x si env)
+;;   ;; (FIB n)
+
+;;   ;; si = keep empty for ESP to go into.
+;;   ;;(emit "nop ; FIB call now ")
   
-  ;; E[x]  si - 4
-  (comp (car (cdr x)) (- si (* 1 *wordsize*)) env)
+;;   ;; E[x]  si - 4
+;;   (comp (car (cdr x)) (- si (* 1 word)) env)
   
-    ;; save onto stack
-  (emit "mov dword [ esp " (- si (* 1 *wordsize*)) "] , eax ")
+;;     ;; save onto stack
+;;   (emit "mov dword [ esp " (- si (* 1 word)) "] , eax ")
   
-  ;; ;; E[y]  si - 8 
-  ;; (comp (car (cdr (cdr x))) (- si (* 2 *wordsize*)) env)
-  ;; ;; save onto stack
-  ;; (emit "mov dword [ esp " (- si (* 2 *wordsize*)) "] , eax ")
+;;   ;; ;; E[y]  si - 8 
+;;   ;; (comp (car (cdr (cdr x))) (- si (* 2 word)) env)
+;;   ;; ;; save onto stack
+;;   ;; (emit "mov dword [ esp " (- si (* 2 word)) "] , eax ")
   
-  ;; ;; E[z]  si - 12
-  ;; (comp (car (cdr (cdr (cdr x)))) (- si (* 3 *wordsize*)) env)
-  ;; ;; save onto stack
-  ;; (emit "mov dword [ esp " (- si (* 3 *wordsize*)) "] , eax ")
+;;   ;; ;; E[z]  si - 12
+;;   ;; (comp (car (cdr (cdr (cdr x)))) (- si (* 3 word)) env)
+;;   ;; ;; save onto stack
+;;   ;; (emit "mov dword [ esp " (- si (* 3 word)) "] , eax ")
 
-  ;; adjust ESP , si is negative multiple of 4 :  -4 , -8 , -12 , -16, -20
-  (emit "add dword esp , " (+ si *wordsize*))
+;;   ;; adjust ESP , si is negative multiple of 4 :  -4 , -8 , -12 , -16, -20
+;;   (emit "add dword esp , " (+ si word))
 
-  ;; do the CALL
-  (emit "call fib")
-  ;; 
-  (emit "sub dword esp , " (+ si *wordsize*)))
+;;   ;; do the CALL
+;;   (emit "call fib")
+;;   ;; 
+;;   (emit "sub dword esp , " (+ si word)))
 
-;;(- (+ si 4))))
-
-
+;; ;;(- (+ si 4))))
 
 
 
@@ -1272,35 +1291,39 @@
 
 
 
-(define (comp-fac x si env)
-  ;; (FAC n)
 
-  ;; si = keep empty for ESP to go into.
-  ;;(emit "nop ; FIB call now ")
+
+;; (define (comp-fac x si env)
+;;   ;; (FAC n)
+
+;;   ;; si = keep empty for ESP to go into.
+;;   ;;(emit "nop ; FIB call now ")
   
-  ;; E[x]  si - 4
-  (comp (car (cdr x)) (- si (* 1 *wordsize*)) env)
+;;   ;; E[x]  si - 4
+;;   (comp (car (cdr x)) (- si (* 1 word)) env)
   
-    ;; save onto stack
-  (emit "mov dword [ esp " (- si (* 1 *wordsize*)) "] , eax ")
+;;     ;; save onto stack
+;;   (emit "mov dword [ esp " (- si (* 1 word)) "] , eax ")
   
-  ;; ;; E[y]  si - 8 
-  ;; (comp (car (cdr (cdr x))) (- si (* 2 *wordsize*)) env)
-  ;; ;; save onto stack
-  ;; (emit "mov dword [ esp " (- si (* 2 *wordsize*)) "] , eax ")
+;;   ;; ;; E[y]  si - 8 
+;;   ;; (comp (car (cdr (cdr x))) (- si (* 2 word)) env)
+;;   ;; ;; save onto stack
+;;   ;; (emit "mov dword [ esp " (- si (* 2 word)) "] , eax ")
   
-  ;; ;; E[z]  si - 12
-  ;; (comp (car (cdr (cdr (cdr x)))) (- si (* 3 *wordsize*)) env)
-  ;; ;; save onto stack
-  ;; (emit "mov dword [ esp " (- si (* 3 *wordsize*)) "] , eax ")
+;;   ;; ;; E[z]  si - 12
+;;   ;; (comp (car (cdr (cdr (cdr x)))) (- si (* 3 word)) env)
+;;   ;; ;; save onto stack
+;;   ;; (emit "mov dword [ esp " (- si (* 3 word)) "] , eax ")
 
-  ;; adjust ESP , si is negative multiple of 4 :  -4 , -8 , -12 , -16, -20
-  (emit "add dword esp , " (+ si *wordsize*))
+;;   ;; adjust ESP , si is negative multiple of 4 :  -4 , -8 , -12 , -16, -20
+;;   (emit "add dword esp , " (+ si word))
 
-  ;; do the CALL
-  (emit "call fac")
-  ;; 
-  (emit "sub dword esp , " (+ si *wordsize*)))
+;;   ;; do the CALL
+;;   (emit "call fac")
+;;   ;; 
+;;   (emit "sub dword esp , " (+ si word)))
+
+
 
 
 
@@ -1316,10 +1339,17 @@
     (let ((binding (assoc var env)))
       (cond
        ((toplevel-binding? binding)
-	;; stuff value onto stack in known location
-	(emit "mov dword [esp " (binding-stack-index binding)  "] , eax "))
+	;; toplevel definitions live in data section
+	(emit "mov dword ebx , toplevel ;; toplevel define " var)
+	(emit "mov dword [ebx + " (binding-index binding)"] , eax"))
        (else
 	(error "comp-define : no SLOT for TOPLEVEL DEFINE found " var))))))
+
+
+
+
+
+
 
 
 
@@ -1351,7 +1381,7 @@
 ;;    ((null? args) '())
 ;;    (else (let ((sym (car args)))
 ;; 	   (cons (list sym 'local index)
-;; 		 (comp-define-helper (cdr args) (- index *wordsize*)))))))
+;; 		 (comp-define-helper (cdr args) (- index word)))))))
 
 
 ;; (define (comp-define-lambda x si env)
@@ -1361,7 +1391,7 @@
 ;;     (let ((args (car (cdr proc)))
 ;; 	  (body (cdr (cdr proc))))
 ;;       (let ((n-args (length args)))
-;; 	(let ((extra-env (comp-define-helper args (- *wordsize*))))
+;; 	(let ((extra-env (comp-define-helper args (- word))))
 	  
 ;; 	  (display "* comp-define-lambda * : ")
 ;; 	  (display "extra env = ")
@@ -1372,7 +1402,7 @@
 ;; 	(emit (tidy-proc-name name) ": nop")
 ;; 	;; compile the definition here
 ;; 	(comp `(begin ,@body)
-;; 	      (- (* (+ n-args 1) *wordsize*))
+;; 	      (- (* (+ n-args 1) word))
 ;; 	      (append extra-env env))
 ;; 	;; final return 
 ;; 	(emit "ret")
@@ -1386,7 +1416,7 @@
    ((null? args) '())
    (else (let ((sym (car args)))
 	   (cons (list sym 'local index)
-		 (comp-lambda-helper (cdr args) (- index *wordsize*)))))))
+		 (comp-lambda-helper (cdr args) (+ index word)))))))
 
 
 ;; suppose free variables are a b c d
@@ -1402,7 +1432,7 @@
    ((null? args) '())
    (else (let ((sym (car args)))
 	   (cons (list sym 'closure index)
-		 (comp-closure-helper (cdr args) (+ index *wordsize*)))))))
+		 (comp-closure-helper (cdr args) (+ index word)))))))
 
 
 
@@ -1433,6 +1463,17 @@
 
 ;; for each formal parameter [ <args> ]  of the lambda expression
 ;; (lambda <args> body)
+;;
+;; -------------
+;; arg3
+;; arg2
+;; arg1
+;; closure PTR
+;; return IP
+;; old-EBP  <---- esp 
+;; -------------
+;;
+;; 
 (define (comp-lambda x si env)
   (let ((anon-name (gensym "lambda"))	
 	(args (car (cdr x)))
@@ -1440,9 +1481,9 @@
 	(after-label (gensym "after"))
 	(free-variables (remove-toplevel (remove-primitives (freevars x)) env)))
       (let ((n-args (length args)))
-	(let ((extra-env (comp-lambda-helper args -8)) ;; 0 = retip -4 = closure ptr -8 : arg1
-	      (free-env  (comp-closure-helper free-variables 4 ))) ;; (* 2 *wordsize*))))
-	  (let ((new-env (append extra-env free-env env )));; env)))
+	(let ((extra-env (comp-lambda-helper args (* word 3)))
+	      (free-env  (comp-closure-helper free-variables word ))) 
+	  (let ((new-env (append extra-env free-env env )))
 	      
 	  (display "* comp-lambda * : ")
 	  (display "extra env = ")
@@ -1465,12 +1506,18 @@
 	  
 	  (emit "jmp " after-label)
 	  ;; lambda has no name 
-	  (emit anon-name ": nop ; comp-lambda ")
+	  (emit anon-name ": push dword ebp ; comp-lambda ")
+	  (emit "mov dword ebp , esp")
+	  
 	  ;; compile the definition here with extra formals and free variables
 	  (comp `(begin ,@body)
-		(- (* (+ n-args 2) *wordsize*))
+		word ;; + 4 
 		new-env)
+	   ;;(- (* (+ n-args 2) word))
+
 	  ;; final return 
+	  (emit "mov dword esp , ebp")
+	  (emit "pop dword ebp")
 	  (emit "ret")
 	  ;; jump over definition
 	  (emit after-label ": nop")
@@ -1497,7 +1544,7 @@
 	  ;; 4th .. closure arg 3 ... + 16
 	  (map (lambda (f)
 		 (begin
-		   (comp-lookup f (- si *wordsize*) env)
+		   (comp-lookup f (+ si word) env)
 		   ;; 
 		   (emit "mov dword [ esi ] , eax")
 		   ;; bump esi
@@ -1511,29 +1558,9 @@
 	  ;;(emit "pop dword eax")
 	  (emit "mov dword eax , ebx")
 	  ;; tag as closure
-	  (emit "or dword eax , 110b ") ;;(emit "add dword eax , 110b ")
-	  	  
-	  
+	  (emit "or dword eax , 110b ")
+	  ;;(emit "add dword eax , 110b ")
 	  )))))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1596,7 +1623,7 @@
    ((and (pair? x) (eq? (car x) 'lambda)) (comp-lambda x si env))
 
    ;; explicit tailcall
-   ((and (pair? x) (eq? (car x) 'tailcall)) (comp-tailcall-application x si env))
+   ;;((and (pair? x) (eq? (car x) 'tailcall)) (comp-tailcall-application x si env))
    
    ;; tak 
    ;;((and (pair? x) (eq? (car x) 'tak)) (comp-tak x si env))
@@ -1652,7 +1679,7 @@
 ;; 	    ;; initial stack index is negative wordsize
 ;; 	    ;; as [ esp - 4 ] , since esp holds return address.
 ;; 	    (let ((initial-environment '())
-;; 		  (stack-index (- *wordsize*)))
+;; 		  (stack-index (- word)))
 
 ;; 	      ;;(comp-tak-def #f stack-index initial-environment)
 
@@ -1673,6 +1700,7 @@
 ;; 	    (emit "")
 ;; 	    (emit "")
 ;; 	    (emit "")))))))
+
 
 
 

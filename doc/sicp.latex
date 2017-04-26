@@ -4,6 +4,20 @@
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+procedure calls
+
+arguments evaluated in REVERSE order ,
+a = ebp + 8
+b = ebp + 12
+c = ebp + 16
+
+each procedure has its own stack frame
+ entry prologue
+
+exit prologue
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
 compilation CAR , CDR and CONS
 
 (car (cons 1 2 ))

@@ -265,6 +265,14 @@
 	  (let ((initial-environment top-environment)
 		(stack-index last-stack-index)) 
 
+	    ;; sufficiently large toplevel
+	    (emit "section .data")
+	    (emit "align 32")	    
+	    (emit "toplevel: times " (+ (length def-forms) 4)   " dd 0")
+	        	    
+	    
+	    (emit "section .text")
+	    (emit "align 32")
 	    (emit "scheme_entry: nop ")
 
 	    ;; entry prologue
