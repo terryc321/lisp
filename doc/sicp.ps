@@ -1,8 +1,8 @@
 %!PS-Adobe-2.0
 %%Creator: dvips(k) 5.996 Copyright 2016 Radical Eye Software
 %%Title: sicp.dvi
-%%CreationDate: Sat Apr 22 20:40:35 2017
-%%Pages: 36
+%%CreationDate: Wed Apr 26 09:28:46 2017
+%%Pages: 37
 %%PageOrder: Ascend
 %%BoundingBox: 0 0 596 842
 %%DocumentFonts: CMR12 CMTT12
@@ -11,7 +11,7 @@
 %DVIPSWebPage: (www.radicaleye.com)
 %DVIPSCommandLine: dvips sicp.dvi
 %DVIPSParameters: dpi=600
-%DVIPSSource:  TeX output 2017.04.22:2140
+%DVIPSSource:  TeX output 2017.04.26:1028
 %%BeginProcSet: tex.pro 0 0
 %!
 /TeXDict 300 dict def TeXDict begin/N{def}def/B{bind def}N/S{exch}N/X{S
@@ -1269,7 +1269,16 @@ ifelse
  end
 %%EndSetup
 %%Page: 1 1
-TeXDict begin 1 0 bop 404 573 a Fb(Ev)m(ery)34 b(p)s(oin)m(ter)f(to)f
+TeXDict begin 1 0 bop 404 573 a Fb(First)26 b(v)m(ersion)i(of)d
+(compiler)i(is)g(a)f(simple)h(recursiv)m(e)i(tree)d(w)m(alking)i
+(translator,)f(w)m(ell)257 693 y(atleast)33 b(the)g(co)s(de)g
+(generator)g(phase)g(is.)404 814 y(format)c(of)g(compilation)h(is)g(3)g
+(argumen)m(ts)h(,)f(x)g(is)g(the)g(expression)i(,)e(si)h(is)f(the)g
+(stac)m(k)257 934 y(index)k(,)f(en)m(v)h(is)f(the)g(compile)g(time)h
+(en)m(vironmen)m(t.)257 1162 y Fa(\(define)53 b(\(comp)g(x)f(si)f
+(env\))i(...\))1852 5637 y Fb(1)p eop end
+%%Page: 2 2
+TeXDict begin 2 1 bop 404 573 a Fb(Ev)m(ery)34 b(p)s(oin)m(ter)f(to)f
 (a)g(heap-)g(allo)s(cated)h(ob)5 b(ject)33 b(is)g(tagged)f(b)m(y)i(a)e
 (3-bit)g(tag)f(\(001)h(b)257 693 y(for)k(pairs,)h(010)e(b)h(for)f(v)m
 (ectors,)k(011)c(b)h(for)f(strings,)j(101)d(b)h(for)f(sym)m(b)s(ols,)k
@@ -1280,9 +1289,9 @@ y(Macro)32 b(expansion)j(.)404 1175 y(Alpha)e(con)m(v)m(ersion)h(.)404
 1295 y(T)-8 b(ail)33 b(call)f(elimination)i(.)404 1416
 y(F)-8 b(ree)32 b(v)-5 b(ariable)33 b(analysis)h(.)404
 1536 y(Closure)f(con)m(v)m(ersion)i(.)404 1656 y(Simple)e(compiler.)
-1852 5637 y(1)p eop end
-%%Page: 2 2
-TeXDict begin 2 1 bop 404 573 a Fb(Dev)m(elopmen)m(t)34
+1852 5637 y(2)p eop end
+%%Page: 3 3
+TeXDict begin 3 2 bop 404 573 a Fb(Dev)m(elopmen)m(t)34
 b(of)e(these)i(notes)g(is)f(in)f(rev)m(erse)j(order.)404
 693 y(The)e(spill)h(phase)f(-)f(pass)i(1)e(iden)m(tify)i(free)f(v)-5
 b(ariables)404 814 y(Assuming)34 b(really)f(that)f(these)i(lam)m(b)s
@@ -1303,14 +1312,14 @@ b(\(lambda)53 b(\(t2\))f(\(k-)g(z)g(1)257 2005 y(x)g(y)f(t1)h(t2)g(k)
 b(:)52 b(\(lambda)h(\(\))f(\(k)g(z\)\)\)\))404 2474 y
 Fb(ktak)31 b(is)h(kno)m(wn)g(,)g(this)g(is)f(pro)s(cedure)h(b)s(eing)g
 (compiled.)44 b(k)32 b(is)f(unkno)m(wn)i(as)e(it)g(will)257
-2594 y(no)i(doubt)g(v)-5 b(ary)d(.)1852 5637 y(2)p eop
+2594 y(no)i(doubt)g(v)-5 b(ary)d(.)1852 5637 y(3)p eop
 end
-%%Page: 3 3
-TeXDict begin 3 2 bop 404 573 a Fb(Exploring)28 b(CPS)g(con)m(v)m
-(ersion)h(and)e(compilation)g(to)g(x86)g(32)g(bit)g(register)h(mac)m
-(hine)257 693 y(co)s(de.)1852 5637 y(3)p eop end
 %%Page: 4 4
-TeXDict begin 4 3 bop 257 573 a Fa(\(define)53 b(tak)g(\(lambda)g(\(x)e
+TeXDict begin 4 3 bop 404 573 a Fb(Exploring)28 b(CPS)g(con)m(v)m
+(ersion)h(and)e(compilation)g(to)g(x86)g(32)g(bit)g(register)h(mac)m
+(hine)257 693 y(co)s(de.)1852 5637 y(4)p eop end
+%%Page: 5 5
+TeXDict begin 5 4 bop 257 573 a Fa(\(define)53 b(tak)g(\(lambda)g(\(x)e
 (y)h(z\))565 693 y(\(if)g(\(<)g(y)f(x\))360 814 y(\(tak)h(\(tak)h(\(-)e
 (x)h(1\))g(y)f(z\))616 934 y(\(tak)i(\(-)e(y)h(1\))g(z)f(x\))616
 1054 y(\(tak)i(\(-)e(z)h(1\))g(x)f(y\)\))360 1175 y(z\)\)\))257
@@ -1331,9 +1340,9 @@ b(\(-)h(a)g(b\)\)\))257 2462 y(\(define)h(\(ktak)g(x)f(y)f(z)h(k\))360
 565 4388 y(\(lambda)h(\(\))f(\(k)g(z\)\)\)\))257 4628
 y(;;)g(identity)i(continuation)257 4749 y(\(define)f(kid)g(\(lambda)g
 (\(x\))f(x\)\))257 4990 y(\(ktak)h(18)f(12)g(6)f(kid\))1852
-5637 y Fb(4)p eop end
-%%Page: 5 5
-TeXDict begin 5 4 bop 404 573 a Fb
+5637 y Fb(5)p eop end
+%%Page: 6 6
+TeXDict begin 6 5 bop 404 573 a Fb
 (.......................................................)404
 693 y(Lisp.scm)404 814 y(Minimal.scm)404 934 y(Minimal)28
 b(v)m(ersion)h(is)f(supp)s(osed)h(to)f(b)s(e)f(absolute)i(CORE)f(of)f
@@ -1379,9 +1388,9 @@ b(sym)m(b)s(ol)g(constructor)404 4786 y
 b(length)33 b(of)f(string)404 5147 y(\(string?)43 b(x\))33
 b(:)44 b(t)m(yp)s(e)33 b(predicate)404 5268 y
 (...................................................)1852
-5637 y(5)p eop end
-%%Page: 6 6
-TeXDict begin 6 5 bop 404 573 a Fb(Self)32 b(ev)-5 b(aluating)32
+5637 y(6)p eop end
+%%Page: 7 7
+TeXDict begin 7 6 bop 404 573 a Fb(Self)32 b(ev)-5 b(aluating)32
 b(items)i(-)d(#a)h(c)m(haracters)i(,)e("a)f(string")i(strings)g(,)f
 (123)f(n)m(um)m(b)s(ers)j(,)257 693 y(#T)g(#F)e(b)s(o)s(oleans.)404
 814 y(Sym)m(b)s(ols)i(are)e(lo)s(ok)m(ed)i(up)e(in)h(the)g(en)m
@@ -1391,9 +1400,9 @@ b(items)i(-)d(#a)h(c)m(haracters)i(,)e("a)f(string")i(strings)g(,)f
 1416 y(#F)32 b(false)h(:)44 b(constructor)404 1536 y(\(b)s(o)s(olean?)f
 (x\))33 b(:)43 b(t)m(yp)s(e)34 b(predicate)404 1656 y
 (...................................................)1852
-5637 y(6)p eop end
-%%Page: 7 7
-TeXDict begin 7 6 bop 404 573 a Fb(Compiler)404 693 y(If)35
+5637 y(7)p eop end
+%%Page: 8 8
+TeXDict begin 8 7 bop 404 573 a Fb(Compiler)404 693 y(If)35
 b(compiler)i(can)f(see)h(an)e(expression)j(that)e(can)g(b)s(e)g
 (simpli\014ed)h(it)f(is)g(probably)g(a)257 814 y(go)s(o)s(d)c(idea)h
 (to)f(replace)i(it)e(with)h(an)g(equiv)-5 b(alen)m(t)34
@@ -1403,9 +1412,9 @@ b(assume)h(got)e(debugged)h(co)s(de)g(and)f(w)m(an)m(t)i(it)e(to)g(run)
 h(fast.)61 b(Here)39 b(is)g(where)257 1391 y(the)33 b(compiler)h(can)f
 (help.)404 1511 y(Lets)g(build)g(a)g(compiler.)404 1631
 y(Lets)g(build)g(a)g(correct)g(in)m(terpreter)h(\014rst)f(then)g(.)1852
-5637 y(7)p eop end
-%%Page: 8 8
-TeXDict begin 8 7 bop 404 573 a Fb(In)31 b(the)g(follo)m(wing)g(pages)h
+5637 y(8)p eop end
+%%Page: 9 9
+TeXDict begin 9 8 bop 404 573 a Fb(In)31 b(the)g(follo)m(wing)g(pages)h
 (are)f(the)g(basis)h(of)e(a)h(sc)m(heme)i(in)m(terpreter)f(using)g(7)e
 (regis-)257 693 y(ters)k(argl)e(,)g(expr)i(,)e(v)-5 b(al)33
 b(,)f(et)h(al)g(.)404 814 y(The)d(in)m(terpreter)h(do)s(es)f(not)g
@@ -1418,14 +1427,14 @@ b(*)32 b(TO)h(DO)f(*)g(.)404 1175 y(Condition)f(system)i(needs)f(to)e
 m(v)m(e)h(an)m(y)257 1295 y(w)m(a)m(y)i(to)e(signal)h(a)g(condition,)g
 (let)g(alone)f(handle)i(it)e(or)h(pass)g(it)g(o\013.)404
 1416 y(Garbage)f(collector)h(needs)h(to)e(b)s(e)h(written)g(up)g(,)g
-(that)f(is)h(also)g(missing.)1852 5637 y(8)p eop end
-%%Page: 9 9
-TeXDict begin 9 8 bop 404 573 a Fb(Ev)-5 b(aluation)38
+(that)f(is)h(also)g(missing.)1852 5637 y(9)p eop end
+%%Page: 10 10
+TeXDict begin 10 9 bop 404 573 a Fb(Ev)-5 b(aluation)38
 b(of)f(argumen)m(ts)j(left)e(to)f(righ)m(t)i(means)g(that)e(building)i
 (up)f(argumen)m(t)257 693 y(list)33 b(requires)i(a)d(rev)m(ersal)i(at)f
-(end)g(of)f(ev-op)s(erands.)1852 5637 y(9)p eop end
-%%Page: 10 10
-TeXDict begin 10 9 bop 257 693 a Fa(------------------------)q(---)q
+(end)g(of)f(ev-op)s(erands.)1828 5637 y(10)p eop end
+%%Page: 11 11
+TeXDict begin 11 10 bop 257 693 a Fa(------------------------)q(---)q
 (----)q(----)q(----)q(---)q(----)q(----)q(----)q(---)667
 814 y(*)206 b(repl)155 b(*)257 934 y(------------------------)q(---)q
 (----)q(----)q(----)q(---)q(----)q(----)q(----)q(---)257
@@ -1452,13 +1461,13 @@ y(cont)g(=)f(ev-read-2)309 4425 y(goto)h(eval-dispatch)257
 4666 y(ev-read-3)i(:)309 4786 y(restore)f(env)309 4907
 y(display)g(";;)f(Value)g(>)g(")f(val)309 5027 y(goto)h(ev-read)257
 5268 y(ev-read-4)i(:)719 5388 y(restore)f(cont)1828 5637
-y Fb(10)p eop end
-%%Page: 11 11
-TeXDict begin 11 10 bop 309 573 a Fa(goto)52 b(continue)257
-693 y(------------------------)q(---)q(----)q(----)q(----)q(---)q(----)
-q(----)q(----)q(---)1828 5637 y Fb(11)p eop end
+y Fb(11)p eop end
 %%Page: 12 12
-TeXDict begin 12 11 bop 257 693 a Fa(in)52 b(this)g(version)i(,)d
+TeXDict begin 12 11 bop 309 573 a Fa(goto)52 b(continue)257
+693 y(------------------------)q(---)q(----)q(----)q(----)q(---)q(----)
+q(----)q(----)q(---)1828 5637 y Fb(12)p eop end
+%%Page: 13 13
+TeXDict begin 13 12 bop 257 693 a Fa(in)52 b(this)g(version)i(,)d
 (shorter)i(but)f(makes)h(2)e(saves)i(and)f(restores)i(,)d(instead)i(of)
 f(just)g(1)257 814 y(for)g(each)h(round)f(trip)h(of)e(the)i(read)f
 (eval)g(print)h(loop.)257 1054 y(------------------------)q(---)q(----)
@@ -1473,9 +1482,9 @@ y(goto)h(eval-dispatch)257 2619 y(ev-read-2)i(:)309 2740
 y(restore)f(env)309 2860 y(restore)g(cont)309 2980 y(display)g(";;)f
 (Value)g(>)g(")f(val)309 3101 y(goto)h(ev-read)257 3342
 y(------------------------)q(---)q(----)q(----)q(----)q(---)q(----)q
-(----)q(----)q(---)1828 5637 y Fb(12)p eop end
-%%Page: 13 13
-TeXDict begin 13 12 bop 257 573 a Fa(------------------------)q(---)q
+(----)q(----)q(---)1828 5637 y Fb(13)p eop end
+%%Page: 14 14
+TeXDict begin 14 13 bop 257 573 a Fa(------------------------)q(---)q
 (----)q(----)q(----)q(---)q(----)q(----)q(----)q(---)667
 693 y(*)206 b(apply-dispatch)157 b(*)257 814 y
 (------------------------)q(---)q(----)q(----)q(----)q(---)q(----)q
@@ -1508,9 +1517,9 @@ y(env)104 b(=)51 b(user-lambda-env)k(proc)257 4305 y(extend)e(the)f
 b(proc)257 4545 y(goto)d(ev-sequence)h(;;)e(implicit)h(sequence)g(on)f
 (body)h(of)e(lambda)257 4666 y(------------------------)q(---)q(----)q
 (----)q(----)q(---)q(----)q(----)q(----)q(---)1828 5637
-y Fb(13)p eop end
-%%Page: 14 14
-TeXDict begin 14 13 bop 257 573 a Fa(------------------------)q(---)q
+y Fb(14)p eop end
+%%Page: 15 15
+TeXDict begin 15 14 bop 257 573 a Fa(------------------------)q(---)q
 (----)q(----)q(----)q(---)q(----)q(----)q(----)q(---)667
 693 y(*)206 b(eval-dispatch)157 b(*)257 814 y(------------------------)
 q(---)q(----)q(----)q(----)q(---)q(----)q(----)q(----)q(---)257
@@ -1539,9 +1548,9 @@ h(=)e('begin)514 3462 y(goto)h(ev-begin)309 3582 y(if)f(pair?)i(exp)f
 4305 y(if)f(pair?)i(exp)514 4425 y(goto)f(ev-application)309
 4545 y(otherwise)514 4666 y(eval-error)i(")d(what)h(now)h(?)e(")257
 4786 y(------------------------)q(---)q(----)q(----)q(----)q(---)q
-(----)q(----)q(----)q(---)1828 5637 y Fb(14)p eop end
-%%Page: 15 15
-TeXDict begin 15 14 bop 257 573 a Fa(------------------------)q(---)q
+(----)q(----)q(----)q(---)1828 5637 y Fb(15)p eop end
+%%Page: 16 16
+TeXDict begin 16 15 bop 257 573 a Fa(------------------------)q(---)q
 (----)q(----)q(----)q(---)q(----)q(----)q(----)q(---)309
 693 y(self-evaluating)55 b(?)257 814 y(------------------------)q(---)q
 (----)q(----)q(----)q(---)q(----)q(----)q(----)q(---)309
@@ -1565,9 +1574,9 @@ b(;)51 b(body)i(of)e(lambda)309 2379 y(val)h(=)f(#[)h(closure)h(unev)f
 b(x)d(2\)\))257 3342 y(\(define)i(\(user-lambda-env)j(x\))206
 b(\(vector-ref)54 b(x)d(3\)\))257 3462 y(------------------------)q
 (---)q(----)q(----)q(----)q(---)q(----)q(----)q(----)q(---)1828
-5637 y Fb(15)p eop end
-%%Page: 16 16
-TeXDict begin 16 15 bop 257 573 a Fa(------------------------)q(---)q
+5637 y Fb(16)p eop end
+%%Page: 17 17
+TeXDict begin 17 16 bop 257 573 a Fa(------------------------)q(---)q
 (----)q(----)q(----)q(---)q(----)q(----)q(----)q(---)667
 693 y(*)206 b(ev-begin)156 b(*)257 814 y(------------------------)q
 (---)q(----)q(----)q(----)q(---)q(----)q(----)q(----)q(---)257
@@ -1591,9 +1600,9 @@ b(:)52 b(argl)g(,)f(exp)h(,)g(unev)g(,)g(val)g(,)f(proc)257
 y(unev)f(=)g(cdr)g(unev)360 4425 y(goto)g(ev-sequence)257
 4545 y(ev-sequence-3)j(:)360 4666 y(goto)d(eval-dispatch)257
 4786 y(------------------------)q(---)q(----)q(----)q(----)q(---)q
-(----)q(----)q(----)q(---)1828 5637 y Fb(16)p eop end
-%%Page: 17 17
-TeXDict begin 17 16 bop 257 573 a Fa(------------------------)q(---)q
+(----)q(----)q(----)q(---)1828 5637 y Fb(17)p eop end
+%%Page: 18 18
+TeXDict begin 18 17 bop 257 573 a Fa(------------------------)q(---)q
 (----)q(----)q(----)q(---)q(----)q(----)q(----)q(---)667
 693 y(*)206 b(ev-definition)157 b(*)257 814 y(------------------------)
 q(---)q(----)q(----)q(----)q(---)q(----)q(----)q(----)q(---)257
@@ -1617,9 +1626,9 @@ b(save)g(environment)i(define)f(will)g(need)f(that)309
 j(exp)d(val)g(env\))g(...)257 3582 y(val)g(=)g(ok)257
 3703 y(goto)h(cont)257 3823 y(------------------------)q(---)q(----)q
 (----)q(----)q(---)q(----)q(----)q(----)q(---)1828 5637
-y Fb(17)p eop end
-%%Page: 18 18
-TeXDict begin 18 17 bop 257 573 a Fa(------------------------)q(---)q
+y Fb(18)p eop end
+%%Page: 19 19
+TeXDict begin 19 18 bop 257 573 a Fa(------------------------)q(---)q
 (----)q(----)q(----)q(---)q(----)q(----)q(----)q(---)667
 693 y(*)206 b(ev-assignment)157 b(*)257 814 y(------------------------)
 q(---)q(----)q(----)q(----)q(---)q(----)q(----)q(----)q(---)257
@@ -1641,9 +1650,9 @@ y(restore)g(exp)257 3342 y(exp)f(=)g(car)g([)g(cdr)g(exp)g(])f(;;)h(x)
 257 3462 y(...)g(primitive)i(operation)g(\(env-set!)f(exp)f(val)h
 (env\))f(...)257 3582 y(val)g(=)g(ok)257 3703 y(goto)h(cont)257
 3823 y(------------------------)q(---)q(----)q(----)q(----)q(---)q
-(----)q(----)q(----)q(---)1828 5637 y Fb(18)p eop end
-%%Page: 19 19
-TeXDict begin 19 18 bop 257 573 a Fa(------------------------)q(---)q
+(----)q(----)q(----)q(---)1828 5637 y Fb(19)p eop end
+%%Page: 20 20
+TeXDict begin 20 19 bop 257 573 a Fa(------------------------)q(---)q
 (----)q(----)q(----)q(---)q(----)q(----)q(----)q(---)667
 693 y(*)206 b(ev-if)155 b(*)257 814 y(------------------------)q(---)q
 (----)q(----)q(----)q(---)q(----)q(----)q(----)q(---)257
@@ -1669,9 +1678,9 @@ y(unev)g(=)e(cdr)h(unev)257 4305 y(if)g(null?)h(unev)411
 257 4666 y(otherwise)411 4786 y(exp)g(=)g(car)g(unev)411
 4907 y(goto)g(eval-dispatch)257 5027 y(------------------------)q(---)q
 (----)q(----)q(----)q(---)q(----)q(----)q(----)q(---)1828
-5637 y Fb(19)p eop end
-%%Page: 20 20
-TeXDict begin 20 19 bop 257 573 a Fa(------------------------)q(---)q
+5637 y Fb(20)p eop end
+%%Page: 21 21
+TeXDict begin 21 20 bop 257 573 a Fa(------------------------)q(---)q
 (----)q(----)q(----)q(---)q(----)q(----)q(----)q(---)667
 693 y(*)206 b(ev-application)157 b(*)257 814 y
 (------------------------)q(---)q(----)q(----)q(----)q(---)q(----)q
@@ -1697,9 +1706,9 @@ y(save)g(env)257 3823 y(save)g(cont)257 3944 y(cont)g(=)e
 4545 y(restore)d(cont)257 4666 y(restore)g(env)257 4786
 y(restore)g(proc)257 4907 y(goto)g(apply-dispatch)257
 5027 y(------------------------)q(---)q(----)q(----)q(----)q(---)q
-(----)q(----)q(----)q(---)1828 5637 y Fb(20)p eop end
-%%Page: 21 21
-TeXDict begin 21 20 bop 257 573 a Fa(------------------------)q(---)q
+(----)q(----)q(----)q(---)1828 5637 y Fb(21)p eop end
+%%Page: 22 22
+TeXDict begin 22 21 bop 257 573 a Fa(------------------------)q(---)q
 (----)q(----)q(----)q(---)q(----)q(----)q(----)q(---)873
 693 y(*)205 b(ev-operands)54 b(usage)155 b(*)257 814
 y(------------------------)q(---)q(----)q(----)q(----)q(---)q(----)q
@@ -1731,13 +1740,13 @@ s(erands)g(,)g(w)m(e)h(w)m(an)m(t)f(to)f(b)s(e)g(sure)h(argl)f(is)h
 (prop)s(erly)g(initialised.)257 5135 y(W)-8 b(e)38 b(observ)m(e)h(that)
 e(the)g(argumen)m(ts)i(are)e(accum)m(ulated)i(in)e(rev)m(erse)i(.)57
 b(AR)m(GL)37 b(v)-5 b(alues)257 5255 y(are)33 b(rev)m(ersed)1828
-5637 y(21)p eop end
-%%Page: 22 22
-TeXDict begin 22 21 bop 404 573 a Fb(The)33 b(rest)g(of)g(this)g(do)s
-(cumen)m(t)h(con)m(tains)f(old)g(notes)g(that)f(ma)m(y)i(b)s(e)f
-(useful)1828 5637 y(22)p eop end
+5637 y(22)p eop end
 %%Page: 23 23
-TeXDict begin 23 22 bop 257 573 a Fa(------------------------)q(---)q
+TeXDict begin 23 22 bop 404 573 a Fb(The)33 b(rest)g(of)g(this)g(do)s
+(cumen)m(t)h(con)m(tains)f(old)g(notes)g(that)f(ma)m(y)i(b)s(e)f
+(useful)1828 5637 y(23)p eop end
+%%Page: 24 24
+TeXDict begin 24 23 bop 257 573 a Fa(------------------------)q(---)q
 (----)q(----)q(----)q(---)q(----)q(----)q(----)q(---)719
 693 y(*)205 b(reverse)104 b(*)257 814 y(piggy)53 b(back)f(on)g
 (ev-operands)257 934 y(------------------------)q(---)q(----)q(----)q
@@ -1747,9 +1756,9 @@ TeXDict begin 23 22 bop 257 573 a Fa(------------------------)q(---)q
 1777 y(ev-reverse-2)j(:)411 1897 y(restore-cont)411 2017
 y(val)d(=)g(argl)411 2138 y(goto)g(cont)257 2258 y
 (------------------------)q(---)q(----)q(----)q(----)q(---)q(----)q
-(----)q(----)q(---)1828 5637 y Fb(23)p eop end
-%%Page: 24 24
-TeXDict begin 24 23 bop 404 573 a Fb(Ev-op)s(erands)40
+(----)q(----)q(---)1828 5637 y Fb(24)p eop end
+%%Page: 25 25
+TeXDict begin 25 24 bop 404 573 a Fb(Ev-op)s(erands)40
 b(tak)m(es)g(unev)-5 b(aluated)41 b(argumen)m(ts)f(in)g(unev)g(,)h(w)m
 (e)f(w)m(an)m(t)g(ev)-5 b(aluated)257 693 y(argumen)m(ts)34
 b(in)f(argl)404 814 y(if)f(no)h(op)s(erands)g(are)f(to)h(b)s(e)f(ev)-5
@@ -1759,9 +1768,9 @@ b(\(ev-operands)i(exp)d(env)g(cont\))360 1162 y(\(if)g(\(null?)h(exp\))
 (env)257 1523 y(EV-3)g(:)154 b(\(lambda)53 b(\(val1\))514
 1644 y(\(ev-operands)h(\(cdr)e(exp\))h(env)257 1764 y(EV-4)g(:)256
 b(\(lambda)53 b(\(val2\))360 1885 y(\(cont)f(\(cons)h(val1)f
-(val2\)\)\)\)\)\)\)\))1828 5637 y Fb(24)p eop end
-%%Page: 25 25
-TeXDict begin 25 24 bop 404 573 a Fb(Motiv)-5 b(ation)404
+(val2\)\)\)\)\)\)\)\))1828 5637 y Fb(25)p eop end
+%%Page: 26 26
+TeXDict begin 26 25 bop 404 573 a Fb(Motiv)-5 b(ation)404
 693 y(W)d(e)39 b(ha)m(v)m(e)i(a)e(w)m(orking)i(con)m(tin)m(uation)f
 (passing)g(st)m(yle)h(lisp)g(in)m(terpreter)f(and)g(ha)m(v)m(e)257
 814 y(successfully)c(written)e(call-with-curren)m(t-con)m(tin)m
@@ -1773,9 +1782,9 @@ m(an)m(t)257 1175 y(to)j(see)g(this)h(translated)f(to)f(SICP)i
 b(to)f(pro)m(v)m(e)h(the)g(simple)h(CPS)f(to)f(register)h(mac)m(hine)g
 (translation)g(that)f(w)m(e)h(de-)257 1416 y(vised)h(as)f(a)f(simple)i
 (and)f(trust)m(w)m(orth)m(y)h(mec)m(hanism)h(that)d(requires)i(men)m
-(tal)f(o)m(v)m(erhead.)1828 5637 y(25)p eop end
-%%Page: 26 26
-TeXDict begin 26 25 bop 404 573 a Fb(ev)-5 b(al-application)404
+(tal)f(o)m(v)m(erhead.)1828 5637 y(26)p eop end
+%%Page: 27 27
+TeXDict begin 27 26 bop 404 573 a Fb(ev)-5 b(al-application)404
 693 y(left)32 b(to)h(righ)m(t)f(ev)-5 b(aluation)33 b(of)f(argumen)m
 (ts)404 814 y(man)m(y)51 b(w)m(a)m(ys)i(to)d(do)h(this)g(,)k(here)d(w)m
 (e)f(ev)-5 b(aluate)52 b(the)f(op)s(erator)f(and)g(then)i(the)257
@@ -1805,9 +1814,9 @@ y(...)404 5098 y Fb(no)m(w)c(w)m(e)g(ha)m(v)m(e)h(the)e(pro)s(cedure)i
 (ev)-5 b(aluated)48 b(in)m(to)f(pro)s(c)h(register)g(,)j(w)m(e)d(need)h
 (to)257 5218 y(preserv)m(e)35 b(it)e(o)m(v)m(er)g(the)g(op)s(erands)h
 (ev)-5 b(aluation)32 b(,)h(so)g(w)m(e)g(stash)h(it)e(on)h(the)g(stac)m
-(k.)1828 5637 y(26)p eop end
-%%Page: 27 27
-TeXDict begin 27 26 bop 257 573 a Fa(save)53 b(proc)257
+(k.)1828 5637 y(27)p eop end
+%%Page: 28 28
+TeXDict begin 28 27 bop 257 573 a Fa(save)53 b(proc)257
 693 y(save)g(env)257 814 y(save)g(cont)257 934 y(cont)g(=)e
 (ev-application-3)257 1054 y(argl)i(=)e('\(\))h(;)g(the)g(empty)g(list)
 257 1175 y(goto)h(ev-operands)404 1523 y Fb(No)m(w)33
@@ -1815,18 +1824,18 @@ b(w)m(an)m(t)g(op)s(erands)g(to)g(b)s(e)f(ev)-5 b(aluated)34
 b(and)e(result)i(placed)f(in)g(argl)f(register)257 1752
 y Fa(ev-application-3)56 b(:)257 1872 y(restore)d(cont)257
 1993 y(restore)g(env)257 2113 y(restore)g(proc)257 2233
-y(goto)g(apply-dispatch)1828 5637 y Fb(27)p eop end
-%%Page: 28 28
-TeXDict begin 28 27 bop 404 573 a Fb(Self)33 b(ev)-5
+y(goto)g(apply-dispatch)1828 5637 y Fb(28)p eop end
+%%Page: 29 29
+TeXDict begin 29 28 bop 404 573 a Fb(Self)33 b(ev)-5
 b(aluating)32 b(forms)h(just)g(return)g(themselv)m(es)404
 693 y(ev)-5 b(aluating)32 b(quoted)i(expression)h(is)e(just)g(return)g
 (the)g(thing)g(that)f(is)h(quoted)257 922 y Fa(1)52 b(\(define)h
 (\(eval-quote)h(exp)e(env)g(cont\))257 1042 y(2)206 b(\(let)52
 b(\(\(thing-quoted)j(\(car)d(\(cdr)h(exp\)\)\)\))257
 1162 y(3)308 b(\(cont)53 b(the-thing-quoted\))1828 5637
-y Fb(28)p eop end
-%%Page: 29 29
-TeXDict begin 29 28 bop 257 573 a Fa(1)52 b(\(define)h(\(eval-if)g(exp)
+y Fb(29)p eop end
+%%Page: 30 30
+TeXDict begin 30 29 bop 257 573 a Fa(1)52 b(\(define)h(\(eval-if)g(exp)
 f(env)h(cont\))257 693 y(2)f(\(let)g(\(\(condition)i(\(car)f(\(cdr)f
 (exp\)\)\))257 814 y(3)359 b(\(consequent)55 b(\(car)d(\(cdr)g(\(cdr)h
 (exp\)\)\)\))257 934 y(4)f(\(alternative)i(\(cdr)f(\(cdr)f(\(cdr)g
@@ -1847,9 +1856,9 @@ b(otherwise)32 b(ev)-5 b(aluate)32 b(the)257 2366 y(alternativ)m(e)i
 (at)g(line)g(6)g(\(lam)m(b)s(da)g(\(b)s(o)s(ol\))e(....\))43
 b(need)32 b(original)f(en)m(v)h(and)e(con)m(tin)m(u-)257
 2607 y(ation)j(con)m(t,)g(also)f(need)i(original)e(expression.)1828
-5637 y(29)p eop end
-%%Page: 30 30
-TeXDict begin 30 29 bop 404 573 a Fb(ev-if)44 b(is)h(not)f(called)i
+5637 y(30)p eop end
+%%Page: 31 31
+TeXDict begin 31 30 bop 404 573 a Fb(ev-if)44 b(is)h(not)f(called)i
 (from)e(an)m(y)h(other)f(site)h(other)g(than)f(ev)-5
 b(al-dispatc)m(h)46 b(,)h(go)s(o)s(d)257 693 y(mo)s(dularit)m(y)-8
 b(.)257 922 y Fa(;;)52 b(\(if)g(x)g(y)f([z]\))i(-)e(conditional)j
@@ -1864,10 +1873,10 @@ y(save)g(exp)309 1283 y(save)g(env)309 1403 y(save)g(cont)309
 b(;;)52 b(false)411 2968 y(goto)g(continue)257 3088 y(otherwise)411
 3209 y(exp)g(=)g(car)g([)f(exp)h(])411 3329 y(goto)g(eval-dispatch)257
 3450 y(ev-if-3:)257 3570 y(exp)g(=)g(car)g([)g(cdr)g([cdr)g(exp]])h(;;)
-e(y)257 3690 y(goto)i(eval-dispatch)1828 5637 y Fb(30)p
+e(y)257 3690 y(goto)i(eval-dispatch)1828 5637 y Fb(31)p
 eop end
-%%Page: 31 31
-TeXDict begin 31 30 bop 257 573 a Fa(1)52 b(\(define)h(\(eval-set)h
+%%Page: 32 32
+TeXDict begin 32 31 bop 257 573 a Fa(1)52 b(\(define)h(\(eval-set)h
 (exp)e(env)g(cont\))257 693 y(2)g(\(let)g(\(\(var)h(\(car)f(\(cdr)g
 (exp\)\)\))257 814 y(3)359 b(\(val)53 b(\(car)f(\(cdr)g(\(cdr)h
 (exp\)\)\)\)\))257 934 y(4)257 b(\(base-eval)54 b(val)e(env)g(\(lambda)
@@ -1900,9 +1909,9 @@ y(save)g(env)309 3557 y(save)g(cont)309 3678 y(exp)g(=)f(car)h([cdr)h
 4521 y(restore)g(exp)257 4641 y(exp)f(=)g(car)g([)g(cdr)g(exp)g(])f(;;)
 h(x)257 4761 y(...)g(primitive)i(operation)g(\(env-set!)f(exp)f(val)h
 (env\))f(...)257 4882 y(val)g(=)g(ok)257 5002 y(goto)h(cont)1828
-5637 y Fb(31)p eop end
-%%Page: 32 32
-TeXDict begin 32 31 bop 404 573 a Fb(SICP)33 b(v)m(ersion)i(uses)f
+5637 y Fb(32)p eop end
+%%Page: 33 33
+TeXDict begin 33 32 bop 404 573 a Fb(SICP)33 b(v)m(ersion)i(uses)f
 (unev)257 801 y Fa(;;)52 b(\(set!)h(x)e(y\))257 922 y(ev-assignment:)
 309 1042 y(unev)h(=)f(car)i([)e(cdr)h(exp)g(])309 1162
 y(save)g(unev)309 1283 y(save)g(env)309 1403 y(save)g(cont)309
@@ -1913,9 +1922,9 @@ b(;;)52 b(y)309 1644 y(cont)g(=)f(ev-assignment-2)309
 y(restore)g(unev)257 2487 y(;;)f(unev)g(=)g(x)g(,)f(val)h(=)g
 (evaluated)h(y)257 2607 y(...)f(primitive)i(operation)g(\(env-set!)f
 (exp)f(val)h(env\))f(...)257 2727 y(val)g(=)g(ok)257
-2848 y(goto)h(cont)1828 5637 y Fb(32)p eop end
-%%Page: 33 33
-TeXDict begin 33 32 bop 257 573 a Fa(1)52 b(\(define)h(\(eval-define)h
+2848 y(goto)h(cont)1828 5637 y Fb(33)p eop end
+%%Page: 34 34
+TeXDict begin 34 33 bop 257 573 a Fa(1)52 b(\(define)h(\(eval-define)h
 (exp)f(env)f(cont\))257 693 y(2)g(\(let)g(\(\(var)h(\(car)f(\(cdr)g
 (exp\)\)\))257 814 y(3)359 b(\(val)53 b(\(car)f(\(cdr)g(\(cdr)h
 (exp\)\)\)\)\))257 934 y(4)257 b(\(base-eval)54 b(val)e(env)g(\(lambda)
@@ -1948,9 +1957,9 @@ y(save)g(env)309 3557 y(save)g(cont)309 3678 y(exp)g(=)f(car)h([cdr)h
 4521 y(restore)g(exp)257 4641 y(exp)f(=)g(car)g([)g(cdr)g(exp)g(])f(;;)
 h(f)257 4761 y(...)g(primitive)i(operation)g(\(env-define!)g(exp)e(val)
 g(env\))h(...)257 4882 y(val)f(=)g(ok)257 5002 y(goto)h(cont)1828
-5637 y Fb(33)p eop end
-%%Page: 34 34
-TeXDict begin 34 33 bop 404 573 a Fb(this)32 b(v)m(ersion)h(is)g(new)f
+5637 y Fb(34)p eop end
+%%Page: 35 35
+TeXDict begin 35 34 bop 404 573 a Fb(this)32 b(v)m(ersion)h(is)g(new)f
 (tail)g(recursiv)m(e)i(as)e(last)g(expression)i(in)e(a)f(b)s(egin)h
 (sequence)j(is)257 693 y(ev)-5 b(aluated)27 b(without)g(an)m(y)f
 (further)h(added)f(con)m(tin)m(uations)i(also)e(incorp)s(orated)g(a)g
@@ -2002,10 +2011,10 @@ b(aluate)41 b(the)f(rest)h(,)h(ev-sequence-2)g(seems)g(appropriate)e
 (other)g(unev)-5 b(aluated)34 b(argumen)m(ts)g(also)404
 5243 y(sa)m(v)m(e-con)m(t)g(sa)m(v)m(e-en)m(v)i(sa)m(v)m(e-unev)f(set!)
 45 b(exp)34 b(\(car)f(unev\))h(set!)45 b(con)m(t)34 b(ev-sequence-2)257
-5363 y(goto)e(ev)-5 b(al-dispatc)m(h)1828 5637 y(34)p
+5363 y(goto)e(ev)-5 b(al-dispatc)m(h)1828 5637 y(35)p
 eop end
-%%Page: 35 35
-TeXDict begin 35 34 bop 404 573 a Fb(ev-sequence-2)47
+%%Page: 36 36
+TeXDict begin 36 35 bop 404 573 a Fb(ev-sequence-2)47
 b(:)69 b(line)46 b(14)e(:)69 b(w)m(e)46 b(observ)m(e)h(see)f(eac)m(h)g
 (lam)m(b)s(da)g(in)f(con)m(tin)m(uation)257 693 y(passing)g(st)m(yle)g
 (b)s(ecomes)f(a)f(new)i(goto)d(lab)s(el)i(lo)s(cation)f(in)g(register)h
@@ -2033,9 +2042,9 @@ b(***)462 3690 y(\(set!)h(cont)f(ev-sequence-2\))462
 4413 y(R1:)104 b(\(restore-cont\))260 b(;;)52 b(***)360
 4533 y(\(set!)g(unev)h(\(cdr)f(unev\)\))360 4653 y(\(ev-sequence\)\))
 257 4894 y(\(define)h(\(ev-sequence-last-exp\))360 5015
-y(\(eval-dispatch\)\))1828 5637 y Fb(35)p eop end
-%%Page: 36 36
-TeXDict begin 36 35 bop 404 573 a Fb(ev-sequence)46 b(HO)m(WEVER)f(is)f
+y(\(eval-dispatch\)\))1828 5637 y Fb(36)p eop end
+%%Page: 37 37
+TeXDict begin 37 36 bop 404 573 a Fb(ev-sequence)46 b(HO)m(WEVER)f(is)f
 (called)h(from)e(other)h(sites)h(in)e(addition)h(to)f(ev)-5
 b(al-)257 693 y(dispatc)m(h.)71 b(This)42 b(is)f(A)-11
 b(WFUL)41 b(mo)s(dularit)m(y)h(,)h(means)f(w)m(e)g(cannot)g(think)f(ab)
@@ -2068,7 +2077,7 @@ b(\(restore-unev\))257 4533 y(R2:)g(\(restore-env\))360
 4653 y(\(set!)52 b(unev)h(\(cdr)f(unev\)\))360 4774 y
 (\(ev-sequence\)\))257 5015 y(\(define)h(\(ev-sequence-last-exp\))257
 5135 y(R1:)206 b(\(restore-cont\))158 b(;;)52 b(*****)360
-5255 y(\(eval-dispatch\)\))1828 5637 y Fb(36)p eop end
+5255 y(\(eval-dispatch\)\))1828 5637 y Fb(37)p eop end
 %%Trailer
 
 userdict /end-hook known{end-hook}if

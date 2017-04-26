@@ -1,0 +1,51 @@
+BODY {
+	background-color : white;
+	color : black;
+	font-family : Arial, Helvetica, Application;
+	font-size : 100%;
+	text-decoration : none;
+}
+
+DIV.normal {
+	margin-left : 1em;
+	font-family : Arial, Helvetica, Application;
+	font-size : 100%;
+	text-decoration : none;
+}
+.bottom {
+	font-size : 91%;
+	font-family : Arial, Helvetica, Application;
+	text-decoration : none;
+}
+
+BLOCKQUOTE {
+	font-style: italic;
+}
+
+CODE {
+	font-family : monospace;
+}
+
+PRE {
+	font-family : monospace;
+	letter-spacing : 0.3em;
+}
+.notSpaced {
+	letter-spacing : 0em;
+	margin-left : 3em;
+}
+
+DT {
+	margin-top : .5em;
+	font-weight : bold;
+}
+
+LI {
+	margin-top : .5em;
+	margin-bottom : .5em;
+}
+
+FONT.warning {
+	color : #440000;
+	font-weight : bold;
+}

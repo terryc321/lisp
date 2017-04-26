@@ -16,8 +16,9 @@
 
 ;; on 32bit system *wordsize* is 4 , as 4 bytes 4 x 8bits per byte = 32 bits in total
 ;; on 64bit system *wordsize* is 8 , as 8 bytes 8 x 8bits per byte = 64 bits in total
-(define *wordsize*  4)
+(define word  4)
 
+(define *wordsize*  4)
 
 
 (define *primitives*
@@ -150,11 +151,12 @@
   (emit "and dword eax , (-8) "))
 
 
-
-
-
-
-
+;; ********************************************************************************
+;; si : stack index represents the free slot on the stack
+;;  it is perfectly fine to assign results to SI slot 
+;;  
+;; does the SI register increase or decrease ??
+;;
 
 (define (comp-null x si env)
   (emit "mov dword eax , " the-empty-list-value))
@@ -173,11 +175,11 @@
 	(+ (shift-left (char->integer x) primitive-character-shift)
 	   (primitive-character-tag))))
 
+
 (define (comp-integer x si env)
   (emit "mov dword eax , " 
 	(shift-left x fixnum-shift)
 	" ; integer " x))
-
 
 
 (define (comp-add1 x si env)
@@ -185,10 +187,12 @@
   (emit "add dword eax , " 
 	(shift-left 1 fixnum-shift)))
 
+
 (define (comp-sub1 x si env)
   (comp (car (cdr x)) si env)
   (emit "sub dword eax , " 
 	(shift-left 1 fixnum-shift)))
+
 
 (define (comp-integer->char x si env)
   (comp (car (cdr x)) si env)
@@ -199,7 +203,6 @@
 (define (comp-char->integer x si env)
   (comp (car (cdr x)) si env)
   (emit "shr dword eax , 6"))
-
 
 
 (define (comp-zero? x si env)
@@ -219,8 +222,6 @@
   (emit "sete al")
   (emit "shl dword eax , " primitive-boolean-shift)
   (emit "or dword eax , " (primitive-boolean-tag)))
-
-
 
 
 (define (comp-not x si env)
@@ -254,111 +255,17 @@
   (emit "or dword eax , " (primitive-boolean-tag)))
 
 
-(define (comp-add x si env)
-  (comp (car (cdr x)) si env)
-  ;; save arg onto stack
-  (emit "mov dword [ esp " si "] , eax ")   
-  ;; E[y]
-  (comp (car (cdr (cdr x))) (- si *wordsize*) env)
-  (emit "add dword eax , [ esp " si "] "))
 
 
-(define (comp-sub x si env)
-    ;; (- x y)
-    ;; E[x]
-    (comp (car (cdr x)) si env)
-    ;; save onto stack
-    (emit "mov dword [ esp "  si "] , eax ")
-    ;; E[y]
-    (comp (car (cdr (cdr x))) (- si *wordsize*) env)
-    (emit "sub dword [ esp " si "] , eax ")
-    (emit "mov dword eax , [ esp " si "] "))
+(define (comp-car x si env)
+  (let ((arg1 (car (cdr x))))
+    (comp arg1 si env)
+    (emit "mov dword eax , [ eax - 1 ] ")))
 
-
-
-;; (let ...)
-(define (comp-let x si env)
-  (let ((bindings (car (cdr x)))
-	(body (cdr (cdr x)))
-	(local-env '()))
-    (comp-let-bindings bindings body si env local-env)))
-
-
-(define (comp-let-bindings bindings body si env local-env)
-  (cond
-   ;; extend environment with local bindings
-   ((null? bindings)
-    ;;(display "LET: new local env : ") (display local-env) (newline)    
-    (comp-implicit-sequence body si (append local-env env)))
-   
-   ;; some more bindings to do
-   (else (let ((the-binding (car bindings)))
-	   (let ((the-sym (car the-binding))
-		 (the-sym-body (cdr the-binding)))
-
-	     (comp-implicit-sequence the-sym-body si env)
-	     ;; mov eax into si
-	     ;; si represents the free slot on stack
-	     (emit "mov dword [ esp " si "] , eax ")
-	     	     
-	     ;;(newline)
-	     ;;(display "LET: the symbol : ") (display the-sym) (newline)
-	     ;;(display "LET:the symbol body : ") (display the-sym-body) (newline)
-	     ;;	     
-	     (comp-let-bindings (cdr bindings)
-				body
-				(- si *wordsize*)
-				env
-				(cons (list the-sym 'local si) local-env)))))))
-
-
-
-;; just close our eyes if its a begin sequence and fingers crossed
-(define (comp-implicit-sequence x si env)
-  (cond
-   ((null? x) #f)
-   (else (comp (car x) si env)
-	 (comp-implicit-sequence (cdr x) si env))))
-
-
-(define (toplevel-binding? x)
-  (and (= (length x) 3)
-       (eq? (car (cdr x)) 'toplevel)))
-
-
-(define (local-binding? x)
-  (and (= (length x) 3)
-       (eq? (car (cdr x)) 'local)))
-
-
-(define (closure-binding? x)
-  (and (= (length x) 3)
-       (eq? (car (cdr x)) 'closure)))
-
-
-(define (binding-stack-index x)
-  (car (cdr (cdr x))))
-
-
-;; 1 . local binding = from LET and on STACK
-;; 2 . closure binding = from LAMBDA and on STACK through RAW untagged CLOSURE POINTER
-;; 3 . toplevel binding = from DEFINE 
-
-(define (comp-lookup x si env)
-  (let ((binding (assoc x env)))
-    (cond
-     ((local-binding? binding)
-      (emit "mov dword eax , [ esp " (binding-stack-index binding)  "] "))
-     ((closure-binding? binding)
-      (emit "mov dword eax , [ esp - 4 ] ; move closure ptr into eax")
-      (emit "mov dword eax , [ eax + " (binding-stack-index binding) "] "))
-     ((toplevel-binding? binding)
-      (emit "mov dword eax , [ ebp " (binding-stack-index binding)  "] "))
-     (else
-      (error "comp-lookup : no binding for symbol " x)))))
-
-
-
+(define (comp-cdr x si env)
+  (let ((arg1 (car (cdr x))))
+    (comp arg1 si env)
+    (emit "mov dword eax , [ eax + 3 ] ")))
 
 
 ;; (if cond conseq alt)
@@ -396,45 +303,170 @@
 
 
 
-;;; problem with function call 
-;;; using cons
+
+
+
+
+;; just close our eyes if its a begin sequence and fingers crossed
+(define (comp-implicit-sequence x si env)
+  (cond
+   ((null? x) #f)
+   (else (comp (car x) si env)
+	 (comp-implicit-sequence (cdr x) si env))))
+
+
+;;*******************************************************************
+
+
 (define (comp-cons x si env)
-  ;; (cons x y)
-  ;; E[x]
-  (comp (car (cdr x)) si env)
-  ;; save onto stack
-  (emit "mov dword [ esp " si "] , eax ")
-  ;; E[y]
-  (comp (car (cdr (cdr x))) (- si *wordsize*) env)  
-  ;; store CDR
-  (emit "mov dword [ esi + 4 ] , eax ")
-  (emit "mov dword eax , [ esp " si "] ")
-  ;; store CAR
-  (emit "mov dword [ esi ] , eax ")
-  ;; tag result
-  (emit "mov dword eax , esi ")
-  ;; xxx001 is a PAIR tag
-  (emit "inc dword eax")
-  ;; bump esi
-  (emit "add dword esi , "  (* 2 *wordsize*)))
+  (let ((arg1 (car (cdr x)))
+	(arg2 (car (cdr (cdr x)))))
+    ;; compile arg1
+    (comp arg1 si env)
+    ;; save onto stack
+    ;;(emit "mov dword [ esp " si "] , eax ")
+    (emit "push dword eax")
+    ;; compile arg2
+    (comp arg2 (+ si word) env)
+    ;; arg2 in EAX
+    ;; heap in ESI register
+    
+    ;; store CDR in HEAP
+    (emit "mov dword [ esi + 4 ] , eax ")
+    ;; load arg1 into EAX
+    (emit "mov dword eax , [ ebp - " si "] ")    
+    ;; store CAR in HEAP
+    (emit "mov dword [ esi ] , eax ")
+    ;; tag result
+    (emit "mov dword eax , esi ")
+    ;; xxx001 is a PAIR tag
+    (emit "inc dword eax")    
+    ;; bump HEAP ESI 
+    (emit "add dword esi , "  (* 2 word))))
 
 
 
 
 
 
-(define (comp-car x si env)
-  ;; (car x)
-  ;; E[x]
-  (comp (car (cdr x)) si env)
-  (emit "mov dword eax , [ eax - 1 ] "))
 
 
-(define (comp-cdr x si env)
-  ;; (cdr x)
-  ;; E[x]
-  (comp (car (cdr x)) si env)
-  (emit "mov dword eax , [ eax + 3 ] "))
+
+(define (comp-add x si env)
+  (let ((arg1 (car (cdr x)))
+	(arg2 (car (cdr (cdr x)))))
+    ;; compile arg1 
+    (comp arg1 si env)
+    ;; save arg onto stack
+    (emit "push dword eax")
+    ;; compile arg2
+    (comp arg2 (+ si word) env)
+    ;; arg2 is in EAX 
+    ;;(emit "add dword eax , [ ebp - " si " ]")
+    (emit "add dword eax , [ esp ]")))
+
+
+(define (comp-sub x si env)
+  (let ((arg1 (car (cdr x)))
+	(arg2 (car (cdr (cdr x)))))
+    ;; compile arg1
+    (comp arg1 si env)
+    ;; save onto stack
+    (emit "push dword eax")
+    ;; compile arg2
+    (comp arg2 (+ si word) env)
+    ;; arg2 in EAX
+    ;;(emit "sub dword [ ebp - " si "] , eax ")
+    ;;(emit "mov dword eax , [ ebp - " si "] ")
+    (emit "sub dword [ esp ] , eax")
+    (emit "mov dword eax , [ esp ] ")))
+
+
+
+
+;; SI stack index is POSITIVE multiple of word (word = 4)
+;; results end in EAX register
+;; push 
+;; ***********************************************************************************
+
+
+;; (let ...)
+(define (comp-let x si env)
+  (let ((bindings (car (cdr x)))
+	(body (cdr (cdr x)))
+	(local-env '()))
+    (comp-let-bindings bindings body si env local-env)))
+
+
+(define (comp-let-bindings bindings body si env local-env)
+  (cond
+   ;; extend environment with local bindings
+   ;; no more bindings to do 
+   ((null? bindings)
+    ;;(display "LET: new local env : ") (display local-env) (newline)    
+    (comp-implicit-sequence body si (append local-env env)))
+   
+   ;; some more bindings to do
+   (else (let ((the-binding (car bindings)))
+	   (let ((the-sym (car the-binding))
+		 (the-sym-body (cdr the-binding)))
+	     
+	     (comp-implicit-sequence the-sym-body si env)
+	     ;; mov eax into si
+	     ;; si represents the free slot on stack
+	     (emit "mov dword [ ebp - " si "] , eax  ; let bound " the-sym)
+	     	     
+	     ;;(newline)
+	     ;;(display "LET: the symbol : ") (display the-sym) (newline)
+	     ;;(display "LET:the symbol body : ") (display the-sym-body) (newline)
+	     ;;	     
+	     (comp-let-bindings (cdr bindings)
+				body
+				(+ si word)
+				env
+				(cons (list the-sym 'local si) local-env)))))))
+
+
+(define (toplevel-binding? x)
+  (and (= (length x) 3)
+       (eq? (car (cdr x)) 'toplevel)))
+
+
+(define (local-binding? x)
+  (and (= (length x) 3)
+       (eq? (car (cdr x)) 'local)))
+
+
+(define (closure-binding? x)
+  (and (= (length x) 3)
+       (eq? (car (cdr x)) 'closure)))
+
+
+(define (binding-stack-index x)
+  (car (cdr (cdr x))))
+
+
+;; 1 . local binding = from LET and on STACK
+;; 2 . closure binding = from LAMBDA and on STACK through RAW untagged CLOSURE POINTER
+;; 3 . toplevel binding = from DEFINE 
+(define (comp-lookup x si env)
+  (let ((binding (assoc x env)))
+    (cond
+     ((local-binding? binding)
+      (emit "mov dword eax , [ ebp - " (binding-stack-index binding)  "] "))
+     ((closure-binding? binding)
+      (emit "mov dword eax , [ ebp - 4 ] ; move closure ptr into eax")
+      (emit "mov dword eax , [ ebx + " (binding-stack-index binding) "] "))
+     ((toplevel-binding? binding)
+      (emit "mov dword eax , [ ebp - " (binding-stack-index binding)  "] "))
+     (else
+      (error "comp-lookup : no binding for symbol " x)))))
+
+
+
+
+
+
 
 
 
@@ -466,23 +498,23 @@
   (emit "push dword eax")
   
   ;; bump 
-  (emit "add dword esi , " (* 2 *wordsize*))
+  (emit "add dword esi , " (* 2 word))
   
   ;; bump
   (let ((bump-label (gensym "bump")))
     (emit bump-label ": mov dword [ esi ] , " the-false-value)
     ;;(emit "mov dword [ esi + 4 ] , " the-false-value)
-    ;;(emit "add dword esi , " (* 2 *wordsize*))
-    (emit "add dword esi , " *wordsize*)
+    ;;(emit "add dword esi , " (* 2 word))
+    (emit "add dword esi , " word)
     ;;(emit "dec dword ebx ")    
     (emit "dec dword ebx ")    
     (emit "cmp dword ebx , 0 ") 
     (emit "ja " bump-label))
-
+  ;; align heap ptr on 8 byte boundary
+  ;; ie ESI is multiple of 8
   (emit-align-heap-pointer)
   
   (emit "pop dword eax"))
-
 
 
 
@@ -508,10 +540,20 @@
 ;; fd -3     01
 ;; fc -4     00
 
+
+;; fixnum lower 2 bits should be zero
+;; and with -4
+;; -4 in twos complement is X
 (define (comp-div2 x si env)
-  (comp (car (cdr x)) si env)
-  (emit "shr dword eax , 3 ")
-  (emit "shl dword eax , 2"))
+  (let ((arg1 (car (cdr x))))
+    (comp arg1 si env)
+    (emit "shr dword eax , 1 ")
+    (emit "and dword eax , -4 ")))
+
+
+
+
+
 
   
   ;; (emit "nop")
@@ -537,6 +579,7 @@
   (comp (car (cdr x)) si env)
   (emit "mov dword ebx , 3")  
   (emit "mul dword ebx")
+  ;; 4 is 1 shifted left twice 00 is fixnum tag
   (emit "add dword eax , 4"))
 
 
@@ -552,48 +595,52 @@
 
 
 
-
+;; eg 1 * 1 would be 4 * 4 in fixnum tagged form
 (define (comp-mul x si env)
-  ;; (* x y)
-  ;; E[x]
-  (comp (car (cdr x)) si env)
-  ;; save onto stack
-  (emit "mov dword [ esp " si "] , eax ")
-  ;; E[y]
-  (comp (car (cdr (cdr x))) (- si *wordsize*) env)
+  (let ((arg1 (car (cdr x)))
+	(arg2 (car (cdr (cdr x)))))    
+    (comp arg1 si env)
+    ;; save onto stack
+    ;;(emit "mov dword [ esp " si "] , eax ")
+    (emit "push dword eax")
+    
+    ;; compile 2nd branch
+    (comp arg2 (+ si word) env)
 
-  (emit "shr dword eax , 2 ")
-  (emit "mov dword ebx , [esp " si "]")
-  (emit "shr dword ebx , 2 ")
-  (emit "mul dword ebx")
-  (emit "shl dword eax , 2 "))
+    ;; arg2 in eax - untag fixnum
+    (emit "shr dword eax , 2 ")
 
-
-
-
-
-
-
-
-
+    ;; 
+    (emit "mov dword ebx , [esp]")
+    ;; arg1 in ebx - untag fixnum
+    (emit "shr dword ebx , 2 ")
+    ;; multiply 
+    (emit "mul dword ebx")
+    ;; leaves result in edx : eax ??
+    (emit "shl dword eax , 2 ")))
 
 
 (define (comp-num= x si env)
-  ;; (= x y)
-  ;; E[x]
-  (comp (car (cdr x)) si env)
-  ;; save onto stack
-  (emit "mov dword [ esp " si "] , eax ")
-  ;; E[y]
-  (comp (car (cdr (cdr x))) (- si *wordsize*) env)  
-  ;; are they equal?
-  (emit "cmp dword [ esp " si "] , eax ")
-  ;; 
-  (emit "mov dword eax , 0 ")
-  (emit "sete al")
-  (emit "shl dword eax , " primitive-boolean-shift)
-  (emit "or dword eax , " (primitive-boolean-tag)))
-  
+  (let ((arg1 (car (cdr x)))
+	(arg2 (car (cdr (cdr x)))))
+    ;; compile arg1
+    (comp arg1 si env)
+    
+    ;; save onto stack
+    (emit "push dword eax")
+
+    ;; compile arg2
+    (comp arg2  (+ si word) env)
+    
+    ;; are they equal?
+    (emit "cmp dword [ esp ] , eax ")
+
+    ;; 
+    (emit "mov dword eax , 0 ")
+    (emit "sete al")
+    (emit "shl dword eax , " primitive-boolean-shift)
+    (emit "or dword eax , " (primitive-boolean-tag))))
+ 
   
   ;; (emit "mov dword [ esi + 4 ] , eax ")
   ;; (emit "mov dword eax , [ esp " si "] ")
@@ -607,37 +654,24 @@
   ;; (emit "add dword esi , "  (* 2 *wordsize*)))
 
 
-
-
 ;; 
 (define (comp-num> x si env)
-  ;; (let ((done-label (gensym "done"))
-  ;; 	(false-label (gensym "false"))
-  ;; 	(true-label (gensym "true")))
+  (let ((arg1 (car (cdr x)))
+	(arg2 (car (cdr (cdr x)))))
+    ;; compile arg1
+    (comp arg1 si env)
+    ;; save onto stack
+    (emit "push dword eax")
+  
+    ;; compile arg2
+    (comp arg2 (+ si word) env)
+    ;; are they equal?
+    (emit "cmp dword [ esp ] , eax ")
     
-  ;; (= x y)
-  ;; E[x]
-  (comp (car (cdr x)) si env)
-  ;; save onto stack
-  (emit "mov dword [ esp " si "] , eax ")
-  ;; E[y]
-  (comp (car (cdr (cdr x))) (- si *wordsize*) env)  
-  ;; are they equal?
-  (emit "cmp dword [ esp " si "] , eax ")
-
-  (emit "mov dword eax , 0 ")
-  (emit "setg al")
-  (emit "shl dword eax , " primitive-boolean-shift)
-  (emit "or dword eax , " (primitive-boolean-tag)))
-  
-  ;; (emit "jg " true-label)
-  ;; (emit "mov dword eax , " the-false-value)
-  ;; (emit "jmp " done-label)  
-  
-  ;; (emit true-label ": mov dword eax , " the-true-value)  
-  ;; (emit done-label ": nop")))
-
-
+    (emit "mov dword eax , 0 ")
+    (emit "setg al")
+    (emit "shl dword eax , " primitive-boolean-shift)
+    (emit "or dword eax , " (primitive-boolean-tag))))
 
 
 
@@ -645,55 +679,63 @@
 
 
 (define (comp-num< x si env)
-  ;; E[x]
-  (comp (car (cdr x)) si env)
-  ;; save onto stack
-  (emit "mov dword [ esp " si "] , eax ")
-  ;; E[y]
-  (comp (car (cdr (cdr x))) (- si *wordsize*) env)  
-  ;; are they equal?
-  (emit "cmp dword [ esp " si "] , eax ")
+  (let ((arg1 (car (cdr x)))
+	(arg2 (car (cdr (cdr x)))))
+    ;; compile arg1
+    (comp arg1 si env)
+    ;; save onto stack
+    ;;(emit "mov dword [ esp " si "] , eax ")
+    (emit "push dword eax")
+    ;; compile arg2
+    (comp arg2 (+ si word) env)
+    ;; are they equal?
+    (emit "cmp dword [ esp ] , eax ")
 
-  (emit "mov dword eax , 0 ")
-  (emit "setl al")
-  (emit "shl dword eax , " primitive-boolean-shift)
-  (emit "or dword eax , " (primitive-boolean-tag)))
-
-
+    (emit "mov dword eax , 0 ")
+    (emit "setl al")
+    (emit "shl dword eax , " primitive-boolean-shift)
+    (emit "or dword eax , " (primitive-boolean-tag))))
 
 
 (define (comp-num<= x si env)
-  ;; E[x]
-  (comp (car (cdr x)) si env)
+  (let ((arg1 (car (cdr x)))
+	(arg2 (car (cdr (cdr x)))))
+    ;; comp arg1
+  (comp arg1 si env)
   ;; save onto stack
-  (emit "mov dword [ esp " si "] , eax ")
-  ;; E[y]
-  (comp (car (cdr (cdr x))) (- si *wordsize*) env)  
+  ;;(emit "mov dword [ esp " si "] , eax ")
+  (emit "push dword eax")
+  ;; comp arg2
+  (comp arg2 (+ si word) env)
   ;; are they equal?
-  (emit "cmp dword [ esp " si "] , eax ")
+  (emit "cmp dword [ esp ] , eax ")
 
   (emit "mov dword eax , 0 ")
   (emit "setle al")
   (emit "shl dword eax , " primitive-boolean-shift)
-  (emit "or dword eax , " (primitive-boolean-tag)))
-
-
+  (emit "or dword eax , " (primitive-boolean-tag))))
 
 
 (define (comp-num>= x si env)
-  ;; E[x]
-  (comp (car (cdr x)) si env)
-  ;; save onto stack
-  (emit "mov dword [ esp " si "] , eax ")
-  ;; E[y]
-  (comp (car (cdr (cdr x))) (- si *wordsize*) env)  
-  ;; are they equal?
-  (emit "cmp dword [ esp " si "] , eax ")
+  (let ((arg1 (car (cdr x)))
+	(arg2 (car (cdr (cdr x)))))
 
-  (emit "mov dword eax , 0 ")
-  (emit "setge al")
-  (emit "shl dword eax , " primitive-boolean-shift)
-  (emit "or dword eax , " (primitive-boolean-tag)))
+    (comp arg1 si env)
+  ;; save onto stack
+    ;;(emit "mov dword [ esp " si "] , eax ")
+    (emit "push dword eax")
+    
+    (comp arg2 (+ si word) env)
+    
+    ;; are they equal?
+    (emit "cmp dword [ esp ] , eax ")
+
+    (emit "mov dword eax , 0 ")
+    (emit "setge al")
+    (emit "shl dword eax , " primitive-boolean-shift)
+    (emit "or dword eax , " (primitive-boolean-tag))))
+
+
 
 
 (define (comp-begin x si env)
@@ -944,21 +986,17 @@
 ;; si - 12  :  arg2
 ;; si - 16  :  arg3
 ;;
-(define (comp-application-helper args si index env)
+(define (comp-application-helper args si env)
   (cond
    ((null? args) #f)
    (else (begin
-	   (let ((si-offset (- si (* index *wordsize*))))
-	   (comp (car args) si-offset env)
-	   (emit "mov dword [ esp " si-offset "] , eax ; save arg " index)
-	   (comp-application-helper (cdr args) si (+ index 1) env))))))
+	   (comp (car args) si env)
+	   (emit "push dword eax")
+	   ;;(emit "mov dword [ ebp - " si-offset "] , eax ; save arg " index)
+	   (comp-application-helper (cdr args) (+ si word) env)))))
 
 
 
-
-
-
-;;
 ;; when processor does a CALL , it decrements ESP by 4 
 ;; writes slot where IP should continue after call
 ;; then jumps to CALL location
@@ -983,17 +1021,22 @@
     (newline)
 
     ;; compile arguments and move them into stack positions 
-    (comp-application-helper args si 2 env)
+    ;;(comp-application-helper args si 0 env)
+    (comp-application-helper args si env)
 
     ;;    
-    (comp fn (- si (* (+ 2 (length args)) *wordsize*)) env)
-    
-    ;; untag it    
-    (emit "sub dword eax , 110b ; untag closure ")
-    ;;(emit "mov dword [esp " (- si *wordsize*) " ] , eax ; closure ptr ")
-    (emit "mov dword [esp " (- si 4) " ] , eax ; closure ptr ")   
+    (comp fn (+ si (* (+ 2 (length args)) word)) env)
     
     
+    ;; untag the closure in EAX 
+    (emit "and dword eax , -8 ; untag closure -8 is binary 11...1111000  lower 3 bits zero")
+
+    
+    ;;(emit "sub dword eax , 110b ; untag closure ")
+    ;;(emit "mov dword [esp " (+ si wordsize) " ] , eax ; closure ptr ")
+    
+    ;;(emit "mov dword [ebp - " (+ si 4) " ] , eax ; closure ptr ")   
+        
     ;;(comp fn (- si (* (+ 2 (length args)) *wordsize*)) env)
     ;; presumably there is a closure left in EAX register
     ;;(emit "mov dword eax , [esp " (- si *wordsize*) "] ; closure ptr ")   
@@ -1007,13 +1050,13 @@
     (emit "mov dword eax , [eax] ; load CODE address ")
     
     ;;(let ((adjust (+ si *wordsize*)))
-    (emit "add dword esp , " (+ si 4) "; adjust stack")
-    (emit "call eax ; call closure")
-    (emit "sub dword esp , " (+ si 4) "; restore esp")))
+    
+    ;;(emit "sub dword esp , " (+ si 4) "; adjust stack")
+    (emit "call eax ; call closure")))
 
-
-
-
+    
+    ;;(emit "add dword esp , " (+ si 4) "; restore esp")))
+    
 
 
 

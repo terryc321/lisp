@@ -70,6 +70,127 @@ def test_reset():
 test_reset()
 
 
+# comp-null
+test_case("()","()")
+
+# comp-boolean
+test_case("#t","#t")
+test_case("#f","#f")
+
+
+# comp-char
+test_case("#\\a","#\\a")
+test_case("#\\A","#\\A")
+
+# comp-integer
+test_case("123","123")
+test_case("-42","-42")
+test_case("0","0")
+
+# comp add1
+test_case("(add1 3)","4")
+test_case("(add1 -3)","-2")
+
+# comp sub1
+test_case("(sub1 3)","2")
+test_case("(sub1 -3)","-4")
+
+# comp integer->char
+test_case("(integer->char 65)","#\\A")
+test_case("(integer->char 97)","#\\a")
+
+# comp char->integer
+test_case("(char->integer #\\a)","97")
+test_case("(char->integer #\\A)","65")
+
+# comp zero?
+test_case("(zero? 3)", "#f")
+test_case("(zero? 0)", "#t")
+
+# comp null?
+test_case("(null? #t)", "#f")
+test_case("(null? ())", "#t")
+
+
+# comp not
+test_case("(not #t)","#f")
+test_case("(not #f)","#t")
+
+# comp boolean?
+test_case("(boolean? #t)","#t")
+test_case("(boolean? #f)","#t")
+test_case("(boolean? 32)","#f")
+test_case("(boolean? #\\a)","#f")
+
+# comp integer?
+test_case("(integer? 32)","#t")
+test_case("(integer? #t)","#f")
+test_case("(integer? #f)","#f")
+test_case("(integer? #\\a)","#f")
+
+# comp add
+test_case("(+ 1 2)","3")
+test_case("(+ -1 32)","31")
+
+# comp sub
+test_case("(- 2 5)","-3")
+test_case("(- 10 7)","3")
+
+
+# comp cons
+test_case("(cons 1 2)","(1 . 2)")
+test_case("(cons 1 ())","(1 . ())")
+
+# comp car
+test_case("(car (cons 1 2))","1")
+
+# comp cdr
+test_case("(cdr (cons 1 2))","2")
+
+
+# comp let
+test_section(" LET ")
+test_case("(let ((a 5)) 3)" , "3") # didnt use the bindings
+test_case("(let ((a 5)) a)" , "5") 
+test_case("(let ((a 1 2 3)) a)" , "3")
+test_case("(let ((a 123)) a)" , "123")
+test_case("(let ((a (+ 1 1))) a)" , "2")
+test_case("(let ((a 123)) (let ((b a)) (+ b b)))" , "246")
+test_case("(let ((a 123)) (let ((b (+ a a))) b))", "246")
+test_case("(let ((a 123)) (let ((b (- a a))) b))", "0")
+
+test_section(" IF ")
+test_case("(if #t 1 2)" , "1")
+test_case("(if #f 1 2)" , "2")
+test_case("(if #t 1)" , "1")
+test_case("(if #f 1)" , "#f")
+test_case("(if () 1 2)" , "1")
+test_case("(if 32 1 2)" , "1")
+test_case("(if #\\a #\\b #\\c)" , "#\\b")
+
+
+test_section(" vector ")
+test_case("(make-vector 12)", "#[#f #f #f #f #f #f #f #f #f #f #f #f]")
+test_case("(make-vector 5)", "#[#f #f #f #f #f]")
+test_case("(make-vector 3)", "#[#f #f #f]")
+test_case("(make-vector 1)", "#[#f]")
+test_case("(make-vector (+ 7 8))", "#[#f #f #f #f #f #f #f #f #f #f #f #f #f #f #f]")
+
+
+
+test_section(" divide by 2 ")
+test_case("(div2 512)" ,"256")
+test_case("(div2 256)" ,"128")
+test_case("(div2 12)" ,"6")
+test_case("(div2 3)" ,"1")
+test_case("(div2 4)" ,"2")
+
+
+test_section(" MULTIPLY tests ")
+test_case("(* 2 3)" , "6")
+test_case("(* -1 5)" , "-5")
+
+
 # test_section("fixnums")
 # test_case("(+ 1 (+ 2 (+ 3 4)))","10")
 
@@ -160,15 +281,6 @@ test_reset()
 # test_case("(not ())","#f")
 
 
-# test_section(" IF ")
-# test_case("(if #t 1 2)" , "1")
-# test_case("(if #f 1 2)" , "2")
-# test_case("(if #t 1)" , "1")
-# test_case("(if #f 1)" , "#f")
-# test_case("(if () 1 2)" , "1")
-# test_case("(if 32 1 2)" , "1")
-# test_case("(if #\\a #\\b #\\c)" , "#\\b")
-
 
 # test_section(" CONS ")
 # test_case("(cons #t #f)" , "(#t . #f)")
@@ -189,21 +301,6 @@ test_reset()
 # test_section(" check negative number prints correctly ")
 # test_case("-32","-32")
 
-# test_section(" vector ")
-# test_case("(make-vector 12)", "#[#f #f #f #f #f #f #f #f #f #f #f #f]")
-# test_case("(make-vector 5)", "#[#f #f #f #f #f]")
-# test_case("(make-vector 3)", "#[#f #f #f]")
-# test_case("(make-vector 1)", "#[#f]")
-# test_case("(make-vector (+ 7 8))", "#[#f #f #f #f #f #f #f #f #f #f #f #f #f #f #f]")
-
-# test_section(" divide by 2 ")
-# test_case("(div2 512)" ,"256")
-# test_case("(div2 256)" ,"128")
-# test_case("(div2 12)" ,"6")
-# test_case("(div2 3)" ,"1")
-# test_case("(div2 4)" ,"2")
-
-
 # test_section(" multiply by 3 and add 1 ")
 # test_case("(mul3+1 512)" ,"1537")
 # test_case("(mul3+1 256)" ,"769") 
@@ -223,71 +320,67 @@ test_reset()
 # test_case("(odd? -4)","#f")
 # test_case("(odd? -5)","#t")
 
-# test_section(" fixnum = tests ")
-# test_case("(= 1 1)","#t")
-# test_case("(= 0 1)","#f")
-# test_case("(= 0 0)","#t")
-# test_case("(= 1 0)","#f")
-# test_case("(= -1 1)","#f")
-# test_case("(= -1 -1)","#t")
-# test_case("(= -256 -256)","#t")
+test_section(" fixnum = tests ")
+test_case("(= 1 1)","#t")
+test_case("(= 0 1)","#f")
+test_case("(= 0 0)","#t")
+test_case("(= 1 0)","#f")
+test_case("(= -1 1)","#f")
+test_case("(= -1 -1)","#t")
+test_case("(= -256 -256)","#t")
 
-# test_section(" fixnum > tests ")
-# test_case("(> 1 1)","#f")
-# test_case("(> 0 1)","#f")
-# test_case("(> 0 0)","#f")
-# test_case("(> 1 0)","#t")
-# test_case("(> 1 -3)","#t")
-# test_case("(> -1 1)","#f")
-# test_case("(> -1 -1)","#f")
-# test_case("(> -256 -256)","#f")
-# test_case("(> -1 -5)","#t")
-# test_case("(> -5 -1)","#f")
-
-
-# test_section(" fixnum < tests ")
-# test_case("(< 1 1)","#f")
-# test_case("(< 0 1)","#t")
-# test_case("(< 0 0)","#f")
-# test_case("(< 1 0)","#f")
-# test_case("(< 1 -3)","#f")
-# test_case("(< -1 1)","#t")
-# test_case("(< -1 -1)","#f")
-# test_case("(< -256 -256)","#f")
-# test_case("(< -1 -5)","#f")
-# test_case("(< -5 -3)","#t")
-
-# #test_case("(div2 -256)" ,"-128")
-
-# test_section(" fixnum <= tests ")
-# test_case("(<= 1 1)","#t")
-# test_case("(<= 0 1)","#t")
-# test_case("(<= 0 0)","#t")
-# test_case("(<= 1 0)","#f")
-# test_case("(<= 1 -3)","#f")
-# test_case("(<= -1 1)","#t")
-# test_case("(<= -1 -1)","#t")
-# test_case("(<= -256 -256)","#t")
-# test_case("(<= -1 -5)","#f")
-# test_case("(<= -5 -3)","#t")
+test_section(" fixnum > tests ")
+test_case("(> 1 1)","#f")
+test_case("(> 0 1)","#f")
+test_case("(> 0 0)","#f")
+test_case("(> 1 0)","#t")
+test_case("(> 1 -3)","#t")
+test_case("(> -1 1)","#f")
+test_case("(> -1 -1)","#f")
+test_case("(> -256 -256)","#f")
+test_case("(> -1 -5)","#t")
+test_case("(> -5 -1)","#f")
 
 
-# test_section(" fixnum >= tests ")
-# test_case("(>= 1 1)","#t")
-# test_case("(>= 0 1)","#f")
-# test_case("(>= 0 0)","#t")
-# test_case("(>= 1 0)","#t")
-# test_case("(>= 1 -3)","#t")
-# test_case("(>= -1 1)","#f")
-# test_case("(>= -1 -1)","#t")
-# test_case("(>= -256 -256)","#t")
-# test_case("(>= -1 -5)","#t")
-# test_case("(>= -5 -3)","#f")
+test_section(" fixnum < tests ")
+test_case("(< 1 1)","#f")
+test_case("(< 0 1)","#t")
+test_case("(< 0 0)","#f")
+test_case("(< 1 0)","#f")
+test_case("(< 1 -3)","#f")
+test_case("(< -1 1)","#t")
+test_case("(< -1 -1)","#f")
+test_case("(< -256 -256)","#f")
+test_case("(< -1 -5)","#f")
+test_case("(< -5 -3)","#t")
+
+test_case("(div2 -256)" ,"-128")
+
+test_section(" fixnum <= tests ")
+test_case("(<= 1 1)","#t")
+test_case("(<= 0 1)","#t")
+test_case("(<= 0 0)","#t")
+test_case("(<= 1 0)","#f")
+test_case("(<= 1 -3)","#f")
+test_case("(<= -1 1)","#t")
+test_case("(<= -1 -1)","#t")
+test_case("(<= -256 -256)","#t")
+test_case("(<= -1 -5)","#f")
+test_case("(<= -5 -3)","#t")
 
 
-# test_section(" MULTIPLY tests ")
-# test_case("(* 2 3)" , "6")
-# test_case("(* -1 5)" , "-5")
+test_section(" fixnum >= tests ")
+test_case("(>= 1 1)","#t")
+test_case("(>= 0 1)","#f")
+test_case("(>= 0 0)","#t")
+test_case("(>= 1 0)","#t")
+test_case("(>= 1 -3)","#t")
+test_case("(>= -1 1)","#f")
+test_case("(>= -1 -1)","#t")
+test_case("(>= -256 -256)","#t")
+test_case("(>= -1 -5)","#t")
+test_case("(>= -5 -3)","#f")
+
 
 
 # # test_section(" F3 tests ")
@@ -306,13 +399,6 @@ test_reset()
 # # test_case("(f3x (let ((dummy 5)) (f3x 1 2 3)) 4 5)","1")
 # # test_case("(f3x (f3y 1 2 3) (let ((dummy 4)) dummy) 5)","2")
 # # test_case("(f3x (f3z 1 2 3) 4 (let ((dummy 5)) dummy))","3")
-
-# test_section(" LET ")
-# test_case("(let ((a 5)) 3)" , "3") # didnt use the bindings
-# test_case("(let ((a 5)) a)" , "5") 
-# test_case("(let ((a (+ 1 1))) a)" , "2")
-# test_case("(let ((a 1 2 3)) a)" , "3")
-# test_case("(let ((a 123)) (let ((b (+ a a))) b))" , "246")
 
 
 
@@ -509,7 +595,7 @@ test_reset()
 # test_case("(begin (cons 1 2)(cons 3 4)(cons 5 6)(cons 7 8)(cons 9 10))","(9 . 10)")
 
 # test_case("(lambda () (+ 1 2))","#<closure>")
-# test_case("((lambda () (+ 1 2)))","3")
+test_case("((lambda () (+ 1 2)))","3")
 
 # test_case("(let ((x 5)) (+ x x))","10")
 # test_case("(define f 1)(define g 2) ((lambda (a b c) (+ a (+ b c))) 1 2 3)","6")
@@ -517,7 +603,8 @@ test_reset()
 # test_case("(define f 1) f" , "1")
 # test_case("(define f 1) (define g 2) f " , "1")
 
-# test_case("(define square (lambda (x) (* x x))) (define g 2) (square 5) " , "25")
+#test_case("(define square (lambda (x) (* x x))) (define g 2) (square 5) " , "25")
+
 
 # # test_section("TAILCALL TAK tests ")
 
@@ -631,7 +718,7 @@ def fac_test2(a,b):
 #fac_test("(fac 2)" , "2")
 #fac_test("(fac 3)" , "6")
 #fac_test("(fac 4)" , "24")
-fac_test2("(fac 5 1)" , "120")
+#fac_test2("(fac 5 1)" , "120")
 #fac_test("(fac 6)" , "720")
 # fac_test("(fac 10)" , "3628800")
 
@@ -650,7 +737,7 @@ def tail_fac_test2(a,b):
 #tail_fac_test2("(fac2 2 1)" , "2")
 #tail_fac_test2("(fac2 3 1)" , "6")
 #tail_fac_test2("(fac2 4 1)" , "24")
-tail_fac_test2("(fac2 5 1)" , "120")
+#tail_fac_test2("(fac2 5 1)" , "120")
 #tail_fac_test2("(fac2 6 1)" , "720")
 #tail_fac_test2("(fac2 10 1)" , "3628800")
 
@@ -668,9 +755,8 @@ def tail_f2_test(a,b):
 
         """ + a , b)
 
-tail_f2_test("(f 1)" , "3")
-
-tail_f2_test("(g 1)" , "3")
+#tail_f2_test("(f 1)" , "3")
+#tail_f2_test("(g 1)" , "3")
 
 def tail_f_test(a,b):
     global test_case
@@ -682,7 +768,7 @@ def tail_f_test(a,b):
              (tailcall (f (+ n 1)))))
         """ + a , b)
 
-tail_f_test("(f 1)" , "11")
+#tail_f_test("(f 1)" , "11")
 
 def tail_f3_test(a,b):
     global test_case
@@ -695,8 +781,8 @@ def tail_f3_test(a,b):
         """ + a , b)
 
 #tail_f3_test("(f3 1 5)" , "(10 . (9 . (8 . (7 . (6 . (5 . (4 . (3 . (2 . (1 . 5))))))))))")
-tail_f3_test("(f3 11 5)" , "5")
-tail_f3_test("(f3 10 5)" , "(10 . 5)")
+#tail_f3_test("(f3 11 5)" , "5")
+#tail_f3_test("(f3 10 5)" , "(10 . 5)")
 
 
 def tail_f4_test(a,b):
@@ -710,19 +796,19 @@ def tail_f4_test(a,b):
         """ + a , b)
 
 #tail_f3_test("(f4 1 5)" , "(10 . (9 . (8 . (7 . (6 . (5 . (4 . (3 . (2 . (1 . 5))))))))))")
-tail_f4_test("(f4 11 5)" , "5")
-tail_f4_test("(f4 10 5)" , "(10 . 5)")
-
-
-test_case("""
-(define (f x) (cons x ()))
-(f 4)
-""", "(4 . 5)")
+#tail_f4_test("(f4 11 5)" , "5")
 #tail_f4_test("(f4 10 5)" , "(10 . 5)")
 
-test_case("""
-(cons 4 5)
-""", "(4 . 5)")
+
+# test_case("""
+# (define (f x) (cons x ()))
+# (f 4)
+# """, "(4 . 5)")
+# #tail_f4_test("(f4 10 5)" , "(10 . 5)")
+
+# test_case("""
+# (cons 4 5)
+# """, "(4 . 5)")
 
 
 

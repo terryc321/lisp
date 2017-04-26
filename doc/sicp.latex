@@ -2,6 +2,116 @@
 \documentclass[a4paper,12pt]{article}
 \begin{document}
 
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+compilation CAR , CDR and CONS
+
+(car (cons 1 2 ))
+= compile 1
+
+(cdr (cons 1 2))
+= compile 2
+
+short circuit the compilation of CONS , CAR , CDR 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+headaches over SI stack index
+is it a negative quantity or because x86 stack grows downward in memory is just soo
+confusing.
+
+view it as a stack and ignore the fact it is growing downward in memory seems correct
+abstraction , since talk about it being a stack not a stalagtite or stalagmite
+
+changing ALL code to use a POSITIVE si stack index ,
+any EMIT code must offset this from the base pointer.
+
+this means running through all the code tests one by one.
+
+comp-add 
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+compilation tactics FIXNUM ADD
+
+\begin{verbatim}
+(define (comp-add x si env)
+(let ((arg1 (car (cdr x)))
+      (arg2 (car (cdr (cdr x)))))
+   (cond
+     ((number? arg2)
+         (comp arg1 si env)
+	 ;; arg1 sits in EAX register say
+      (if (= arg2 1)
+          (emit "INC DWORD EAX")
+	  (emit "ADD DWORD EAX " arg2)))
+     (else
+      ;; compile both branches 
+          (comp arg1 si env)
+	  (emit "PUSH DWORD EAX")
+	  (comp arg2 (+ si word) env)
+	  (emit "ADD DWORD EAX , [EBP -" si "]"))))
+	  
+\end{verbatim}
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+weighted tree
+
+idea is if a left branch takes L registers to compute , and right branch
+takes R registers to compute then
+
+compute maximum branch first , then overall tree takes that many registers to compute.
+
+e.g L = 3 , R = 4 , it requires atmost 4 registers to compute entire tree if we do R first.
+if we do left first it will need 5 registers because have to hold L left branch result ,
+while do R right branch.
+how we compute how many registers expression takes is a mystery for now ,
+eg what weight is given to procedure calls ??
+
+leaf node has weight 0
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+compilation of AND
+
+\begin{verbatim}
+(and a b c ...)
+
+as macro into
+(let (temp1 a) (if temp1  ... )
+
+
+(or a b c ...)
+(let ((temp1 a))
+  (if 
+
+sure could just be compiled more directly in x86
+
+also no need to construct BOOLEAN object if it never gets out
+e.g
+(if (not ....) do-this do-that)
+    
+either do-this OR do-that is to be done , do not care about this (not ...)
+expression
+
+compile for effect VS compile for value
+
+\end{verbatim}
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+First version of compiler is a simple recursive tree walking translator,
+well atleast the code generator phase is.
+
+format of compilation is 3 arguments , x is the expression , si is the stack index ,
+env is the compile time environment.
+
+\begin{verbatim}
+(define (comp x si env) ...)
+\end{verbatim}
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
 Every pointer to a heap-
 allocated object is tagged by a 3-bit tag (001 b for pairs, 010 b for
 vectors, 011 b for strings, 101 b for symbols, and 110 b for closures;

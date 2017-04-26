@@ -100,18 +100,21 @@
 
 
       
-;; if no toplevel , no slots used , then -4 result
-;; if one slot used then -8
-;; two slots -12
+;; if no toplevel , no slots used , then 4 result
+;; if one slot used then 8
+;; two slots 12
 ;; and so on...
-;; or we could just say : (* *wordsize* (+ 1 (length slots)))
+;; or we could just say : (* word (+ 1 (length slots)))
 (define (next-toplevel-stack-index-available slots)
   (define (search slots index)
     (cond
-     ((null? slots) (- index *wordsize*))
+     ((null? slots) (+ index word))
      (else (search (cdr slots) (binding-stack-index (car slots))))))
-  ;; if no toplevel , then default to -4 stack index
+  ;; if no toplevel , then default
   (search slots 0))
+
+
+
 
    
 
@@ -156,7 +159,7 @@
    ((null? syms) '())
    (else (let ((sym (car syms)))
 	   (cons (list sym 'toplevel index)
-		 (assign-toplevel-stack-index (cdr syms) (- index *wordsize*)))))))
+		 (assign-toplevel-stack-index (cdr syms) (+ index word)))))))
 
 
 
@@ -167,10 +170,10 @@
 ;; toplevel environmnet will contain these f's
 ;; assign a unique stack index for these also
 (define (toplevel-environment forms)  
-     ;; -4 is initial empty slot on stack index 
+     ;; 4 is initial empty slot on stack index 
   (assign-toplevel-stack-index (map (lambda (x) (car (cdr x)))
 			   (toplevel-definitions forms))
-		      -4))
+		      4))
 
 
 
@@ -260,29 +263,23 @@
 	  ;; initial stack index is negative wordsize
 	  ;; as [ esp - 4 ] , since esp holds return address.
 	  (let ((initial-environment top-environment)
-		(stack-index last-stack-index)) ;; (- *wordsize*))) was -4
-		;;(stack-index -8))
+		(stack-index last-stack-index)) 
 
-	    
-	    ;;(comp-tak-def #f stack-index initial-environment)
-	    ;; (comp-fib-def #f stack-index initial-environment)
-	    ;; (comp-fac-def #f stack-index initial-environment)
-	    ;; (comp-f3x-def #f stack-index initial-environment)
-	    ;; (comp-f3y-def #f stack-index initial-environment)
-	    ;; (comp-f3z-def #f stack-index initial-environment)
-	    
 	    (emit "scheme_entry: nop ")
 
-	    ;; entry prologue 
+	    ;; entry prologue
+	    ;;(emit "enter")
+	    
 	    (emit "push ebp")
 	    (emit "mov	ebp, esp")
+	    
 	    ;;(emit "sub esp, N")
 	    
 	    ;; HEAP is passed as 1st argument
-	    ;; esp + 8 = HEAP ptr passed by C
-	    ;; esp + 4 = RET ip
-	    ;; esp     = old EBP
-	    (emit "mov dword esi , [ esp + 8 ] ")
+	    ;; ebp + 8 = HEAP ptr passed by C
+	    ;; ebp + 4 = RET ip
+	    ;; ebp     = old EBP
+	    (emit "mov dword esi , [ ebp + 8 ] ")
 	    (emit "scheme_heap_in_esi: nop")
 	    ;; esp - 4 = first FREE slot on stack    
 
@@ -303,11 +300,14 @@
 		     (comp expr stack-index initial-environment)))
 		 non-def-forms)
 
+	    ;; exit prologue
 	    (emit "mov	esp, ebp")
 	    (emit "pop	ebp")
 	    
 	    ;; final return 
 	    (emit "ret")))))))
+
+
 
 
 
