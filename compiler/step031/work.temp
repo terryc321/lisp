@@ -1,6 +1,1 @@
-
-(define (fac n)
-  (if (= n 1) 1
-      (* n (fac (- n 1)))))
-
-        (fac 5)
+((lambda (a b c) c) 1 2 3)

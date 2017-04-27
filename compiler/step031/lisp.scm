@@ -275,11 +275,10 @@
 	    (emit "align 32")
 	    (emit "scheme_entry: nop ")
 
-	    ;; entry prologue
-	    ;;(emit "enter")
-	    
-	    (emit "push ebp")
-	    (emit "mov	ebp, esp")
+	    ;; NO ENTRY PROLOGUE people !! 
+	    ;;(emit "enter")	    
+	    ;;(emit "push ebp")
+	    ;;(emit "mov	ebp, esp")
 	    
 	    ;;(emit "sub esp, N")
 	    
@@ -287,10 +286,11 @@
 	    ;; ebp + 8 = HEAP ptr passed by C
 	    ;; ebp + 4 = RET ip
 	    ;; ebp     = old EBP
-	    (emit "mov dword esi , [ ebp + 8 ] ")
+	    (emit "mov dword esi , [ esp + 4 ] ")
 	    (emit "scheme_heap_in_esi: nop")
 	    ;; esp - 4 = first FREE slot on stack    
 
+	    
 	    
 	    (map (lambda (expr)
 		   (begin
@@ -308,9 +308,10 @@
 		     (comp expr stack-index initial-environment)))
 		 non-def-forms)
 
-	    ;; exit prologue
-	    (emit "mov	esp, ebp")
-	    (emit "pop	ebp")
+	    
+	    ;; NO EXIT PROLOGUE people !! 
+	    ;; (emit "mov	esp, ebp")
+	    ;; (emit "pop	ebp")
 	    
 	    ;; final return 
 	    (emit "ret")))))))

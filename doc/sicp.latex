@@ -4,6 +4,13 @@
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+procedure calls being a pain.
+
+
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
 returning to using ESP as base register
 
 when evaluate the 2nd argument ensure the si STACK INDEX is decremented by WORD 

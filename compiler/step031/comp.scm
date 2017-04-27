@@ -1041,9 +1041,11 @@
    ((null? args) #f)
    (else (begin
 	   (comp (car args) si env)
-	   (emit "push dword eax")
+	   (emit "mov dword [esp " si "] , eax")
+	   ;;(emit "push dword eax") ;; must NEVER !! do this -- destroys ESP frame pointer
 	   ;;(emit "mov dword [ ebp - " si-offset "] , eax ; save arg " index)
-	   (comp-application-helper (cdr args) (+ si word) env)))))
+	   (comp-application-helper (cdr args) (- si word) env)))))
+
 
 
 
@@ -1093,6 +1095,7 @@
     ;; reserve two slots for RETURN-ADDRESS and CLOSURE-PTR slot
     (comp-application-helper args (- si (* 2 word)) env)
 
+    
     ;; compile procedure
     (comp fn (- si (* (+ 2 (length args)) word)) env)
     
@@ -1120,9 +1123,11 @@
     
     ;;(let ((adjust (+ si word)))
     
-    (emit "add dword esp , " (+ si 4) "; adjust stack")
+    (emit "add dword esp , " (- si -4) "; adjust stack")
     (emit "call eax ; call closure")
-    (emit "sub dword esp , " (+ si 4) "; restore esp")))
+    (emit "sub dword esp , " (- si -4) "; restore esp")))
+
+
 
     
 
@@ -1300,6 +1305,7 @@
 
 
 
+
 ;; (define (comp-fib x si env)
 ;;   ;; (FIB n)
 
@@ -1444,7 +1450,7 @@
      ((null? args) '())
      (else (let ((sym (car args)))
 	     (cons (list sym 'local index)
-		   (helper (cdr args) (+ index word)))))))
+		   (helper (cdr args) (- index word)))))))
   (helper args -8))
 
 
