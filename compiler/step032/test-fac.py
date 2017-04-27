@@ -610,12 +610,12 @@ def fib_test(a,b):
 #test_case("((lambda (a b c) c) 1 2 3)","3")
 #test_case("(define f 1)(define g 2) ((lambda (a b c) (+ a (+ b c))) 1 2 3)","6")
 
-test_case("(define f (lambda (a b c) a)) (f 1 2 3)" , "1")
-test_case("(define f (lambda (a b c) b)) (f 1 2 3)" , "2")
-test_case("(define f (lambda (a b c) c)) (f 1 2 3)" , "3")
-test_case("((lambda (a b c) a) 1 2 3)" , "1")
-test_case("((lambda (a b c) b) 1 2 3)" , "2")
-test_case("((lambda (a b c) c) 1 2 3)" , "3")
+# test_case("(define f (lambda (a b c) a)) (f 1 2 3)" , "1")
+# test_case("(define f (lambda (a b c) b)) (f 1 2 3)" , "2")
+# test_case("(define f (lambda (a b c) c)) (f 1 2 3)" , "3")
+# test_case("((lambda (a b c) a) 1 2 3)" , "1")
+# test_case("((lambda (a b c) b) 1 2 3)" , "2")
+# test_case("((lambda (a b c) c) 1 2 3)" , "3")
 
 
 
@@ -727,13 +727,15 @@ def fac_test2(a,b):
 
         """ + a , b)
 
-#fac_test("(fac 1)" , "1")
-#fac_test("(fac 2)" , "2")
-#fac_test("(fac 3)" , "6")
-#fac_test("(fac 4)" , "24")
+    
+    
+#fac_test2("(fac 1 1)" , "1")
+#fac_test2("(fac 2 1)" , "2")
+#fac_test2("(fac 3 1)" , "6")
+#fac_test2("(fac 4 1)" , "24")
 #fac_test2("(fac 5 1)" , "120")
-#fac_test("(fac 6)" , "720")
-# fac_test("(fac 10)" , "3628800")
+#fac_test2("(fac 6 1)" , "720")
+#fac_test2("(fac 10 1)" , "3628800")
 
 
 def tail_fac_test2(a,b):
@@ -798,6 +800,7 @@ def tail_f3_test(a,b):
 #tail_f3_test("(f3 10 5)" , "(10 . 5)")
 
 
+
 def tail_f4_test(a,b):
     global test_case
     test_case(
@@ -808,16 +811,63 @@ def tail_f4_test(a,b):
              (tailcall (f4 (+ n 1) (cons n xs)))))
         """ + a , b)
 
-#tail_f3_test("(f4 1 5)" , "(10 . (9 . (8 . (7 . (6 . (5 . (4 . (3 . (2 . (1 . 5))))))))))")
+#tail_f4_test("(f4 1 5)" , "(10 . (9 . (8 . (7 . (6 . (5 . (4 . (3 . (2 . (1 . 5))))))))))")
 #tail_f4_test("(f4 11 5)" , "5")
 #tail_f4_test("(f4 10 5)" , "(10 . 5)")
 
+def nontail_f4_test(a,b):
+    global test_case
+    test_case(
+        """
+        (define (f4 n xs)
+         (if (> n 10) 
+             xs
+             (f4 (+ n 1) (cons n xs))))
+        """ + a , b)
 
-# test_case("""
-# (define (f x) (cons x ()))
-# (f 4)
-# """, "(4 . 5)")
-# #tail_f4_test("(f4 10 5)" , "(10 . 5)")
+#nontail_f4_test("(f4 10 5)" , "(10 . 5)")
+
+
+    
+def tail_f5_test(a,b):
+    global test_case
+    test_case(
+        """
+        (define (f5 n xs)
+         (if (> n 10) 
+             xs
+             (tailcall (f5 (+ n 1) (+ n xs)))))
+        """ + a , b)
+
+#tail_f5_test("(f5 1 5)" , "60")
+   
+
+#test_case(""" (define (f x) (cons x ())) (f 4) """, "(4 . ())")
+#test_case(""" (cons 4 ()) """ , "(4 . ())")
+#test_case(""" (cons 1 (cons 2 (cons 3 (cons 4 ()) """ , "(1 . (2 . (3 . (4 . ()))))")
+#test_case(""" (cons (cons (cons 1 2) 3) (cons (cons 4 5) 6)) """ , "(((1 . 2) . 3) . ((4 . 5) . 6))")
+
+
+
+def f6_test(a,b):
+    global test_case
+    test_case(
+        """
+        (define (f4 x)
+         (cons x 5))
+        """ + a , b)
+
+f6_test("(f4 5)" , "(5 . 5)")
+
+
+
+
+
+
+
+
+
+
 
 # test_case("""
 # (cons 4 5)

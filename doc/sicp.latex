@@ -2,12 +2,47 @@
 \documentclass[a4paper,12pt]{article}
 \begin{document}
 
+\begin{verbatim}
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+heres a problematic CONS , it doesnt seem to work when in procedure calls
+
+
+(define (comp-cons x si env)
+  (let ((arg1 (car (cdr x)))
+	(arg2 (car (cdr (cdr x)))))
+    ;; compile arg1
+    (comp arg1 si env)
+    ;; save onto stack
+    (emit "mov dword [ esp " si "] , eax ")
+    ;;(emit "push dword eax")
+    ;; compile arg2
+    (comp arg2 (- si word) env)
+    ;; arg2 in EAX
+    ;;(emit "mov dword [ esp " (- si word) "] , eax ")
+    ;; heap in ESI register  
+    
+    ;; store CDR in HEAP
+    (emit "mov dword [ esi + 4 ] , eax ")
+    ;; load arg1 into EAX
+    (emit "mov dword eax , [ esp " si "] ")    
+    ;; store CAR in HEAP
+    (emit "mov dword [ esi ] , eax ")
+    ;; tag result
+    (emit "mov dword eax , esi ")
+    ;; xxx001 is a PAIR tag
+    (emit "inc dword eax")    
+    ;; bump HEAP ESI 
+    (emit "add dword esi , "  (* 2 word))))
+
+\end{verbatim}
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 procedure calls being a pain.
 
-
-
+procedure calls and tail calls work with numbers
+when build a CONS and bump heap , it doesnt seem to like it at all.
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 

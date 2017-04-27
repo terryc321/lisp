@@ -726,13 +726,16 @@ def fac_test2(a,b):
 
         """ + a , b)
 
-fac_test2("(fac 1 1)" , "1")
-fac_test2("(fac 2 1)" , "2")
-fac_test2("(fac 3 1)" , "6")
-fac_test2("(fac 4 1)" , "24")
+#fac_test2("(fac 1 1)" , "1")
+#fac_test2("(fac 2 1)" , "2")
+#fac_test2("(fac 3 1)" , "6")
+#fac_test2("(fac 4 1)" , "24")
 fac_test2("(fac 5 1)" , "120")
-fac_test2("(fac 6 1)" , "720")
-fac_test2("(fac 10 1)" , "3628800")
+#fac_test2("(fac 6 1)" , "720")
+#fac_test2("(fac 10 1)" , "3628800")
+
+
+
 
 
 def tail_fac_test2(a,b):

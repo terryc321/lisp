@@ -320,9 +320,13 @@
 ;;*******************************************************************
 
 
+
 (define (comp-cons x si env)
   (let ((arg1 (car (cdr x)))
 	(arg2 (car (cdr (cdr x)))))
+    (let ((a si)
+	  (b (- si word)))
+    
     ;; compile arg1
     (comp arg1 si env)
     ;; save onto stack
@@ -331,7 +335,11 @@
     ;; compile arg2
     (comp arg2 (- si word) env)
     ;; arg2 in EAX
-    ;; heap in ESI register
+    ;;(emit "mov dword [ esp " b "] , eax")
+    
+    ;;(emit "mov dword [ esp " (- si word) "] , eax ")
+    ;; heap in ESI register  
+    ;;(emit "mov dword eax , [ esp " b "] ")
     
     ;; store CDR in HEAP
     (emit "mov dword [ esi + 4 ] , eax ")
@@ -344,7 +352,11 @@
     ;; xxx001 is a PAIR tag
     (emit "inc dword eax")    
     ;; bump HEAP ESI 
-    (emit "add dword esi , "  (* 2 word))))
+    (emit "add dword esi , "  (* 2 word)))))
+
+
+
+
 
 
 
@@ -1048,7 +1060,6 @@
 
 
 
-
 ;; when processor does a CALL , it decrements ESP by 4 
 ;; writes slot where IP should continue after call
 ;; then jumps to CALL location
@@ -1137,8 +1148,6 @@
 
 
 
-
-
 (define (esp n)
   (if (< n 0)
       (begin
@@ -1153,65 +1162,98 @@
    ((null? args) #f)
    (else (begin
 	   (let ((offset (* index word)))
-	     (emit "mov dword eax , [ esp " (esp (- si offset)) "] ; collapse element " index)
+	     (emit "mov dword eax , [ esp " (- si offset) "] ; collapse element " index)
 	     (emit "mov dword [ esp - " offset "] , eax ")
 	     (comp-tailcall-collapse (cdr args) si (+ index 1) env))))))
 
 
 
-
-
-;; ;; x = (tailcall (fn . args))
-;; (define (comp-tailcall-application x si env)
-;;   (let ((fn (car (car (cdr x))))
-;; 	(args (cdr (car (cdr x)))))
-
-;;     (begin
-      
-;;     (display "* tail call optimisation *") (newline)
-;;     (display "* FN * = ")
-;;     (display fn)
-;;     (newline)
-;;     (display "* ARGS * = ")
-;;     (display args)
-;;     (newline)
-
-;;     (emit " nop ; tailcall application ")
+;; x = (tailcall (fn . args))
+(define (comp-tailcall-application x si env)
+  (let ((fn (car (car (cdr x))))
+	(args (cdr (car (cdr x)))))
     
-;;   ;; compile arguments and move them into stack positions 
-;;   (comp-application-helper args si 2 env)
-    
-;;   ;; evaluate operator
-;;   (comp fn (- si (* (+ 2 (length args)) word)) env)
+    (display "* tail call optimisation *") (newline)
+    (display "* FN * = ")
+    (display fn)
+    (newline)
+    (display "* ARGS * = ")
+    (display args)
+    (newline)
 
-;;   ;; presumably there is a closure left in EAX register
-;;   ;; untag it
-;;   ;;(emit "sub dword eax , 110b ; untag closure ")
-  
-;;   ;; save closure onto stack
-;;   (emit "mov dword [esp " (- si word) "] ,eax  ; raw closure ptr ")
-  
-;;   ;; collapse arguments
-;;   (emit "nop ; collapse arguments by " si)
-  
-;;   ;;(comp-tailcall-collapse (cons 'dummy args) si 2 env)
-;;   ;;(comp-tailcall-collapse (cons 'dummy (cons 'dummy2 args)) si 1 env)
-;;   (comp-tailcall-collapse args si 2 env)
+    ;; ------- first section is verbatim of normal procedure application ----------
+    ;; compile arguments
+    ;; reserve two slots for RETURN-ADDRESS and CLOSURE-PTR slot
+    (comp-application-helper args (- si (* 2 word)) env)
 
-;;   (emit "mov dword eax , [esp " (- si word) "] ; closure ptr ")
-;;   (emit "mov dword [esp " (- word) "] , eax ; closure ptr ")
+    ;; compile procedure
+    (comp fn (- si (* (+ 2 (length args)) word)) env)
     
-;;   ;; save closure ptr
-;;   ;;(emit "mov dword [esp - 4 ] , eax ; closure ptr ")
-  
-;;   ;; untag the closure
-;;   (emit "sub dword eax , 110b ; untag closure ")
-  
-;;   ;; obtain procedure CODE address
-;;   (emit "mov dword eax , [eax] ; load procedure ptr from raw closure ")
-  
-;;   ;; now the tail call
-;;   (emit "jmp eax ;  tailcall"))))
+    ;; untag the closure in EAX 
+    (emit "and dword eax , -8 ; untag closure -8 is binary 11...1111000  lower 3 bits zero")
+
+    ;;(emit "mov dword [esp "  (- si word) " ] , eax ; closure ptr ")
+    ;; save un- tagged - closure on stack directly 
+    (emit "mov dword [esp "  (- word) " ] , eax ; closure ptr ")
+
+    ;; obtain procedure CODE address
+    ;; placed it into EBX register because tailcall-collapse over writes EAX register
+    (emit "mov dword ebx , [eax] ; load CODE address ")
+    
+    ;; collapse the stack
+    ;;   leave original return ip intact at ESP [ 0 ]
+    ;;   put procedure closure at ESP [ - 4 ]
+    ;;   put arg1 at ESP [ - 8 ]
+    ;;   put arg2 at ESP [ - 12 ]
+    ;;   put arg3 at ESP [ - 16 ]
+    (comp-tailcall-collapse args si 2 env)
+
+    ;; CODE address is still safe in EBX register , so just jump to it
+    ;; now do the tail call
+    (emit "jmp ebx ; tail call")))
+
+
+
+
+
+
+
+    
+    ;; ;; compile arguments
+    
+    ;; (comp-application-helper args si 2 env)
+    
+    ;; ;; evaluate operator
+    ;; (comp fn (- si (* (+ 2 (length args)) word)) env)
+
+    ;; ;; presumably there is a closure left in EAX register
+    ;; ;; untag it
+    ;; ;;(emit "sub dword eax , 110b ; untag closure ")
+    
+    ;; ;; save closure onto stack
+    ;; (emit "mov dword [esp " (- si word) "] ,eax  ; raw closure ptr ")
+    
+    ;; ;; collapse arguments
+    ;; (emit "nop ; collapse arguments by " si)
+    
+    ;; ;;(comp-tailcall-collapse (cons 'dummy args) si 2 env)
+    ;; ;;(comp-tailcall-collapse (cons 'dummy (cons 'dummy2 args)) si 1 env)
+    
+
+    ;; (emit "mov dword eax , [esp " (- si word) "] ; closure ptr ")
+    ;; (emit "mov dword [esp " (- word) "] , eax ; closure ptr ")
+    
+    ;; ;; save closure ptr
+    ;; ;;(emit "mov dword [esp - 4 ] , eax ; closure ptr ")
+    
+    ;; ;; untag the closure
+    ;; (emit "sub dword eax , 110b ; untag closure ")
+    
+    ;; ;; obtain procedure CODE address
+    ;; (emit "mov dword eax , [eax] ; load procedure ptr from raw closure ")
+    
+    ;; ;; now the tail call
+    ;; (emit "jmp eax ;  tailcall")))
 
 
 
@@ -1653,8 +1695,9 @@
    ;; explicit lambda
    ((and (pair? x) (eq? (car x) 'lambda)) (comp-lambda x si env))
 
+   
    ;; explicit tailcall
-   ;;((and (pair? x) (eq? (car x) 'tailcall)) (comp-tailcall-application x si env))
+   ((and (pair? x) (eq? (car x) 'tailcall)) (comp-tailcall-application x si env))
    
    ;; tak 
    ;;((and (pair? x) (eq? (car x) 'tak)) (comp-tak x si env))
