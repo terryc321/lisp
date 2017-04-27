@@ -1134,9 +1134,9 @@
     
     ;;(let ((adjust (+ si word)))
     
-    (emit "add dword esp , " (- si -4) "; adjust stack")
+    (emit "add dword esp , " (+ si 4) "; adjust stack")
     (emit "call eax ; call closure")
-    (emit "sub dword esp , " (- si -4) "; restore esp")))
+    (emit "sub dword esp , " (+ si 4) "; restore esp")))
 
 
 

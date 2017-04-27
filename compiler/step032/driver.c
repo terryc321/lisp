@@ -201,12 +201,20 @@ void pretty_print(unsigned int val){
 
 int main(int argc, char **argv){
   
-  char *ptr = (char *)malloc(sizeof(int) * HEAP_SIZE);
+  char *ptr = (char *)malloc(sizeof(int) * HEAP_SIZE);  
   if (!ptr){   
     return 1;
   }
 
+  if (((int)ptr) % 8 == 0){
+    // heap aligned ok.
+  }
+  else {
+    printf("heap ptr is misaligned .");
+    return 2;
+  }
   int i = 0 ;
+  
 
   // we may choose to clear the heap at startup 
   

@@ -1,4 +1,7 @@
 
-        (define (f4 x)
-         (cons x 5))
-        (f4 5)
+        (define (fac n m)
+  (if (= n 1) 
+      m
+      (fac (- n 1) (* n m))))
+
+        (fac 5 1)
