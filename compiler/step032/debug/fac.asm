@@ -1,16 +1,13 @@
 
 extern debug_stack
 global scheme_entry
-section .data
-align 32
-toplevel: times 5 dd 0
-section .text
-align 32
 scheme_entry: nop 
-mov dword esi , [ esp + 4 ] 
+push ebp
+mov	ebp, esp
+mov dword esi , [ esp + 8 ] 
 scheme_heap_in_esi: nop
 jmp after144
-lambda143: nop ; 
+lambda143: nop ; comp-lambda 
 mov dword eax , [ esp -8] 
 mov dword [ esp -16] , eax 
 mov dword eax , 4 ; integer 1
@@ -27,9 +24,9 @@ if148: nop
 mov dword eax , [ esp -8] 
 mov dword [ esp -24] , eax 
 mov dword eax , 4 ; integer 1
-sub dword [ esp -24] , eax
+sub dword [ esp -24] , eax 
 mov dword eax , [ esp -24] 
-mov dword [esp -24] , eax
+mov dword [ esp -24] , eax ; save arg 2
 mov dword eax , [ esp -8] 
 mov dword [ esp -28] , eax 
 mov dword eax , [ esp -12] 
@@ -38,10 +35,9 @@ mov dword ebx , [esp -28]
 shr dword ebx , 2 
 mul dword ebx
 shl dword eax , 2 
-mov dword [esp -28] , eax
-mov dword ebx , toplevel ;; toplevel define fac
-mov dword eax , [ebx + 4]
-and dword eax , -8 ; untag closure -8 is binary 11...1111000  lower 3 bits zero
+mov dword [ esp -28] , eax ; save arg 3
+mov dword eax , [ ebp -4] 
+sub dword eax , 110b ; untag closure 
 mov dword [esp -20 ] , eax ; closure ptr 
 mov dword eax , [eax] ; load CODE address 
 add dword esp , -12; adjust stack
@@ -57,18 +53,18 @@ add dword eax , 8
 and dword eax , (-8) 
 mov dword eax , ebx
 or dword eax , 110b 
-mov dword ebx , toplevel ;; toplevel define fac
-mov dword [ebx + 4] , eax
-mov dword eax , 40 ; integer 10
-mov dword [esp -12] , eax
+mov dword [esp -4] , eax 
+mov dword eax , 20 ; integer 5
+mov dword [ esp -16] , eax ; save arg 2
 mov dword eax , 4 ; integer 1
-mov dword [esp -16] , eax
-mov dword ebx , toplevel ;; toplevel define fac
-mov dword eax , [ebx + 4]
-and dword eax , -8 ; untag closure -8 is binary 11...1111000  lower 3 bits zero
-mov dword [esp -8 ] , eax ; closure ptr 
+mov dword [ esp -20] , eax ; save arg 3
+mov dword eax , [ ebp -4] 
+sub dword eax , 110b ; untag closure 
+mov dword [esp -12 ] , eax ; closure ptr 
 mov dword eax , [eax] ; load CODE address 
-add dword esp , 0; adjust stack
+add dword esp , -4; adjust stack
 call eax ; call closure
-sub dword esp , 0; restore esp
+sub dword esp , -4; restore esp
+mov	esp, ebp
+pop	ebp
 ret

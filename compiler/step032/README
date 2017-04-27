@@ -1,0 +1,9 @@
+
+
+should really be called compile and make
+
+./compile "/home/terry/lisp/demo/100doors/100doors.scm"
+
+echo
+
+
