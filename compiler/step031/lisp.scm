@@ -263,13 +263,13 @@
 	  ;; initial stack index is negative wordsize
 	  ;; as [ esp - 4 ] , since esp holds return address.
 	  (let ((initial-environment top-environment)
-		(stack-index last-stack-index)) 
+		(stack-index (- word))) ;; -4
 
 	    ;; sufficiently large toplevel
 	    (emit "section .data")
 	    (emit "align 32")	    
 	    (emit "toplevel: times " (+ (length def-forms) 4)   " dd 0")
-	        	    
+	    
 	    
 	    (emit "section .text")
 	    (emit "align 32")

@@ -326,17 +326,17 @@
     ;; compile arg1
     (comp arg1 si env)
     ;; save onto stack
-    ;;(emit "mov dword [ esp " si "] , eax ")
-    (emit "push dword eax")
+    (emit "mov dword [ esp " si "] , eax ")
+    ;;(emit "push dword eax")
     ;; compile arg2
-    (comp arg2 (+ si word) env)
+    (comp arg2 (- si word) env)
     ;; arg2 in EAX
     ;; heap in ESI register
     
     ;; store CDR in HEAP
     (emit "mov dword [ esi + 4 ] , eax ")
     ;; load arg1 into EAX
-    (emit "mov dword eax , [ ebp - " si "] ")    
+    (emit "mov dword eax , [ esp " si "] ")    
     ;; store CAR in HEAP
     (emit "mov dword [ esi ] , eax ")
     ;; tag result
@@ -354,18 +354,22 @@
 
 
 
+
 (define (comp-add x si env)
   (let ((arg1 (car (cdr x)))
 	(arg2 (car (cdr (cdr x)))))
     ;; compile arg1 
     (comp arg1 si env)
     ;; save arg onto stack
-    (emit "push dword eax")
+    ;;(emit "push dword eax")
+    (emit "mov dword [ esp " si "] , eax ")
+    
     ;; compile arg2
-    (comp arg2 (+ si word) env)
+    (comp arg2 (- si word) env)
     ;; arg2 is in EAX 
     ;;(emit "add dword eax , [ ebp - " si " ]")
-    (emit "add dword eax , [ esp ]")))
+    (emit "add dword eax , [ esp " si " ]")))
+
 
 
 (define (comp-sub x si env)
@@ -374,14 +378,16 @@
     ;; compile arg1
     (comp arg1 si env)
     ;; save onto stack
-    (emit "push dword eax")
+    ;;(emit "push dword eax")
+    (emit "mov dword [ esp " si "] , eax ")    
     ;; compile arg2
-    (comp arg2 (+ si word) env)
+    (comp arg2 (- si word) env)
     ;; arg2 in EAX
     ;;(emit "sub dword [ ebp - " si "] , eax ")
     ;;(emit "mov dword eax , [ ebp - " si "] ")
-    (emit "sub dword [ esp ] , eax")
-    (emit "mov dword eax , [ esp ] ")))
+    (emit "sub dword [ esp " si "] , eax")
+    (emit "mov dword eax , [ esp " si "] ")))
+
 
 
 
@@ -416,7 +422,7 @@
 	     (comp-implicit-sequence the-sym-body si env)
 	     ;; mov eax into si
 	     ;; si represents the free slot on stack
-	     (emit "mov dword [ ebp - " si "] , eax  ; let bound " the-sym)
+	     (emit "mov dword [ esp " si "] , eax  ; let bound " the-sym)
 	     	     
 	     ;;(newline)
 	     ;;(display "LET: the symbol : ") (display the-sym) (newline)
@@ -424,7 +430,7 @@
 	     ;;	     
 	     (comp-let-bindings (cdr bindings)
 				body
-				(+ si word)
+				(- si word)
 				env
 				(cons (list the-sym 'local si) local-env)))))))
 
@@ -456,8 +462,6 @@
 
 
 
-
-
 ;; 1 . local binding = from LET and on STACK
 ;; 2 . closure binding = from LAMBDA and on STACK through RAW untagged CLOSURE POINTER
 ;; 3 . toplevel binding = from DEFINE 
@@ -465,7 +469,7 @@
   (let ((binding (assoc var env)))
     (cond
      ((local-binding? binding)
-      (emit "mov dword eax , [ ebp + " (binding-stack-index binding)  "] "))
+      (emit "mov dword eax , [ esp " (binding-stack-index binding)  "] "))
      ((closure-binding? binding)
       (emit "mov dword eax , [ ebp + 8 ] ; move closure ptr into eax")
       (emit "mov dword eax , [ eax + " (binding-stack-index binding) "] "))
@@ -515,7 +519,7 @@
   ;; the result in EAX
   (emit "mov dword eax , esi ")
   (emit "or dword eax , 2 ") ;; add dword eax , 2  --- was add
-  (emit "push dword eax")
+  (emit "mov dword ecx , eax")
   
   ;; bump 
   (emit "add dword esi , " (* 2 word))
@@ -534,7 +538,7 @@
   ;; ie ESI is multiple of 8
   (emit-align-heap-pointer)
   
-  (emit "pop dword eax"))
+  (emit "mov dword eax, ecx"))
 
 
 
@@ -569,10 +573,6 @@
     (comp arg1 si env)
     (emit "shr dword eax , 1 ")
     (emit "and dword eax , -4 ")))
-
-
-
-
 
 
   
@@ -621,11 +621,10 @@
 	(arg2 (car (cdr (cdr x)))))    
     (comp arg1 si env)
     ;; save onto stack
-    ;;(emit "mov dword [ esp " si "] , eax ")
-    (emit "push dword eax")
+    (emit "mov dword [ esp " si "] , eax ")
     
     ;; compile 2nd branch
-    (comp arg2 (+ si word) env)
+    (comp arg2 (- si word) env)
 
     ;; arg2 in eax - untag fixnum
     (emit "shr dword eax , 2 ")
@@ -647,19 +646,20 @@
     (comp arg1 si env)
     
     ;; save onto stack
-    (emit "push dword eax")
-
+    (emit "mov dword [ esp " si "] , eax ")
+    
     ;; compile arg2
-    (comp arg2  (+ si word) env)
+    (comp arg2  (- si word) env)
     
     ;; are they equal?
-    (emit "cmp dword [ esp ] , eax ")
+    (emit "cmp dword [ esp " si "] , eax ")
 
     ;; 
     (emit "mov dword eax , 0 ")
     (emit "sete al")
     (emit "shl dword eax , " primitive-boolean-shift)
     (emit "or dword eax , " (primitive-boolean-tag))))
+
  
   
   ;; (emit "mov dword [ esi + 4 ] , eax ")
@@ -681,12 +681,13 @@
     ;; compile arg1
     (comp arg1 si env)
     ;; save onto stack
-    (emit "push dword eax")
-  
+    (emit "mov dword [ esp " si "] , eax ")
+    
     ;; compile arg2
-    (comp arg2 (+ si word) env)
+    (comp arg2 (- si word) env)
+    
     ;; are they equal?
-    (emit "cmp dword [ esp ] , eax ")
+    (emit "cmp dword [ esp " si "] , eax ")
     
     (emit "mov dword eax , 0 ")
     (emit "setg al")
@@ -696,25 +697,25 @@
 
 
 
-
-
 (define (comp-num< x si env)
   (let ((arg1 (car (cdr x)))
 	(arg2 (car (cdr (cdr x)))))
     ;; compile arg1
-    (comp arg1 si env)
+    (comp arg1 si env)    
     ;; save onto stack
-    ;;(emit "mov dword [ esp " si "] , eax ")
-    (emit "push dword eax")
+    (emit "mov dword [ esp " si "] , eax ")
+
     ;; compile arg2
-    (comp arg2 (+ si word) env)
+    (comp arg2 (- si word) env)
     ;; are they equal?
-    (emit "cmp dword [ esp ] , eax ")
+    (emit "cmp dword [ esp " si "] , eax ")
 
     (emit "mov dword eax , 0 ")
     (emit "setl al")
     (emit "shl dword eax , " primitive-boolean-shift)
     (emit "or dword eax , " (primitive-boolean-tag))))
+
+
 
 
 (define (comp-num<= x si env)
@@ -723,12 +724,11 @@
     ;; comp arg1
   (comp arg1 si env)
   ;; save onto stack
-  ;;(emit "mov dword [ esp " si "] , eax ")
-  (emit "push dword eax")
+  (emit "mov dword [ esp " si "] , eax ")
   ;; comp arg2
-  (comp arg2 (+ si word) env)
+  (comp arg2 (- si word) env)
   ;; are they equal?
-  (emit "cmp dword [ esp ] , eax ")
+  (emit "cmp dword [ esp " si "] , eax ")
 
   (emit "mov dword eax , 0 ")
   (emit "setle al")
@@ -736,24 +736,28 @@
   (emit "or dword eax , " (primitive-boolean-tag))))
 
 
+
+
 (define (comp-num>= x si env)
   (let ((arg1 (car (cdr x)))
 	(arg2 (car (cdr (cdr x)))))
 
     (comp arg1 si env)
-  ;; save onto stack
-    ;;(emit "mov dword [ esp " si "] , eax ")
-    (emit "push dword eax")
+    ;; save onto stack
+    (emit "mov dword [ esp " si "] , eax ")
     
-    (comp arg2 (+ si word) env)
+    (comp arg2 (- si word) env)
     
     ;; are they equal?
-    (emit "cmp dword [ esp ] , eax ")
+    (emit "cmp dword [ esp " si "] , eax ")
 
     (emit "mov dword eax , 0 ")
     (emit "setge al")
     (emit "shl dword eax , " primitive-boolean-shift)
     (emit "or dword eax , " (primitive-boolean-tag))))
+
+
+
 
 
 
@@ -766,6 +770,7 @@
     (begin
       (comp (car (cdr x)) si env)
       (comp-implicit-sequence (cdr (cdr x)) si env)))))
+
 
 
 
@@ -1651,6 +1656,7 @@
    
    (else
     (error "comp : unknown expression : " x))))
+
 
 
 

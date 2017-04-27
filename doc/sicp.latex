@@ -4,6 +4,43 @@
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
+returning to using ESP as base register
+
+when evaluate the 2nd argument ensure the si STACK INDEX is decremented by WORD 
+
+ESP [0] = return address
+ESP [-4] = free slot
+
+so we are VERY careful NEVER to use PUSH or POP
+
+\begin{verbatim}
+(define (comp-mul x si env)
+  (let ((arg1 (car (cdr x)))
+	(arg2 (car (cdr (cdr x)))))    
+    (comp arg1 si env)
+    ;; save onto stack -- DO NOT use PUSH or POP 
+    (emit "mov dword [ esp " si "] , eax ")
+    
+    ;; compile 2nd branch -- DECREMENT by WORD
+    (comp arg2 (- si word) env) 
+
+    ;; arg2 in eax - untag fixnum
+    (emit "shr dword eax , 2 ")
+
+    ;; 
+    (emit "mov dword ebx , [esp]")
+    ;; arg1 in ebx - untag fixnum
+    (emit "shr dword ebx , 2 ")
+    ;; multiply 
+    (emit "mul dword ebx")
+    ;; leaves result in edx : eax ??
+    (emit "shl dword eax , 2 ")))
+\end{verbatim}
+
+
+
+xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
 procedure calls
 
 arguments evaluated in REVERSE order ,

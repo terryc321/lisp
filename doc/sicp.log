@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.17 (TeX Live 2016/Debian) (preloaded format=latex 2017.4.15)  26 APR 2017 10:28
+This is pdfTeX, Version 3.14159265-2.6-1.40.17 (TeX Live 2016/Debian) (preloaded format=latex 2017.4.15)  27 APR 2017 08:22
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -40,38 +40,50 @@ LaTeX Font Info:    ... okay on input line 3.
 
 [1
 
-] [2] [3] [4] [5] [6] [7] [8] [9] [10]
-Overfull \hbox (104.00024pt too wide) in paragraph at lines 311--311
+]
+Overfull \hbox (5.77518pt too wide) in paragraph at lines 82--84
+[]\OT1/cmr/m/n/12 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx com-pi-la-tion tac-tics FIXN
+UM ADD 
+ []
+
+[2]
+Overfull \hbox (66.95023pt too wide) in paragraph at lines 148--148
+[]\OT1/cmtt/m/n/12 either do-this OR do-that is to be done , do not care about 
+this (not ...)[] 
+ []
+
+[3] [4] [5] [6] [7] [8] [9] [10] [11]
+Overfull \hbox (104.00024pt too wide) in paragraph at lines 456--456
 []\OT1/cmtt/m/n/12 MAYBE - avoid saving and restoring cont , have ev-read-3 do 
 restore and continue[] 
  []
 
-[11] [12]
-Overfull \hbox (79.30023pt too wide) in paragraph at lines 341--341
+[12] [13]
+Overfull \hbox (79.30023pt too wide) in paragraph at lines 486--486
 []\OT1/cmtt/m/n/12 in this version , shorter but makes 2 saves and restores , i
 nstead of just 1[] 
  []
 
-[13]
-Overfull \hbox (23.7252pt too wide) in paragraph at lines 381--381
+[14]
+Overfull \hbox (23.7252pt too wide) in paragraph at lines 526--526
 []\OT1/cmtt/m/n/12 inputs    : proc = evaluated procedure , argl = evaluated ar
 guments[] 
  []
 
 
-Overfull \hbox (54.60022pt too wide) in paragraph at lines 381--381
+Overfull \hbox (54.60022pt too wide) in paragraph at lines 526--526
 []\OT1/cmtt/m/n/12 extend the environment [env] with [unev : params ] and [ arg
 l : values ][] 
  []
 
-[14] [15] [16] [17] [18] [19] [20] [21] [22] [23] [24] [25] [26] [27] [28]
-[29] [30] [31] [32] [33] [34]
-Overfull \hbox (36.07521pt too wide) in paragraph at lines 1067--1067
+[15] [16] [17] [18] [19] [20] [21] [22] [23] [24] [25] [26] [27] [28] [29]
+[30] [31] [32] [33] [34] [35]
+Overfull \hbox (36.07521pt too wide) in paragraph at lines 1212--1212
 []\OT1/cmtt/m/n/12 9   ;; last expression has no need to return -- key to tail 
 recursion[] 
  []
 
-[35] [36] [37] (./sicp.aux) ) 
+[36] [37] [38] (./sicp.aux) ) 
 Here is how much of TeX's memory you used:
  205 strings out of 494946
  2168 string characters out of 6181058
@@ -81,4 +93,4 @@ Here is how much of TeX's memory you used:
  14 hyphenation exceptions out of 8191
  22i,5n,19p,133b,239s stack positions out of 5000i,500n,10000p,200000b,80000s
 
-Output written on sicp.dvi (37 pages, 37356 bytes).
+Output written on sicp.dvi (38 pages, 41524 bytes).
