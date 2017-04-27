@@ -1,1 +1,6 @@
-(begin (cons 1 2)(cons 3 4)(cons 5 6)(cons 7 8)(cons 9 10))
+
+(define (fac n)
+  (if (= n 1) 1
+      (* n (fac (- n 1)))))
+
+        (fac 5)

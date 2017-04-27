@@ -471,7 +471,7 @@
      ((local-binding? binding)
       (emit "mov dword eax , [ esp " (binding-stack-index binding)  "] "))
      ((closure-binding? binding)
-      (emit "mov dword eax , [ ebp + 8 ] ; move closure ptr into eax")
+      (emit "mov dword eax , [ esp - 4 ] ; move untagged closure ptr into eax")
       (emit "mov dword eax , [ eax + " (binding-stack-index binding) "] "))
      ((toplevel-binding? binding)
 	;; toplevel definitions live in data section
@@ -479,6 +479,9 @@
 	(emit "mov dword eax , [ebx + " (binding-index binding)"]"))
      (else
       (error "comp-lookup : no binding for symbol " var)))))
+
+
+
 
 
 
@@ -630,13 +633,14 @@
     (emit "shr dword eax , 2 ")
 
     ;; 
-    (emit "mov dword ebx , [esp]")
+    (emit "mov dword ebx , [esp " si "]")
     ;; arg1 in ebx - untag fixnum
     (emit "shr dword ebx , 2 ")
     ;; multiply 
     (emit "mul dword ebx")
     ;; leaves result in edx : eax ??
     (emit "shl dword eax , 2 ")))
+
 
 
 (define (comp-num= x si env)
@@ -770,6 +774,27 @@
     (begin
       (comp (car (cdr x)) si env)
       (comp-implicit-sequence (cdr (cdr x)) si env)))))
+
+
+
+;; assume x is a lambda 
+;; define f x
+;; should really be called TOPLEVEL-DEFINE
+(define (comp-define x si env)
+  (let ((var (car (cdr x)))
+	(val (car (cdr (cdr x)))))
+    ;; compile the val
+    (comp val si env)
+    ;; find global index for the var
+    (let ((binding (assoc var env)))
+      (cond
+       ((toplevel-binding? binding)
+	;; toplevel definitions live in data section
+	(emit "mov dword ebx , toplevel ;; toplevel define " var)
+	(emit "mov dword [ebx + " (binding-index binding)"] , eax"))
+       (else
+	(error "comp-define : no SLOT for TOPLEVEL DEFINE found " var))))))
+
 
 
 
@@ -1032,6 +1057,25 @@
 ;; si - 8  : arg 1
 ;; si - 12 : arg 2
 
+
+
+;; esp : return ip of caller
+;; 
+;; 
+;; esp - (si + 0)  :  -   : first free slot on stack for any use ....
+;; esp - (si + 4)  : where closure pointer will go
+;; esp - (si + 8)  : arg1 formal parameter
+;; esp - (si + 12) : arg2 formal parameter
+;; esp - (si + 16) : arg3 formal parameter
+;; esp - (si + 20) : arg4 formal parameter
+;;  ....  and so on
+;;
+;; before the call we need to SET the ESP to be (si - 4)
+;; then CALL opcode executes decrements ESP by WORD to (esp - (si + 0)) and write return ip
+;; execution continues where the CALL opcode value points to
+;; after the call we need to restore old ESP
+;;
+
 (define (comp-application x si env)
   (let ((fn (car x))
 	(args (cdr x)))
@@ -1045,22 +1089,21 @@
     (display args)
     (newline)
         
-    ;; compile arguments and move them into stack positions 
-    ;;(comp-application-helper args si 0 env)
-    (comp-application-helper (reverse args) si env)
+    ;; compile arguments
+    ;; reserve two slots for RETURN-ADDRESS and CLOSURE-PTR slot
+    (comp-application-helper args (- si (* 2 word)) env)
 
-    ;;    
-    (comp fn (+ si (* (+ 2 (length args)) word)) env)   
+    ;; compile procedure
+    (comp fn (- si (* (+ 2 (length args)) word)) env)
     
     ;; untag the closure in EAX 
     (emit "and dword eax , -8 ; untag closure -8 is binary 11...1111000  lower 3 bits zero")
 
     ;; save un- tagged - closure on stack
-    (emit "push dword eax")
+    (emit "mov dword [esp "  (- si word) " ] , eax ; closure ptr ")
     
+    ;;(emit "push dword eax")
     ;;(emit "sub dword eax , 110b ; untag closure ")
-    ;;(emit "mov dword [esp " (+ si wordsize) " ] , eax ; closure ptr ")
-    
     ;;(emit "mov dword [ebp - " (+ si 4) " ] , eax ; closure ptr ")   
         
     ;;(comp fn (- si (* (+ 2 (length args)) word)) env)
@@ -1077,11 +1120,10 @@
     
     ;;(let ((adjust (+ si word)))
     
-    ;;(emit "sub dword esp , " (+ si 4) "; adjust stack")
-    (emit "call eax ; call closure")))
+    (emit "add dword esp , " (+ si 4) "; adjust stack")
+    (emit "call eax ; call closure")
+    (emit "sub dword esp , " (+ si 4) "; restore esp")))
 
-    
-    ;;(emit "add dword esp , " (+ si 4) "; restore esp")))
     
 
 
@@ -1332,26 +1374,6 @@
 
 
 
-;; assume x is a lambda 
-;; define f x
-;; should really be called TOPLEVEL-DEFINE
-(define (comp-define x si env)
-  (let ((var (car (cdr x)))
-	(val (car (cdr (cdr x)))))
-    ;; compile the val
-    (comp val si env)
-    ;; find global index for the var
-    (let ((binding (assoc var env)))
-      (cond
-       ((toplevel-binding? binding)
-	;; toplevel definitions live in data section
-	(emit "mov dword ebx , toplevel ;; toplevel define " var)
-	(emit "mov dword [ebx + " (binding-index binding)"] , eax"))
-       (else
-	(error "comp-define : no SLOT for TOPLEVEL DEFINE found " var))))))
-
-
-
 
 
 
@@ -1416,12 +1438,15 @@
 
 
 
-(define (comp-lambda-helper args index)
-  (cond
-   ((null? args) '())
-   (else (let ((sym (car args)))
-	   (cons (list sym 'local index)
-		 (comp-lambda-helper (cdr args) (+ index word)))))))
+(define (comp-lambda-helper args)
+  (define (helper args index)
+    (cond
+     ((null? args) '())
+     (else (let ((sym (car args)))
+	     (cons (list sym 'local index)
+		   (helper (cdr args) (+ index word)))))))
+  (helper args -8))
+
 
 
 ;; suppose free variables are a b c d
@@ -1432,12 +1457,17 @@
 ;; d : 32
 ;;
 
-(define (comp-closure-helper args index)
-  (cond
-   ((null? args) '())
-   (else (let ((sym (car args)))
-	   (cons (list sym 'closure index)
-		 (comp-closure-helper (cdr args) (+ index word)))))))
+;; arguments are placed in closure at offset word
+;; then every word thereafter ... word*2 word*3 word*4 ...
+(define (comp-closure-helper args)
+  (define (helper args index)
+    (cond
+     ((null? args) '())
+     (else (let ((sym (car args)))
+	     (cons (list sym 'closure index)
+		   (helper (cdr args) (+ index word)))))))
+  (helper args word))
+
 
 
 
@@ -1465,20 +1495,8 @@
 
 
 
-
 ;; for each formal parameter [ <args> ]  of the lambda expression
 ;; (lambda <args> body)
-;;
-;; -------------
-;; arg3
-;; arg2
-;; arg1
-;; closure PTR
-;; return IP
-;; old-EBP  <---- esp 
-;; -------------
-;;
-;; 
 (define (comp-lambda x si env)
   (let ((anon-name (gensym "lambda"))	
 	(args (car (cdr x)))
@@ -1486,8 +1504,8 @@
 	(after-label (gensym "after"))
 	(free-variables (remove-toplevel (remove-primitives (freevars x)) env)))
       (let ((n-args (length args)))
-	(let ((extra-env (comp-lambda-helper args (* word 3)))
-	      (free-env  (comp-closure-helper free-variables word ))) 
+	(let ((extra-env (comp-lambda-helper args))
+	      (free-env  (comp-closure-helper free-variables))) 
 	  (let ((new-env (append extra-env free-env env )))
 	      
 	  (display "* comp-lambda * : ")
@@ -1510,19 +1528,20 @@
 	  
 	  
 	  (emit "jmp " after-label)
-	  ;; lambda has no name 
-	  (emit anon-name ": push dword ebp ; comp-lambda ")
-	  (emit "mov dword ebp , esp")
+	  ;; cannot just do arbitrary PUSH and POPS
+	  ;; lambda has no name	  
+	  (emit anon-name ": nop ; ")
 	  
 	  ;; compile the definition here with extra formals and free variables
-	  (comp `(begin ,@body)
-		word ;; + 4 
-		new-env)
-	   ;;(- (* (+ n-args 2) word))
+	  ;; new stack index number args and 2 reserved return ip and closure ptr
+	  ;; e.g n-args = 0 then new-si of -8
+	  ;; return ip   : esp + 0
+	  ;; closure ptr : esp - 4
+	  ;; empty slot  : esp - 8 , 
+	  (let ((new-si (- (* (+ n-args 2) word))))	    
+	    (comp `(begin ,@body) new-si new-env))
 
-	  ;; final return 
-	  (emit "mov dword esp , ebp")
-	  (emit "pop dword ebp")
+
 	  (emit "ret")
 	  ;; jump over definition
 	  (emit after-label ": nop")
@@ -1530,11 +1549,10 @@
 	  ;; ??
 	  ;;(emit "push dword esi")
 	  
-	  ;; ptr to start of closure
-	  (emit "mov dword ebx , esi")
-	  ;;(emit "push dword eax ")
-	  
 	  ;; construct closure
+	  ;; remember where HEAP esi was before build closure
+	  (emit "mov dword ebx , esi")
+	  
 	  ;; 1st CODE ptr to anon-name
 	  ;; closure ptr	  
 	  (emit "mov dword [ esi ] , " anon-name)
@@ -1549,7 +1567,9 @@
 	  ;; 4th .. closure arg 3 ... + 16
 	  (map (lambda (f)
 		 (begin
-		   (comp-lookup f (+ si word) env)
+		   ;;(comp-lookup f (+ si word) env)
+		   ;; should be free to re-use si slot for each arg
+		   (comp-lookup f si env)
 		   ;; 
 		   (emit "mov dword [ esi ] , eax")
 		   ;; bump esi
@@ -1557,11 +1577,11 @@
 		   ))
 	       free-variables)
 
-	  ;;
+	  ;; important HEAP pointer esi is a multiple of 8
 	  (emit-align-heap-pointer)
 	  
-	  ;;(emit "pop dword eax")
 	  (emit "mov dword eax , ebx")
+	  
 	  ;; tag as closure
 	  (emit "or dword eax , 110b ")
 	  ;;(emit "add dword eax , 110b ")
@@ -1656,6 +1676,7 @@
    
    (else
     (error "comp : unknown expression : " x))))
+
 
 
 

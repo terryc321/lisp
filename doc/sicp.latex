@@ -27,8 +27,8 @@ so we are VERY careful NEVER to use PUSH or POP
     ;; arg2 in eax - untag fixnum
     (emit "shr dword eax , 2 ")
 
-    ;; 
-    (emit "mov dword ebx , [esp]")
+    (emit "mov dword ebx , [esp " si "]")
+    
     ;; arg1 in ebx - untag fixnum
     (emit "shr dword ebx , 2 ")
     ;; multiply 
