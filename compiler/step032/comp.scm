@@ -326,16 +326,21 @@
 (define (comp-cons x si env)
   (let ((arg1 (car (cdr x)))
 	(arg2 (car (cdr (cdr x)))))
-    (let ((a si)
-	  (b (- si word)))
+    
     
     ;; compile arg1
     (comp arg1 si env)
+      
     ;; save onto stack
-    (emit "mov dword [ esp " si "] , eax ")
+    ;;(emit "mov dword [ esp " si "] , eax ")
+    (emit "push dword eax")
+    
     ;;(emit "push dword eax")
     ;; compile arg2
-    (comp arg2 (- si word) env)
+    (comp arg2 si env) ;;(- si word) env)
+            
+    ;;(emit "mov dword [ esp " (- si word) "] , eax ")
+    
     ;; arg2 in EAX
     ;;(emit "mov dword [ esp " b "] , eax")
     
@@ -346,26 +351,20 @@
     ;; store CDR in HEAP
     (emit "mov dword [ esi + 4 ] , eax ")
     ;; load arg1 into EAX
-    (emit "mov dword eax , [ esp " si "] ")    
+    (emit "mov dword eax , [ esp ] ") ;;" si "] ")
+    
+    (emit "add dword esp ,4 ")
+    
     ;; store CAR in HEAP
     (emit "mov dword [ esi ] , eax ")
     ;; tag result
     (emit "mov dword eax , esi ")
     ;; xxx001 is a PAIR tag
-    (emit "inc dword eax")    
+    (emit "and dword eax , (-8) ")
+    ;;(emit "inc dword eax")
+    (emit "or dword eax , 001b")    
     ;; bump HEAP ESI 
-    (emit "add dword esi , "  (* 2 word)))))
-
-
-
-
-
-
-
-
-
-
-
+    (emit "add dword esi , "  (* 2 word))))
 
 
 
@@ -375,14 +374,16 @@
     ;; compile arg1 
     (comp arg1 si env)
     ;; save arg onto stack
-    ;;(emit "push dword eax")
-    (emit "mov dword [ esp " si "] , eax ")
+    (emit "push dword eax")
+    ;;(emit "mov dword [ esp " si "] , eax ")
     
     ;; compile arg2
     (comp arg2 (- si word) env)
     ;; arg2 is in EAX 
     ;;(emit "add dword eax , [ ebp - " si " ]")
-    (emit "add dword eax , [ esp " si " ]")))
+    (emit "add dword eax , [ esp ]")
+    (emit "add dword esp , 4")))
+    
 
 
 
@@ -412,11 +413,12 @@
 ;; ***********************************************************************************
 
 
+
 ;; (let ...)
 (define (comp-let x si env)
   (let ((bindings (car (cdr x)))
 	(body (cdr (cdr x)))
-	(local-env '()))
+	(local-env '()))    
     (comp-let-bindings bindings body si env local-env)))
 
 
@@ -425,7 +427,7 @@
    ;; extend environment with local bindings
    ;; no more bindings to do 
    ((null? bindings)
-    ;;(display "LET: new local env : ") (display local-env) (newline)    
+    (display "LET: new local env : ") (display local-env) (newline)    
     (comp-implicit-sequence body si (append local-env env)))
    
    ;; some more bindings to do
@@ -436,7 +438,9 @@
 	     (comp-implicit-sequence the-sym-body si env)
 	     ;; mov eax into si
 	     ;; si represents the free slot on stack
-	     (emit "mov dword [ esp " si "] , eax  ; let bound " the-sym)
+	     ;;(emit "mov dword [ ebp " si "] , eax  ; let bound " the-sym)
+	     (emit "push dword eax")
+	     
 	     	     
 	     ;;(newline)
 	     ;;(display "LET: the symbol : ") (display the-sym) (newline)
@@ -447,6 +451,7 @@
 				(- si word)
 				env
 				(cons (list the-sym 'local si) local-env)))))))
+
 
 
 
@@ -476,6 +481,7 @@
 
 
 
+
 ;; 1 . local binding = from LET and on STACK
 ;; 2 . closure binding = from LAMBDA and on STACK through RAW untagged CLOSURE POINTER
 ;; 3 . toplevel binding = from DEFINE 
@@ -483,9 +489,9 @@
   (let ((binding (assoc var env)))
     (cond
      ((local-binding? binding)
-      (emit "mov dword eax , [ esp " (binding-stack-index binding)  "] "))
+      (emit "mov dword eax , [ ebp " (binding-stack-index binding)  "] "))
      ((closure-binding? binding)
-      (emit "mov dword eax , [ esp - 4 ] ; move untagged closure ptr into eax")
+      (emit "mov dword eax , [ ebp + 8 ] ; closure ptr into eax")
       (emit "mov dword eax , [ eax + " (binding-stack-index binding) "] "))
      ((toplevel-binding? binding)
 	;; toplevel definitions live in data section
@@ -493,6 +499,8 @@
 	(emit "mov dword eax , [ebx + " (binding-index binding)"]"))
      (else
       (error "comp-lookup : no binding for symbol " var)))))
+
+
 
 
 
@@ -1050,46 +1058,38 @@
 ;; si - 12  :  arg2
 ;; si - 16  :  arg3
 ;;
+
+;; 4 argument procedure for example
+;; e.g (f4 a b c d)
+;; ???????????
+;; arg4  d 
+;; arg3  c
+;; arg2  b 
+;; arg1  a
+;; ??????????
 (define (comp-application-helper args si env)
   (cond
    ((null? args) #f)
    (else (begin
 	   (comp (car args) si env)
-	   (emit "mov dword [esp " si "] , eax")
+	   ;;(emit "mov dword [esp " si "] , eax")
+	   (emit "push dword eax") 
 	   ;;(emit "push dword eax") ;; must NEVER !! do this -- destroys ESP frame pointer
 	   ;;(emit "mov dword [ ebp - " si-offset "] , eax ; save arg " index)
 	   (comp-application-helper (cdr args) (- si word) env)))))
 
 
 
-;; when processor does a CALL , it decrements ESP by 4 
-;; writes slot where IP should continue after call
-;; then jumps to CALL location
-;;
-;; si + 4  :   before do CALL  ESP= si + 4
-;; si      : < where IP goes >
-;; si - 4  : closure ptr
-;; si - 8  : arg 1
-;; si - 12 : arg 2
 
-
-
-;; esp : return ip of caller
-;; 
-;; 
-;; esp - (si + 0)  :  -   : first free slot on stack for any use ....
-;; esp - (si + 4)  : where closure pointer will go
-;; esp - (si + 8)  : arg1 formal parameter
-;; esp - (si + 12) : arg2 formal parameter
-;; esp - (si + 16) : arg3 formal parameter
-;; esp - (si + 20) : arg4 formal parameter
-;;  ....  and so on
+;; stack to be like this
 ;;
-;; before the call we need to SET the ESP to be (si - 4)
-;; then CALL opcode executes decrements ESP by WORD to (esp - (si + 0)) and write return ip
-;; execution continues where the CALL opcode value points to
-;; after the call we need to restore old ESP
-;;
+;; [ empty slot for return ip to go when do CALL ]
+;; closure ptr
+;; arg1
+;; arg2
+;; arg3
+;; arg4
+
 
 (define (comp-application x si env)
   (let ((fn (car x))
@@ -1106,17 +1106,18 @@
         
     ;; compile arguments
     ;; reserve two slots for RETURN-ADDRESS and CLOSURE-PTR slot
-    (comp-application-helper args (- si (* 2 word)) env)
+    (comp-application-helper (reverse args) si env)
     
     ;; compile procedure
-    (comp fn (- si (* (+ 3 (length args)) word)) env)
-    
+    (comp fn si env)
+        
     ;; untag the closure in EAX
     ;; -8 is binary 11...1111000  lower 3 bits zero")
     (emit "and dword eax , -8 ; untag closure ")
-
+    
     ;; save un- tagged - closure on stack
-    (emit "mov dword [esp "  (- si word) " ] , eax ; closure ptr ")
+    ;;(emit "mov dword [esp "  (- si word) " ] , eax ; closure ptr ")
+    (emit "push dword eax ; closure ptr")
     
     ;;(emit "push dword eax")
     ;;(emit "sub dword eax , 110b ; untag closure ")
@@ -1136,9 +1137,14 @@
     
     ;;(let ((adjust (+ si word)))
     
-    (emit "add dword esp , " (+ si word) "; adjust stack")
+    ;;(emit "add dword esp , " (+ si word) "; adjust stack")
     (emit "call eax ; call closure")
-    (emit "sub dword esp , " (+ si word) "; restore esp")))
+
+    (emit "add dword esp , " (* word (+ 1 (length args))))
+    
+    ;;(emit "sub dword esp , " (+ si word) "; restore esp")
+    ))
+
 
 
 
@@ -1495,6 +1501,7 @@
 
 
 
+
 ;; suppose free variables are a b c d
 ;; assigns closure offsets of multiples of 8 byte boundary.
 ;; a : 8
@@ -1513,9 +1520,6 @@
 	     (cons (list sym 'closure index)
 		   (helper (cdr args) (+ index word)))))))
   (helper args word))
-
-
-
 
 
 (define (remove-primitives vars)
@@ -1577,6 +1581,11 @@
 	  ;; cannot just do arbitrary PUSH and POPS
 	  ;; lambda has no name	  
 	  (emit anon-name ": nop ; ")
+
+	  (emit "push dword ebp ; entry prologue")
+	  (emit "mov dword ebp , esp")
+
+	  
 	  
 	  ;; compile the definition here with extra formals and free variables
 	  ;; new stack index number args and 2 reserved return ip and closure ptr
@@ -1588,9 +1597,14 @@
 	    (comp `(begin ,@body) new-si new-env))
 
 
+	  (emit "mov dword esp , ebp ; exit prolog")
+	  (emit "pop dword ebp")	  
 	  (emit "ret")
+	  
 	  ;; jump over definition
 	  (emit after-label ": nop")
+
+	  
 
 	  ;; ??
 	  ;;(emit "push dword esi")
@@ -1632,6 +1646,7 @@
 	  (emit "or dword eax , 110b ")
 	  ;;(emit "add dword eax , 110b ")
 	  )))))
+
 
 
 
@@ -1695,7 +1710,7 @@
 
    
    ;; explicit tailcall
-   ((and (pair? x) (eq? (car x) 'tailcall)) (comp-tailcall-application x si env))
+   ;;((and (pair? x) (eq? (car x) 'tailcall)) (comp-tailcall-application x si env))
    
    ;; tak 
    ;;((and (pair? x) (eq? (car x) 'tak)) (comp-tak x si env))

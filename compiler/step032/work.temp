@@ -1,1 +1,1 @@
- (define f (lambda () (make-vector 3))) 1 2 3 (f) 
+((lambda (x) (+ x x))) 

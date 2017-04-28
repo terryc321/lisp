@@ -885,10 +885,20 @@ def f8_test(a,b):
 
 
 #test_case(""" (make-vector 3) """, "#[#f #f #f]")
-test_case(""" (define f (lambda () (make-vector 3))) (f) 1 2 3 """, "3")
-test_case(""" (define f (lambda () (make-vector 3))) 1 2 3 f """, "#<closure>")
-test_case(""" (define f (lambda () (make-vector 3))) 1 2 3 (f) """, "#[#f #f #f]")
+#test_case(""" (define f (lambda () (make-vector 3))) (f) 1 2 3 """, "3")
+#test_case(""" (define f (lambda () (make-vector 3))) 1 2 3 f """, "#<closure>")
+#test_case(""" (define f (lambda () (make-vector 3))) 1 2 3 (f) """, "#[#f #f #f]")
+#test_case(""" (define f (lambda () 42)) 1 2 3 (f)""", "42")
+#test_case(""" (define f (lambda () (cons 1 2)))  1 2 3 (f)""", "(1 . 2)")
+#test_case(""" (define f (lambda () (cons 123 456)))  1 2 3 (f)""", "(123 . 456)")
+#test_case(""" (define f (lambda () (cons 123 (cons 456 789))))  1 2 3 (f)""", "(123 . (456 . 789))")
+#test_case(""" (define f (lambda () (cons 123 (cons 456 (cons 789 101112)))))  1 2 3 (f)""", "(123 . (456 . (789 . 101112)))")
 
+#test_case("((lambda () (let ((x 5)) (+ x x))))","10")
+
+#test_case("((lambda () (+ 5 5))) ","10")
+
+test_case("((lambda (x) (+ x x))) ","10")
 
 
 
