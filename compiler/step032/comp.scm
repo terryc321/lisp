@@ -56,6 +56,8 @@
     quote
     not
     tailcall
+    #t
+    #f
     ))
 
 
@@ -1105,13 +1107,13 @@
     ;; compile arguments
     ;; reserve two slots for RETURN-ADDRESS and CLOSURE-PTR slot
     (comp-application-helper args (- si (* 2 word)) env)
-
     
     ;; compile procedure
-    (comp fn (- si (* (+ 2 (length args)) word)) env)
+    (comp fn (- si (* (+ 3 (length args)) word)) env)
     
-    ;; untag the closure in EAX 
-    (emit "and dword eax , -8 ; untag closure -8 is binary 11...1111000  lower 3 bits zero")
+    ;; untag the closure in EAX
+    ;; -8 is binary 11...1111000  lower 3 bits zero")
+    (emit "and dword eax , -8 ; untag closure ")
 
     ;; save un- tagged - closure on stack
     (emit "mov dword [esp "  (- si word) " ] , eax ; closure ptr ")
@@ -1134,13 +1136,9 @@
     
     ;;(let ((adjust (+ si word)))
     
-    (emit "add dword esp , " (+ si 4) "; adjust stack")
+    (emit "add dword esp , " (+ si word) "; adjust stack")
     (emit "call eax ; call closure")
-    (emit "sub dword esp , " (+ si 4) "; restore esp")))
-
-
-
-    
+    (emit "sub dword esp , " (+ si word) "; restore esp")))
 
 
 

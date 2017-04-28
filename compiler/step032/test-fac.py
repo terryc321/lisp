@@ -849,15 +849,63 @@ def tail_f5_test(a,b):
 
 
 
+
 def f6_test(a,b):
     global test_case
     test_case(
         """
-        (define (f4 x)
+        (define (f6 x)
          (cons x 5))
         """ + a , b)
 
-f6_test("(f4 5)" , "(5 . 5)")
+#f6_test("(f6 5)" , "(5 . 5)")
+
+
+def f7_test(a,b):
+    global test_case
+    test_case(
+        """
+        (define (f7)
+         (cons 1 2))
+        """ + a , b)
+
+#f7_test("(f7)" , "(1 . 2)")
+#test_case(""" (cons 1 2) """ , "(1 . 2)")
+
+
+def f8_test(a,b):
+    global test_case
+    test_case(
+        """        
+        (define (f8) (cons 1 2))
+        (define dummy 123)
+        """ + a , b)
+
+#f8_test("(f8)" , "(1 . 2)")
+
+
+#test_case(""" (make-vector 3) """, "#[#f #f #f]")
+test_case(""" (define f (lambda () (make-vector 3))) (f) 1 2 3 """, "3")
+test_case(""" (define f (lambda () (make-vector 3))) 1 2 3 f """, "#<closure>")
+test_case(""" (define f (lambda () (make-vector 3))) 1 2 3 (f) """, "#[#f #f #f]")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

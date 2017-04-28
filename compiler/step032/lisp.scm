@@ -263,7 +263,7 @@
 	  ;; initial stack index is negative wordsize
 	  ;; as [ esp - 4 ] , since esp holds return address.
 	  (let ((initial-environment top-environment)
-		(stack-index (- word))) ;; -4
+		(stack-index (- (* 2 word)))) ;; -8
 
 	    ;; sufficiently large toplevel
 	    (emit "section .data")
@@ -277,8 +277,8 @@
 
 	    ;; NO ENTRY PROLOGUE people !! 
 	    ;;(emit "enter")	    
-	    ;;(emit "push ebp")
-	    ;;(emit "mov	ebp, esp")
+	    (emit "push ebp")
+	    (emit "mov	ebp, esp")
 	    
 	    ;;(emit "sub esp, N")
 	    
@@ -286,7 +286,7 @@
 	    ;; ebp + 8 = HEAP ptr passed by C
 	    ;; ebp + 4 = RET ip
 	    ;; ebp     = old EBP
-	    (emit "mov dword esi , [ esp + 4 ] ")
+	    (emit "mov dword esi , [ esp + 8 ] ")
 	    (emit "scheme_heap_in_esi: nop")
 	    ;; esp - 4 = first FREE slot on stack    
 
@@ -310,8 +310,9 @@
 
 	    
 	    ;; NO EXIT PROLOGUE people !! 
-	    ;; (emit "mov	esp, ebp")
-	    ;; (emit "pop	ebp")
+	    (emit "mov	esp, ebp")
+	    (emit "pop	ebp")
+
 	    
 	    ;; final return 
 	    (emit "ret")))))))
