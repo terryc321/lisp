@@ -898,30 +898,8 @@ def f8_test(a,b):
 
 #test_case("((lambda () (+ 5 5))) ","10")
 
-test_case("((lambda (x) (+ x x))) ","10")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+#test_case("((lambda (x) (+ x x)) 5) ","10")
+test_case("((lambda (x) x) 10) ","10")
 
 
 

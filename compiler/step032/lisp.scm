@@ -34,26 +34,36 @@
 (load 	  "/home/terry/lisp/macros/lambda.scm")
 
 ;; conjunction
-(load 	  "/home/terry/lisp/macros/and.scm")
+(load   "/home/terry/lisp/macros/and.scm")
 
 ;; disjunction
-(load 	  "/home/terry/lisp/macros/or.scm")
+(load  "/home/terry/lisp/macros/or.scm")
 
 ;; define
-(load 	  "/home/terry/lisp/macros/define.scm")
+(load  "/home/terry/lisp/macros/define.scm")
 
 ;; begin simplifier
-(load 	  "/home/terry/lisp/macros/begin.scm")
+(load  "/home/terry/lisp/macros/begin.scm")
 
 
 ;; alpha conversion
-(load  	  "/home/terry/lisp/alpha-conversion/alpha.scm")
+(load  "/home/terry/lisp/alpha-conversion/alpha.scm")
 
 ;; free variable analysis
-(load  	  "/home/terry/lisp/free-variables/freevar.scm")
+(load  "/home/terry/lisp/free-variables/freevar.scm")
 
 ;; the rudimentary compiler
-(load  	  "comp.scm")
+(load  "comp.scm")
+
+;; the simulator
+(load  "simulator.scm")
+
+;; the simulator compiler
+(load "simulator-comp.scm")
+
+
+
+
 
 
 
@@ -224,7 +234,6 @@
 	  (non-def-forms (toplevel-non-definitions forms))
 	  (top-environment (toplevel-environment forms)))
       (let ((last-stack-index (next-toplevel-stack-index-available top-environment)))
-	
 
       (newline)
       (display "stage-4b: definitions:")
@@ -249,6 +258,7 @@
       (display "stage-4b: first open stack index = :")
       (display last-stack-index)
       (newline)
+      
       
       (call-with-output-file outfile
 	(lambda (p)
@@ -286,11 +296,9 @@
 	    ;; ebp + 8 = HEAP ptr passed by C
 	    ;; ebp + 4 = RET ip
 	    ;; ebp     = old EBP
-	    (emit "mov dword esi , [ esp + 8 ] ")
+	    (emit "mov dword esi , [ ebp + 8 ] ")
 	    (emit "scheme_heap_in_esi: nop")
 	    ;; esp - 4 = first FREE slot on stack    
-
-	    
 	    
 	    (map (lambda (expr)
 		   (begin

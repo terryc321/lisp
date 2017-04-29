@@ -3,8 +3,6 @@
 ;;
 
 
-
-
 ;; assume input is a closed source file
 ;; read in definitions
 ;; last expression is one that fires it off ??
@@ -414,6 +412,7 @@
 
 
 
+
 ;; (let ...)
 (define (comp-let x si env)
   (let ((bindings (car (cdr x)))
@@ -448,7 +447,7 @@
 	     ;;	     
 	     (comp-let-bindings (cdr bindings)
 				body
-				(- si word)
+				(+ si word)
 				env
 				(cons (list the-sym 'local si) local-env)))))))
 
@@ -1677,7 +1676,6 @@
    ((and (pair? x) (eq? (car x) '*)) (comp-mul x si env))
    ((and (pair? x) (eq? (car x) '+)) (comp-add x si env))
    ((and (pair? x) (eq? (car x) '-)) (comp-sub x si env))
-   ((and (pair? x) (eq? (car x) 'let)) (comp-let x si env))
    ((and (pair? x) (eq? (car x) 'if)) (comp-if x si env))   
    ((and (pair? x) (eq? (car x) 'cons)) (comp-cons x si env))
    ((and (pair? x) (eq? (car x) 'car)) (comp-car x si env))   
@@ -1706,6 +1704,9 @@
    ;; begin
    ((and (pair? x) (eq? (car x) 'begin)) (comp-begin x si env))
 
+   ;; bindings
+   ((and (pair? x) (eq? (car x) 'let)) (comp-let x si env))
+   
    ;; explicit lambda
    ((and (pair? x) (eq? (car x) 'lambda)) (comp-lambda x si env))
 
