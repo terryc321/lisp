@@ -1,1 +1,1 @@
-((lambda (x) (+ x x))) 
+(let ((x 5)) (+ x x))

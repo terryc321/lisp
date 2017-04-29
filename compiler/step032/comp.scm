@@ -337,7 +337,7 @@
     
     ;;(emit "push dword eax")
     ;; compile arg2
-    (comp arg2 si env) ;;(- si word) env)
+    (comp arg2 (- si word) env) ;;(- si word) env)
             
     ;;(emit "mov dword [ esp " (- si word) "] , eax ")
     
@@ -351,7 +351,7 @@
     ;; store CDR in HEAP
     (emit "mov dword [ esi + 4 ] , eax ")
     ;; load arg1 into EAX
-    (emit "mov dword eax , [ esp ] ") ;;" si "] ")
+    (emit "mov dword eax , [ esp " si " ] ") ;;" si "] ")
     
     (emit "add dword esp ,4 ")
     
@@ -482,6 +482,7 @@
 
 
 
+
 ;; 1 . local binding = from LET and on STACK
 ;; 2 . closure binding = from LAMBDA and on STACK through RAW untagged CLOSURE POINTER
 ;; 3 . toplevel binding = from DEFINE 
@@ -489,7 +490,7 @@
   (let ((binding (assoc var env)))
     (cond
      ((local-binding? binding)
-      (emit "mov dword eax , [ ebp " (binding-stack-index binding)  "] "))
+      (emit "mov dword eax , [ ebp + " (binding-stack-index binding)  "] "))
      ((closure-binding? binding)
       (emit "mov dword eax , [ ebp + 8 ] ; closure ptr into eax")
       (emit "mov dword eax , [ eax + " (binding-stack-index binding) "] "))
@@ -1496,8 +1497,8 @@
      ((null? args) '())
      (else (let ((sym (car args)))
 	     (cons (list sym 'local index)
-		   (helper (cdr args) (- index word)))))))
-  (helper args -8))
+		   (helper (cdr args) (+ index word)))))))
+  (helper args 8))
 
 
 
