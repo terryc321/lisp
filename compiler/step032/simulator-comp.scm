@@ -191,7 +191,9 @@
 
 
 (define (comp-integer x si env)
-  `((mov eax ,x)))
+  `((mov eax ,(* x 4))))
+
+
 
 
   ;; (emit "mov dword eax , " 
@@ -400,15 +402,18 @@
 
 
 
+
 (define (comp-add x si env)
   (let ((arg1 (car (cdr x)))
 	(arg2 (car (cdr (cdr x)))))
     `(,@(comp arg1 si env)
-      (push eax) 
+      
+      (mov (ref (+ esp ,si)) eax)
+      
       ,@(comp arg2 (- si word) env)
-      (add eax (ref esp))
-      (add esp 4))))
-  
+      
+      (add eax (ref (+ esp ,si)))
+      )))
 
 
 
@@ -885,8 +890,6 @@
 
 
 
-
-
 ;; assume x is a lambda 
 ;; define f x
 ;; should really be called TOPLEVEL-DEFINE
@@ -1190,14 +1193,15 @@
   (let ((fn (car x))
 	(args (cdr x)))
 
-    (display "* regular function call *")
-    (newline)
-    (display "* FN * = ")
-    (display fn)
-    (newline)
-    (display "* ARGS * = ")
-    (display args)
-    (newline)
+    
+    ;; (display "* regular function call *")
+    ;; (newline)
+    ;; (display "* FN * = ")
+    ;; (display fn)
+    ;; (newline)
+    ;; (display "* ARGS * = ")
+    ;; (display args)
+    ;; (newline)
 
     
     (append
@@ -1680,30 +1684,32 @@
 	      (free-env  (comp-closure-helper free-variables))) 
 	  (let ((new-env (append extra-env free-env env )))
 	      
-	  (display "* comp-lambda * : ")
-	  (display "extra env = ")
-	  (display extra-env)
-	  (newline)
+	  ;; (display "* comp-lambda * : ")
+	  ;; (display "extra env = ")
+	  ;; (display extra-env)
+	  ;; (newline)
 
-	  (display "* comp-lambda * : ")
-	  (display "free = ")
-	  (display free-variables)
-	  (newline)
-	  (display "free-env = ")
-	  (display free-env)
-	  (newline)
+	  ;; (display "* comp-lambda * : ")
+	  ;; (display "free = ")
+	  ;; (display free-variables)
+	  ;; (newline)
+	  ;; (display "free-env = ")
+	  ;; (display free-env)
+	  ;; (newline)
 
-	  (display "* comp-lambda * : ")
-	  (display "new-env = ")
-	  (display new-env)
-	  (newline)
+	  ;; (display "* comp-lambda * : ")
+	  ;; (display "new-env = ")
+	  ;; (display new-env)
+	  ;; (newline)
 
 	  (append 
 	  `(	  
 	    (jmp ,after-label)
 	    (label ,anon-name)
-	    (push ebp)
-	    (mov ebp esp)
+
+	    ;(push ebp)
+	    ;(mov ebp esp)
+	    
 	    )
 	  
 	  (let ((new-si (- (* (+ n-args 2) word))))	    
@@ -1713,9 +1719,9 @@
 	    (mov esp ebp)
 	    (pop ebp)
 	    (ret)	  
-	    (label ,after-label ": nop")	    
+	    (label ,after-label)	    
 	    (mov ebx esi) ; remember heap loc	  
-	    (mov (ref esi) ,anon-name)	  	  
+	    (mov (ref esi) (label ,anon-name))
 	    (add esi 4) ; bump heap 
 	    )
 
@@ -1724,7 +1730,8 @@
 
 	    `(
 	    ;; important HEAP pointer esi is a multiple of 8
-	    (emit-align-heap-pointer)	  
+	      ,@(emit-align-heap-pointer)
+	      
 	    (mov eax ebx) 	    
 	    (or eax 110b) ; tag closure
 	    )

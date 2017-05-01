@@ -53,7 +53,7 @@
 (load  "/home/terry/lisp/free-variables/freevar.scm")
 
 ;; the rudimentary compiler
-(load  "comp.scm")
+;;(load  "comp.scm")
 
 ;; the simulator
 (load  "simulator.scm")
@@ -61,6 +61,8 @@
 ;; the simulator compiler
 (load "simulator-comp.scm")
 
+;; the code generator
+(load "code-gen.scm")
 
 
 
