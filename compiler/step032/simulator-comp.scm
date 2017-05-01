@@ -4,6 +4,8 @@
 
 (use-modules (ice-9 pretty-print))
 
+(load  "/home/terry/lisp/free-variables/freevar.scm")
+
 
 
 
@@ -1155,14 +1157,21 @@
 ;; ??????????
 (define (comp-application-helper args si env)
   (cond
-   ((null? args) #f)
-   (else (begin
-	   (comp (car args) si env)
-	   ;;(emit "mov dword [esp " si "] , eax")
-	   (emit "push dword eax") 
+   ((null? args) '())
+   (else
+    (append
+     (comp (car args) si env)
+     ;;(emit "mov dword [esp " si "] , eax")
+
+     `(
+     (push eax) ;;emit "push dword eax") 
 	   ;;(emit "push dword eax") ;; must NEVER !! do this -- destroys ESP frame pointer
-	   ;;(emit "mov dword [ ebp - " si-offset "] , eax ; save arg " index)
-	   (comp-application-helper (cdr args) (- si word) env)))))
+     ;;(emit "mov dword [ ebp - " si-offset "] , eax ; save arg " index)
+     )
+     
+     (comp-application-helper (cdr args) (- si word) env)))))
+
+
 
 
 
@@ -1189,21 +1198,25 @@
     (display "* ARGS * = ")
     (display args)
     (newline)
-        
+
+    
+    (append
+     
     ;; compile arguments
     ;; reserve two slots for RETURN-ADDRESS and CLOSURE-PTR slot
     (comp-application-helper (reverse args) si env)
     
     ;; compile procedure
     (comp fn si env)
-        
+
+    `(
     ;; untag the closure in EAX
     ;; -8 is binary 11...1111000  lower 3 bits zero")
-    (emit "and dword eax , -8 ; untag closure ")
+    (and eax -8) ;; "and dword eax , -8 ; untag closure ")
     
     ;; save un- tagged - closure on stack
     ;;(emit "mov dword [esp "  (- si word) " ] , eax ; closure ptr ")
-    (emit "push dword eax ; closure ptr")
+    (push eax) ;;emit "push dword eax ; closure ptr")
     
     ;;(emit "push dword eax")
     ;;(emit "sub dword eax , 110b ; untag closure ")
@@ -1219,17 +1232,20 @@
     ;; save closure onto stack
     ;;(emit "mov dword [esp " (- si word) "] ,eax  ; raw closure ptr ")
     ;; obtain procedure CODE address
-    (emit "mov dword eax , [eax] ; load CODE address ")
+    (mov eax (ref eax)) ;;emit "mov dword eax , [eax] ; load CODE address ")
     
     ;;(let ((adjust (+ si word)))
     
     ;;(emit "add dword esp , " (+ si word) "; adjust stack")
-    (emit "call eax ; call closure")
+    ;;(emit "call eax ; call closure")
+    (call eax)
+    (add esp ,(* word (+ 1 (length args)))) ;;(emit "add dword esp , " (* word (+ 1 (length args))))
+    )
 
-    (emit "add dword esp , " (* word (+ 1 (length args))))
     
     ;;(emit "sub dword esp , " (+ si word) "; restore esp")
-    ))
+    )))
+
 
 
 
@@ -1629,13 +1645,33 @@
 		 (cons var (remove-toplevel (cdr vars) env))))))))
 
 
+;; for each free variable ,
+;; 1st .. closure arg 0 ... + 4 
+;; 2nd .. closure arg 1 ... + 8
+;; 3rd .. closure arg 2 ... + 12
+;; 4th .. closure arg 3 ... + 16
+(define (comp-lambda-free-vars fv si env)
+  (cond
+   ((null? fv) '())
+   (else
+    (let ((f (car fv))
+	  (fother (cdr fv)))
+      (append
+       (comp-lookup fv si env)		   
+       `(
+	 (mov (ref esi) eax)
+	 (add esi 4) ;bump
+	 )
+       (comp-lambda-free-vars fother si env))))))
+
+
 
 
 ;; for each formal parameter [ <args> ]  of the lambda expression
 ;; (lambda <args> body)
 (define (comp-lambda x si env)
   (let ((anon-name (gensym "lambda"))	
-	(args (car (cdr x)))
+	(args (car (cdr x)))	
 	(body (cdr (cdr x)))
 	(after-label (gensym "after"))
 	(free-variables (remove-toplevel (remove-primitives (freevars x)) env)))
@@ -1661,77 +1697,40 @@
 	  (display "new-env = ")
 	  (display new-env)
 	  (newline)
-	  
-	  
-	  (emit "jmp " after-label)
-	  ;; cannot just do arbitrary PUSH and POPS
-	  ;; lambda has no name	  
-	  (emit anon-name ": nop ; ")
 
-	  (emit "push dword ebp ; entry prologue")
-	  (emit "mov dword ebp , esp")
-
+	  (append 
+	  `(	  
+	    (jmp ,after-label)
+	    (label ,anon-name)
+	    (push ebp)
+	    (mov ebp esp)
+	    )
 	  
-	  
-	  ;; compile the definition here with extra formals and free variables
-	  ;; new stack index number args and 2 reserved return ip and closure ptr
-	  ;; e.g n-args = 0 then new-si of -8
-	  ;; return ip   : esp + 0
-	  ;; closure ptr : esp - 4
-	  ;; empty slot  : esp - 8 , 
 	  (let ((new-si (- (* (+ n-args 2) word))))	    
 	    (comp `(begin ,@body) new-si new-env))
 
+	  `(
+	    (mov esp ebp)
+	    (pop ebp)
+	    (ret)	  
+	    (label ,after-label ": nop")	    
+	    (mov ebx esi) ; remember heap loc	  
+	    (mov (ref esi) ,anon-name)	  	  
+	    (add esi 4) ; bump heap 
+	    )
 
-	  (emit "mov dword esp , ebp ; exit prolog")
-	  (emit "pop dword ebp")	  
-	  (emit "ret")
-	  
-	  ;; jump over definition
-	  (emit after-label ": nop")
+	  (comp-lambda-free-vars free-variables si env)
+  
 
-	  
+	    `(
+	    ;; important HEAP pointer esi is a multiple of 8
+	    (emit-align-heap-pointer)	  
+	    (mov eax ebx) 	    
+	    (or eax 110b) ; tag closure
+	    )
+	    
+	    ))))))
 
-	  ;; ??
-	  ;;(emit "push dword esi")
-	  
-	  ;; construct closure
-	  ;; remember where HEAP esi was before build closure
-	  (emit "mov dword ebx , esi")
-	  
-	  ;; 1st CODE ptr to anon-name
-	  ;; closure ptr	  
-	  (emit "mov dword [ esi ] , " anon-name)
-	  	  
-	  ;; bump heap 
-	  (emit "add dword esi , 4 ")
-	  
-	  ;; for each free variable ,
-	  ;; 1st .. closure arg 0 ... + 4 
-	  ;; 2nd .. closure arg 1 ... + 8
-	  ;; 3rd .. closure arg 2 ... + 12
-	  ;; 4th .. closure arg 3 ... + 16
-	  (map (lambda (f)
-		 (begin
-		   ;;(comp-lookup f (+ si word) env)
-		   ;; should be free to re-use si slot for each arg
-		   (comp-lookup f si env)
-		   ;; 
-		   (emit "mov dword [ esi ] , eax")
-		   ;; bump esi
-		   (emit "add dword esi , 4 ")
-		   ))
-	       free-variables)
-
-	  ;; important HEAP pointer esi is a multiple of 8
-	  (emit-align-heap-pointer)
-	  
-	  (emit "mov dword eax , ebx")
-	  
-	  ;; tag as closure
-	  (emit "or dword eax , 110b ")
-	  ;;(emit "add dword eax , 110b ")
-	  )))))
 
 
 
@@ -1793,6 +1792,7 @@
    ;; begin
    ((and (pair? x) (eq? (car x) 'begin)) (comp-begin x si env))
 
+   
    ;; bindings
    ((and (pair? x) (eq? (car x) 'let)) (comp-let x si env))
    
