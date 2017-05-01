@@ -218,8 +218,8 @@
 	  (cond
 	   ((< the-int 0)
 	    (gen-rmi (car (cdr the-ref)) port)
-	    (display " " port)
-	    (display the-int port))
+	    (display " - " port)
+	    (display (abs the-int) port))
 	   ((= the-int 0)
 	    (gen-rmi (car (cdr the-ref)) port))
 	   ((> the-int 0)

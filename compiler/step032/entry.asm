@@ -10,14 +10,16 @@ scheme_entry: nop
 MOV DWORD  ESI  , [ ESP  + 4]
 ;; the integer  10 
 MOV DWORD  EAX  , 40
+;; app help : arg  
 MOV DWORD [ ESP ] ,  EAX 
-JMP after1525
-lambda1524: nop
-MOV DWORD  EAX  , [ ESP  -4]
+JMP after11475
+lambda11474: nop
+;; local lookup  x 
+MOV DWORD  EAX  , [ ESP  - 4]
 ret
-after1525: nop
+after11475: nop
 MOV DWORD  EBX  ,  ESI 
-MOV DWORD [ ESI ] , lambda1524
+MOV DWORD [ ESI ] , lambda11474
 ADD DWORD  ESI  , 4
 ADD DWORD  EAX  , 8
 ADD DWORD  EAX  , -8

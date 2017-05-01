@@ -191,6 +191,7 @@
   ;; 	   (primitive-character-tag))))
 
 
+
 (define (comp-integer x si env)
   `((comment "the integer " ,x)
     (mov eax ,(* x 4))))
@@ -547,6 +548,7 @@
      ((local-binding? binding)
       ;;`((mov eax (ref (+ ebp ,(binding-stack-index binding))))))
       `(
+	(comment "local lookup " ,var)
 	(mov eax (ref (+ esp ,(binding-stack-index binding))))
 	))
      ;;(emit "mov dword eax , [ ebp + " (binding-stack-index binding)  "] "))
@@ -1186,11 +1188,15 @@
      ;;(push eax) ;;emit "push dword eax") 
 	   ;;(emit "push dword eax") ;; must NEVER !! do this -- destroys ESP frame pointer
        ;;(emit "mov dword [ ebp - " si-offset "] , eax ; save arg " index)
-       (mov (ref esp si) eax)
+       (comment "app help : arg ")
+       (mov (ref esp ,si) eax)
        
      )
      
      (comp-application-helper (cdr args) (- si word) env)))))
+
+
+
 
 
 
