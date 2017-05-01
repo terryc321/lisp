@@ -505,8 +505,6 @@
 
 
 
-
-
 (define (toplevel-binding? x)
   (and (= (length x) 3)
        (eq? (car (cdr x)) 'toplevel)))
@@ -548,7 +546,7 @@
      ;; (emit "mov dword eax , [ ebp + 8 ] ; closure ptr into eax")
      ;; (emit "mov dword eax , [ eax + " (binding-stack-index binding) "] "))
      ((toplevel-binding? binding)
-      `((mov ebx toplevel)
+      `((mov ebx "toplevel")
 	(mov eax (ref (+ ebx ,(binding-index binding))))))
      
 	;; toplevel definitions live in data section
@@ -556,6 +554,9 @@
      ;;(emit "mov dword eax , [ebx + " (binding-index binding)"]"))
      (else
       (error "comp-lookup : no binding for symbol " var)))))
+
+
+
 
 
 
@@ -897,16 +898,19 @@
   (let ((var (car (cdr x)))
 	(val (car (cdr (cdr x)))))
     ;; compile the val
-    (comp val si env)
+    (append 
+     (comp val si env)
     ;; find global index for the var
     (let ((binding (assoc var env)))
       (cond
        ((toplevel-binding? binding)
 	;; toplevel definitions live in data section
-	(emit "mov dword ebx , toplevel ;; toplevel define " var)
-	(emit "mov dword [ebx + " (binding-index binding)"] , eax"))
+	`((literal "mov dword ebx , toplevel")
+	  (literal "mov dword [ebx + " ,(binding-index binding) "] , eax")))
        (else
-	(error "comp-define : no SLOT for TOPLEVEL DEFINE found " var))))))
+	(error "comp-define : no SLOT for TOPLEVEL DEFINE found " var)))))))
+
+
 
 
 
@@ -1704,7 +1708,7 @@
 
 	  (append 
 	  `(	  
-	    (jmp ,after-label)
+	    (jmp (label ,after-label))
 	    (label ,anon-name)
 
 	    ;(push ebp)

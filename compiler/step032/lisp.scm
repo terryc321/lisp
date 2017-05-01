@@ -67,8 +67,6 @@
 
 
 
-
-
 ;; read all the forms from a target expression
 ;; p is PORT
 (define (read-file filename)
@@ -260,87 +258,59 @@
       (display "stage-4b: first open stack index = :")
       (display last-stack-index)
       (newline)
-      
-      
-      (call-with-output-file outfile
-	(lambda (p)
-	  (set-emit-output-port! p)
-
-	  (emit "")
-	  (emit "extern debug_stack")
-	  (emit "global scheme_entry")
-
-	  
-	  ;; here compile the expression
-	  ;; initial stack index is negative wordsize
-	  ;; as [ esp - 4 ] , since esp holds return address.
-	  (let ((initial-environment top-environment)
-		(stack-index (- (* 2 word)))) ;; -8
-
-	    ;; sufficiently large toplevel
-	    (emit "section .data")
-	    (emit "align 32")	    
-	    (emit "toplevel: times " (+ (length def-forms) 4)   " dd 0")
+            
 	    
-	    
-	    (emit "section .text")
-	    (emit "align 32")
-	    (emit "scheme_entry: nop ")
+      (append
 
-	    ;; NO ENTRY PROLOGUE people !! 
-	    ;;(emit "enter")	    
-	    (emit "push ebp")
-	    (emit "mov	ebp, esp")
-	    
-	    ;;(emit "sub esp, N")
-	    
-	    ;; HEAP is passed as 1st argument
-	    ;; ebp + 8 = HEAP ptr passed by C
-	    ;; ebp + 4 = RET ip
-	    ;; ebp     = old EBP
-	    (emit "mov dword esi , [ ebp + 8 ] ")
-	    (emit "scheme_heap_in_esi: nop")
-	    ;; esp - 4 = first FREE slot on stack    
-	    
-	    (map (lambda (expr)
-		   (begin
-		     (display "compiling expr => ")
-		     (display expr)
-		     (newline)		   
-		     (comp expr stack-index initial-environment)))
-		 def-forms)
+       `(
+	 (global scheme_entry)
+	 (section data)
+	 (align 32)
+	 (literal "toplevel:  times " ,(+ (length def-forms) 2) " dd 0 ")
 
-	    (map (lambda (expr)
-		   (begin
-		     (display "compiling expr => ")
-		     (display expr)
-		     (newline)		   
-		     (comp expr stack-index initial-environment)))
-		 non-def-forms)
+	 (section text)
+	 (align 32)
+	 (label scheme_entry)
 
-	    
-	    ;; NO EXIT PROLOGUE people !! 
-	    (emit "mov	esp, ebp")
-	    (emit "pop	ebp")
+	 (mov esi (ref (+ esp 4)))
+	 )
+       
+       (f321 def-forms non-def-forms top-environment)
+       
 
-	    
-	    ;; final return 
-	    (emit "ret")))))))
+       `(
+	 (ret))))))
 
+	 
+
+
+(define (f321 df ndf ie)
+  (cond
+   ((null? df)
+    (f322 ndf ie))
+   (else
+    (append (comp (car df) -4 ie)
+	    (f321 (cdr df) ndf ie)))))
+
+(define (f322 ndf ie)
+  (cond
+   ((null? ndf) '())
+   (else
+    (append (comp (car ndf) -4 ie)
+	    (f322 (cdr ndf) ie)))))
 
 
 
 
 ;; 
-;;(stage-4 "/home/terry/lisp/demo/tak/tak.scm" "entry.asm")
-
-
-
-
-	    
-
-
-
+(define (stage-5 forms outfile)
+  (call-with-output-file outfile
+    (lambda (out)
+      (let ((codelist (stage-4b forms outfile)))
+	(map (lambda (code)
+	       (gen code out))
+	     codelist)
+	codelist))))
 
 
 
