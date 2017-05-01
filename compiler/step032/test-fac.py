@@ -38,7 +38,7 @@ def test_case(expr,expected):
     subprocess.run(['rm', '-f' , "entry.o" ])    
     subprocess.run(['rm', '-f' , "c-help.o" ])    
     
-    subprocess.run(['guile', '-c' , "(begin (load \"lisp.scm\") (stage-4 \"work.temp\" \"entry.asm\"))" ])
+    subprocess.run(['guile', '-c' , "(begin (load \"lisp.scm\") (stage-5 \"work.temp\" \"entry.asm\"))" ])
     subprocess.run(['make'])
     result = subprocess.run(['./driver'] , stdout=subprocess.PIPE)
     result = result.stdout
@@ -900,6 +900,11 @@ def f8_test(a,b):
 
 #test_case("((lambda (x) (+ x x)) 5) ","10")
 test_case("((lambda (x) x) 10) ","10")
+#test_case("5 ","5")
+#test_case("(+ 1 2) ","3")
+
+
+
 
 
 

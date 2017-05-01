@@ -3,8 +3,12 @@
 ;; Libraries 
 
 ;;; mit specific stuff
+
+
 ;;(define (gensym args) (cons 'gensym args)) ;;generate-uninterned-symbol)
 ;;(define gensym generate-uninterned-symbol)
+
+
 
 ;;quasiquotation
 (load  	  "/home/terry/lisp/quasiquote/quasiquote.scm")
@@ -270,8 +274,10 @@
 
 	 (section text)
 	 (align 32)
+	 (comment "scheme_entry is called from driver.c")
 	 (label scheme_entry)
 
+	 (comment "load heap address into esi , provided by c compiler")
 	 (mov esi (ref (+ esp 4)))
 	 )
        
@@ -303,7 +309,7 @@
 
 
 ;; 
-(define (stage-5 forms outfile)
+(define (stage-5b forms outfile)
   (call-with-output-file outfile
     (lambda (out)
       (let ((codelist (stage-4b forms outfile)))
@@ -311,6 +317,18 @@
 	       (gen code out))
 	     codelist)
 	codelist))))
+
+;; 
+(define (stage-5 infile outfile)
+  (call-with-output-file outfile
+    (lambda (out)
+      (let ((codelist (stage-4 infile outfile)))
+	(map (lambda (code)
+	       (gen code out))
+	     codelist)
+	codelist))))
+
+
 
 
 

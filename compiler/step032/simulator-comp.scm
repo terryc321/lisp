@@ -2,9 +2,10 @@
 ;; tidy proc name , removes minus sign from
 ;;
 
-(use-modules (ice-9 pretty-print))
+;;(use-modules (ice-9 pretty-print))
 
-(load  "/home/terry/lisp/free-variables/freevar.scm")
+;;(load  "/home/terry/lisp/free-variables/freevar.scm")
+
 
 
 
@@ -191,7 +192,9 @@
 
 
 (define (comp-integer x si env)
-  `((mov eax ,(* x 4))))
+  `((comment "the integer " ,x)
+    (mov eax ,(* x 4))))
+
 
 
 
@@ -461,6 +464,7 @@
 
 
 
+
 (define (comp-let-bindings bindings body si env local-env)
   (cond
    ;; extend environment with local bindings
@@ -484,7 +488,10 @@
 	     ;; mov eax into si
 	     ;; si represents the free slot on stack
 	     ;;(emit "mov dword [ ebp " si "] , eax  ; let bound " the-sym)
-	      `((push eax))
+	     `(
+	       ;;(push eax)
+	       (mov (ref (+ esp si)) eax)
+	       )
 	     	     
 	     ;;(newline)
 	     ;;(display "LET: the symbol : ") (display the-sym) (newline)
@@ -538,7 +545,10 @@
   (let ((binding (assoc var env)))
     (cond
      ((local-binding? binding)
-      `((mov eax (ref (+ ebp ,(binding-stack-index binding))))))
+      ;;`((mov eax (ref (+ ebp ,(binding-stack-index binding))))))
+      `(
+	(mov eax (ref (+ esp ,(binding-stack-index binding))))
+	))
      ;;(emit "mov dword eax , [ ebp + " (binding-stack-index binding)  "] "))
      ((closure-binding? binding)
       `((mov eax (+ ebp 8))
@@ -554,6 +564,7 @@
      ;;(emit "mov dword eax , [ebx + " (binding-index binding)"]"))
      (else
       (error "comp-lookup : no binding for symbol " var)))))
+
 
 
 
@@ -1171,12 +1182,17 @@
      ;;(emit "mov dword [esp " si "] , eax")
 
      `(
-     (push eax) ;;emit "push dword eax") 
+       
+     ;;(push eax) ;;emit "push dword eax") 
 	   ;;(emit "push dword eax") ;; must NEVER !! do this -- destroys ESP frame pointer
-     ;;(emit "mov dword [ ebp - " si-offset "] , eax ; save arg " index)
+       ;;(emit "mov dword [ ebp - " si-offset "] , eax ; save arg " index)
+       (mov (ref esp si) eax)
+       
      )
      
      (comp-application-helper (cdr args) (- si word) env)))))
+
+
 
 
 
@@ -1212,19 +1228,23 @@
      
     ;; compile arguments
     ;; reserve two slots for RETURN-ADDRESS and CLOSURE-PTR slot
-    (comp-application-helper (reverse args) si env)
+    (comp-application-helper args si env)
     
     ;; compile procedure
     (comp fn si env)
 
     `(
     ;; untag the closure in EAX
-    ;; -8 is binary 11...1111000  lower 3 bits zero")
+      ;; -8 is binary 11...1111000  lower 3 bits zero")
+      (comment "untag closure")
     (and eax -8) ;; "and dword eax , -8 ; untag closure ")
     
     ;; save un- tagged - closure on stack
     ;;(emit "mov dword [esp "  (- si word) " ] , eax ; closure ptr ")
-    (push eax) ;;emit "push dword eax ; closure ptr")
+    (comment "save untagged closure on stack")
+    (mov (ref esp ,(- si 4)) eax)
+    
+    ;;(push eax) ;;emit "push dword eax ; closure ptr")
     
     ;;(emit "push dword eax")
     ;;(emit "sub dword eax , 110b ; untag closure ")
@@ -1240,14 +1260,16 @@
     ;; save closure onto stack
     ;;(emit "mov dword [esp " (- si word) "] ,eax  ; raw closure ptr ")
     ;; obtain procedure CODE address
+    (comment ";; load CODE address ")
     (mov eax (ref eax)) ;;emit "mov dword eax , [eax] ; load CODE address ")
     
     ;;(let ((adjust (+ si word)))
     
     ;;(emit "add dword esp , " (+ si word) "; adjust stack")
-    ;;(emit "call eax ; call closure")
+    (comment ";; call closure")
     (call eax)
-    (add esp ,(* word (+ 1 (length args)))) ;;(emit "add dword esp , " (* word (+ 1 (length args))))
+    ;;(add esp ,(* word (+ 1 (length args))))
+    ;;(emit "add dword esp , " (* word (+ 1 (length args))))
     )
 
     
@@ -1606,8 +1628,8 @@
      ((null? args) '())
      (else (let ((sym (car args)))
 	     (cons (list sym 'local index)
-		   (helper (cdr args) (+ index word)))))))
-  (helper args 8))
+		   (helper (cdr args) (- index word)))))))
+  (helper args -4))
 
 
 
@@ -1629,7 +1651,7 @@
      (else (let ((sym (car args)))
 	     (cons (list sym 'closure index)
 		   (helper (cdr args) (+ index word)))))))
-  (helper args word))
+  (helper args 4))
 
 
 (define (remove-primitives vars)
@@ -1675,6 +1697,7 @@
 
 
 
+
 ;; for each formal parameter [ <args> ]  of the lambda expression
 ;; (lambda <args> body)
 (define (comp-lambda x si env)
@@ -1716,12 +1739,12 @@
 	    
 	    )
 	  
-	  (let ((new-si (- (* (+ n-args 2) word))))	    
+	  (let ((new-si (- (* (+ n-args 1) word))))	    
 	    (comp `(begin ,@body) new-si new-env))
 
 	  `(
-	    (mov esp ebp)
-	    (pop ebp)
+	    ;(mov esp ebp)
+	    ;(pop ebp)
 	    (ret)	  
 	    (label ,after-label)	    
 	    (mov ebx esi) ; remember heap loc	  
@@ -1731,16 +1754,17 @@
 
 	  (comp-lambda-free-vars free-variables si env)
   
-
 	    `(
 	    ;; important HEAP pointer esi is a multiple of 8
 	      ,@(emit-align-heap-pointer)
 	      
 	    (mov eax ebx) 	    
-	    (or eax 110b) ; tag closure
+	    (or eax 6) ; tag closure 110b
 	    )
 	    
 	    ))))))
+
+
 
 
 

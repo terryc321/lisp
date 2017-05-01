@@ -1,5 +1,6 @@
 
 
+
 ;;; translate s expression to nasm
 
 (define (gen-error x port)
@@ -17,7 +18,14 @@
    ((and (pair? x) (eq? (car x) 'ret))  (gen-return x port))
    ((and (pair? x) (eq? (car x) 'mov))     (gen-mov x port))
    ((and (pair? x) (eq? (car x) 'jmp))     (gen-jmp x port))
-  
+   ((and (pair? x) (eq? (car x) 'push))     (gen-push x port))
+   ((and (pair? x) (eq? (car x) 'pop))     (gen-pop x port))  
+   ((and (pair? x) (eq? (car x) 'add))     (gen-add x port))  
+   ((and (pair? x) (eq? (car x) 'sub))     (gen-sub x port))  
+   ((and (pair? x) (eq? (car x) 'or))     (gen-or x port))  
+   ((and (pair? x) (eq? (car x) 'and))     (gen-and x port))  
+   ((and (pair? x) (eq? (car x) 'call))     (gen-call x port))  
+   ((and (pair? x) (eq? (car x) 'comment))     (gen-comment x port))  
    (else
     (gen-error x port))))
 
@@ -31,6 +39,15 @@
 
 
 
+
+
+
+(define (gen-comment x port)
+  (display ";; " port)
+  (map (lambda (message)
+	 (display message port)
+	 (display " " port))
+       (cdr x)))
 
 
 
@@ -66,7 +83,12 @@
 
 (define (gen-label x port)
   (display (car (cdr x)) port)
-  (display ": nop\n" port))
+  (display ": nop" port))
+
+
+
+
+
 
 
 (define (gen-return x port)
@@ -78,6 +100,51 @@
     (gen-rm (car (cdr x)) port)
     (display " , " port)
     (gen-rmi (car (cdr (cdr x))) port)))
+
+
+(define (gen-add x port)
+  (begin
+    (display "ADD DWORD " port)
+    (gen-rm (car (cdr x)) port)
+    (display " , " port)
+    (gen-rmi (car (cdr (cdr x))) port)))
+
+(define (gen-sub x port)
+  (begin
+    (display "SUB DWORD " port)
+    (gen-rm (car (cdr x)) port)
+    (display " , " port)
+    (gen-rmi (car (cdr (cdr x))) port)))
+
+(define (gen-or x port)
+  (begin
+    (display "OR DWORD " port)
+    (gen-rm (car (cdr x)) port)
+    (display " , " port)
+    (gen-rmi (car (cdr (cdr x))) port)))
+
+
+(define (gen-and x port)
+  (begin
+    (display "AND DWORD " port)
+    (gen-rm (car (cdr x)) port)
+    (display " , " port)
+    (gen-rmi (car (cdr (cdr x))) port)))
+
+
+
+(define (gen-call x port)
+  (cond
+   ((gen-label? (car (cdr x)))
+    (begin
+      (display "CALL " port)
+      (display (car (cdr (car (cdr x)))) port)))
+   ((gen-register? (car (cdr x)))
+    (begin
+      (display "CALL " port)
+      (gen-rm (car (cdr x)) port)))
+   (else (gen-error x port))))
+
 
 
 (define (gen-jmp x port)
@@ -127,6 +194,7 @@
 ;;   #t)
 
 
+
 (define (gen-register? x)
   (memq x '(eax ebx ecx edx edi esi esp ebp
 		EAX EBX ECX EDX EDI ESI ESP EBP)))
@@ -135,6 +203,56 @@
   (and (pair? x)
        (eq? (car x) 'label)))
 
+
+(define (gen-ref x port)
+    (display "[" port)
+    (let ((the-ref (car (cdr x))))
+      (cond
+       ((symbol? the-ref) (gen-rm the-ref port))
+       
+       ((and (pair? the-ref)
+	     (eq? (car the-ref) '+)
+	     (gen-register? (car (cdr the-ref)))
+	     (integer? (car (cdr (cdr the-ref)))))
+	(let ((the-int (car (cdr (cdr the-ref)))))
+	  (cond
+	   ((< the-int 0)
+	    (gen-rmi (car (cdr the-ref)) port)
+	    (display " " port)
+	    (display the-int port))
+	   ((= the-int 0)
+	    (gen-rmi (car (cdr the-ref)) port))
+	   ((> the-int 0)
+	    (gen-rmi (car (cdr the-ref)) port)
+	    (display " + " port)
+	    (display the-int port)))))
+       
+       ((and (pair? the-ref)
+	     (eq? (car the-ref) '-)
+	     (gen-register? (car (cdr the-ref)))
+	     (integer? (car (cdr (cdr the-ref)))))
+	(let ((the-int (car (cdr (cdr the-ref)))))
+	  (cond
+	   ((< the-int 0)
+	    (gen-rmi (car (cdr the-ref)) port)
+	    (display " + " port)
+	    (display (abs the-int) port))
+	   ((= the-int 0)
+	    (gen-rmi (car (cdr the-ref)) port))
+	   ((> the-int 0)
+	    (gen-rmi (car (cdr the-ref)) port)
+	    (display " - " port)
+	    (display the-int port)))))
+       (else (gen-error the-ref port))))
+    (display "]" port))
+
+
+
+
+
+
+
+   
 
 
 (define (gen-rm x port)
@@ -148,29 +266,13 @@
    ((eq? x 'esi) (display " ESI " port))
    ((eq? x 'edi) (display " EDI " port))
    ((eq? x 'ebp) (display " EBP " port))   
-   ((and (pair? x) (eq? (car x) 'ref))
-    (display "[" port)
-    (let ((the-ref (car (cdr x))))
-      (cond
-       ((symbol? the-ref) (gen-rm x port))
-       ((and (pair? the-ref)
-	     (eq? (car the-ref) '+)
-	     (gen-register? (car (cdr the-ref)))
-	     (integer? (car (cdr (cdr the-ref)))))
-	(gen-rmi (car (cdr the-ref)) port)
-	(display " + " port)
-	(gen-rmi (car (cdr (cdr the-ref))) port))
-       ((and (pair? the-ref)
-	     (eq? (car the-ref) '-)
-	     (gen-register? (car (cdr the-ref)))
-	     (integer? (car (cdr (cdr the-ref)))))
-	(gen-rmi (car (cdr the-ref)) port)
-	(display " - " port)
-	(gen-rmi (car (cdr (cdr the-ref))) port))
-       (else (gen-error the-ref port))))
-    (display "]" port))
+   ((and (pair? x)
+	 (eq? (car x) 'ref))
+    (gen-ref x port))
    (else
     (gen-error x port))))
+
+
 
 
 
@@ -178,6 +280,7 @@
 (define (gen-rmi x port)
   (cond
    ((string? x) (display x port))
+   ((integer? x) (display x port))
    ((eq? x 'eax) (display " EAX " port))
    ((eq? x 'ebx) (display " EBX " port))
    ((eq? x 'ecx) (display " ECX " port))
@@ -187,31 +290,19 @@
    ((eq? x 'edi) (display " EDI " port))
    ((eq? x 'ebp) (display " EBP " port))   
    ((integer? x) (display x port))
-   ((and (pair? x) (eq? (car x) 'ref))
-    (display "[" port)
-    (let ((the-ref (car (cdr x))))
-      (cond
-       ((symbol? the-ref) (gen-rm x port))
-       ((and (pair? the-ref)
-	     (eq? (car the-ref) '+)
-	     (gen-register? (car (cdr the-ref)))
-	     (integer? (car (cdr (cdr the-ref)))))
-	(begin
-	  (gen-rmi (car (cdr the-ref)) port)
-	  (display " + " port)
-	  (gen-rmi (car (cdr (cdr the-ref))) port)))
-       ((and (pair? the-ref)
-	     (eq? (car the-ref) '-)
-	     (gen-register? (car (cdr the-ref)))
-	     (integer? (car (cdr (cdr the-ref)))))
-	(begin
-	  (gen-rmi (car (cdr the-ref)) port)
-	  (display " - " port)
-	  (gen-rmi (car (cdr (cdr the-ref))) port))       )
-       (else (gen-error the-ref port))))
-    (display "]" port))
+   ((and (pair? x)
+	 (eq? (car x) 'ref))
+    (gen-ref x port))
+   ((and (pair? x)
+	 (eq? (car x) 'label))
+    (display (car (cdr x)) port))
    (else
     (gen-error x port))))
+
+
+
+
+
 
 
 
