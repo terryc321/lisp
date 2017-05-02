@@ -30,12 +30,14 @@
     (gen-error x port))))
 
 (define (gen x port)
-  (display "generating code for ")
-  (display x)
-  (newline)
+  ;;(display "generating code for ")
+  ;;(display x)
+  ;;(newline)
   (gen-dispatch x port)
   (newline port)
-  (display "... done\n"))
+  ;;(display "... done\n")
+  )
+
 
 
 
@@ -204,6 +206,7 @@
        (eq? (car x) 'label)))
 
 
+
 (define (gen-ref x port)
     (display "[" port)
     (let ((the-ref (car (cdr x))))
@@ -245,6 +248,7 @@
 	    (display the-int port)))))
        (else (gen-error the-ref port))))
     (display "]" port))
+
 
 
 

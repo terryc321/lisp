@@ -43,6 +43,7 @@ def test_case(expr,expected):
     result = subprocess.run(['./driver'] , stdout=subprocess.PIPE)
     result = result.stdout
     result = result.decode()
+
     
     print("RESULT = ",)
     print(result)
@@ -71,10 +72,10 @@ test_reset()
 
 
 # # comp-null
-test_case("()","()")
+#test_case("()","()")
 
 # # comp-boolean
-# test_case("#t","#t")
+test_case("#t","#t")
 # test_case("#f","#f")
 
 # # comp-char

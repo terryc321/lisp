@@ -894,14 +894,32 @@ def f8_test(a,b):
 #test_case(""" (define f (lambda () (cons 123 (cons 456 789))))  1 2 3 (f)""", "(123 . (456 . 789))")
 #test_case(""" (define f (lambda () (cons 123 (cons 456 (cons 789 101112)))))  1 2 3 (f)""", "(123 . (456 . (789 . 101112)))")
 
+
+
+# free variable failure 
 #test_case("((lambda () (let ((x 5)) (+ x x))))","10")
 
-#test_case("((lambda () (+ 5 5))) ","10")
 
-#test_case("((lambda (x) (+ x x)) 5) ","10")
+
+test_case("(let ((x 5)) (+ x x))","10")
+test_case("((lambda () (+ 5 5))) ","10")
+test_case("((lambda (x) (+ x x)) 5) ","10")
 test_case("((lambda (x) x) 10) ","10")
-#test_case("5 ","5")
-#test_case("(+ 1 2) ","3")
+test_case("(define f (lambda (x) x)) (f (+ 1 (+ 3 6))) ","10")
+test_case("5 ","5")
+test_case("(+ 1 2) ","3")
+
+
+# nested lambdas dont work
+#test_case("((lambda () ((lambda (x) (+ x x)) 5)))","10")
+
+
+#test_case("(let ((x 5)) (lambda () (+ x x)))","10")
+test_case("((let ((x 5)) (lambda () (+ x x))))","10")
+
+
+
+
 
 
 

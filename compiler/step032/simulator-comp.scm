@@ -149,10 +149,10 @@
 ;;; Therefore are not subject to evaluator , they do their stuff at machine level
 
 
-(define (emit . args)
-  ;; dont need map here , can just iterate over args
-  (map (lambda (x) (display x *out*)) args)
-  (newline *out*))
+;; (define (emit . args)
+;;   ;; dont need map here , can just iterate over args
+;;   (map (lambda (x) (display x *out*)) args)
+;;   (newline *out*))
 
 
 (define (emit-align-heap-pointer)
@@ -170,6 +170,7 @@
 (define (comp-null x si env)
   (let ((nil '()))
     `((mov eax ,nil))))
+
 
 
 (define (comp-boolean x si env)
@@ -466,6 +467,7 @@
 
 
 
+
 (define (comp-let-bindings bindings body si env local-env)
   (cond
    ;; extend environment with local bindings
@@ -491,7 +493,7 @@
 	     ;;(emit "mov dword [ ebp " si "] , eax  ; let bound " the-sym)
 	     `(
 	       ;;(push eax)
-	       (mov (ref (+ esp si)) eax)
+	       (mov (ref (+ esp ,si)) eax)
 	       )
 	     	     
 	     ;;(newline)
@@ -500,9 +502,10 @@
 	     ;;	     
 	      (comp-let-bindings (cdr bindings)
 	     			 body
-	     			 (+ si word)
+	     			 (- si word)
 	     			 env
 	     			 (cons (list the-sym 'local si) local-env))))))))
+
 
 
 
@@ -543,29 +546,39 @@
 ;; 2 . closure binding = from LAMBDA and on STACK through RAW untagged CLOSURE POINTER
 ;; 3 . toplevel binding = from DEFINE 
 (define (comp-lookup var si env)
-  (let ((binding (assoc var env)))
-    (cond
-     ((local-binding? binding)
-      ;;`((mov eax (ref (+ ebp ,(binding-stack-index binding))))))
-      `(
-	(comment "local lookup " ,var)
-	(mov eax (ref (+ esp ,(binding-stack-index binding))))
-	))
-     ;;(emit "mov dword eax , [ ebp + " (binding-stack-index binding)  "] "))
-     ((closure-binding? binding)
-      `((mov eax (+ ebp 8))
-	(mov eax (ref (+ eax ,(binding-stack-index binding))))))
-     ;; (emit "mov dword eax , [ ebp + 8 ] ; closure ptr into eax")
-     ;; (emit "mov dword eax , [ eax + " (binding-stack-index binding) "] "))
-     ((toplevel-binding? binding)
-      `((mov ebx "toplevel")
-	(mov eax (ref (+ ebx ,(binding-index binding))))))
-     
-	;; toplevel definitions live in data section
-     ;;(emit "mov dword ebx , toplevel ;; toplevel define " var)
-     ;;(emit "mov dword eax , [ebx + " (binding-index binding)"]"))
-     (else
-      (error "comp-lookup : no binding for symbol " var)))))
+  (if (not (symbol? var))
+      (begin
+	(error "comp-lookup expected " var " to be a symbol variable "))
+      (begin
+  
+	(let ((binding (assoc var env)))
+	  (cond
+	   ((local-binding? binding)
+	    ;;`((mov eax (ref (+ ebp ,(binding-stack-index binding))))))
+	    `(
+	      (comment "local lookup " ,var)
+	      (mov eax (ref (+ esp ,(binding-stack-index binding))))
+	      ))
+	   ;;(emit "mov dword eax , [ ebp + " (binding-stack-index binding)  "] "))
+	   ((closure-binding? binding)
+	    `((mov eax (ref (+ esp 4)))
+	      (mov eax (ref (+ eax ,(binding-stack-index binding))))
+	      ))
+	   ;; (emit "mov dword eax , [ ebp + 8 ] ; closure ptr into eax")
+	   ;; (emit "mov dword eax , [ eax + " (binding-stack-index binding) "] "))
+	   ((toplevel-binding? binding)
+	    `((mov ebx "toplevel")
+	      (mov eax (ref (+ ebx ,(binding-index binding))))
+	      ))
+	   
+	   ;; toplevel definitions live in data section
+	   ;;(emit "mov dword ebx , toplevel ;; toplevel define " var)
+	   ;;(emit "mov dword eax , [ebx + " (binding-index binding)"]"))
+	   (else
+	    (error "comp-lookup : no binding for symbol " var)))))))
+
+
+
 
 
 
@@ -1175,7 +1188,7 @@
 ;; arg2  b 
 ;; arg1  a
 ;; ??????????
-(define (comp-application-helper args si env)
+(define (comp-application-helper nth args si env)
   (cond
    ((null? args) '())
    (else
@@ -1188,12 +1201,13 @@
      ;;(push eax) ;;emit "push dword eax") 
 	   ;;(emit "push dword eax") ;; must NEVER !! do this -- destroys ESP frame pointer
        ;;(emit "mov dword [ ebp - " si-offset "] , eax ; save arg " index)
-       (comment "app help : arg ")
-       (mov (ref esp ,si) eax)
+       (comment "app : arg " ,nth)
+       (mov (ref (+ esp ,si)) eax)
        
      )
      
-     (comp-application-helper (cdr args) (- si word) env)))))
+     (comp-application-helper (+ nth 1) (cdr args) (- si word) env)))))
+
 
 
 
@@ -1228,13 +1242,12 @@
     ;; (display "* ARGS * = ")
     ;; (display args)
     ;; (newline)
-
     
     (append
      
     ;; compile arguments
     ;; reserve two slots for RETURN-ADDRESS and CLOSURE-PTR slot
-    (comp-application-helper args si env)
+    (comp-application-helper 1 args (- si word) env)
     
     ;; compile procedure
     (comp fn si env)
@@ -1248,7 +1261,7 @@
     ;; save un- tagged - closure on stack
     ;;(emit "mov dword [esp "  (- si word) " ] , eax ; closure ptr ")
     (comment "save untagged closure on stack")
-    (mov (ref esp ,(- si 4)) eax)
+    (mov (ref (+ esp ,(+ si 4))) eax)
     
     ;;(push eax) ;;emit "push dword eax ; closure ptr")
     
@@ -1268,7 +1281,10 @@
     ;; obtain procedure CODE address
     (comment ";; load CODE address ")
     (mov eax (ref eax)) ;;emit "mov dword eax , [eax] ; load CODE address ")
+
+    (comment ";; adjust ESP for non-tail call")
     
+    (add esp ,(+ si word))
     ;;(let ((adjust (+ si word)))
     
     ;;(emit "add dword esp , " (+ si word) "; adjust stack")
@@ -1276,8 +1292,13 @@
     (call eax)
     ;;(add esp ,(* word (+ 1 (length args))))
     ;;(emit "add dword esp , " (* word (+ 1 (length args))))
+    (comment ";; restore ESP after non-tail call ")
+    (sub esp ,(+ si word))
+
+    
     )
 
+    
     
     ;;(emit "sub dword esp , " (+ si word) "; restore esp")
     )))
@@ -1693,12 +1714,13 @@
     (let ((f (car fv))
 	  (fother (cdr fv)))
       (append
-       (comp-lookup fv si env)		   
+       (comp-lookup f si env)		   
        `(
 	 (mov (ref esi) eax)
 	 (add esi 4) ;bump
 	 )
        (comp-lambda-free-vars fother si env))))))
+
 
 
 
@@ -1744,7 +1766,7 @@
 	    ;(mov ebp esp)
 	    
 	    )
-	  
+
 	  (let ((new-si (- (* (+ n-args 1) word))))	    
 	    (comp `(begin ,@body) new-si new-env))
 

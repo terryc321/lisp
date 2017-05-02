@@ -295,15 +295,16 @@
    ((null? df)
     (f322 ndf ie))
    (else
-    (append (comp (car df) -4 ie)
+    (append (comp (car df) -8 ie)
 	    (f321 (cdr df) ndf ie)))))
 
 (define (f322 ndf ie)
   (cond
    ((null? ndf) '())
    (else
-    (append (comp (car ndf) -4 ie)
+    (append (comp (car ndf) -8 ie)
 	    (f322 (cdr ndf) ie)))))
+
 
 
 
