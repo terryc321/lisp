@@ -29,8 +29,8 @@
 
 
 (define *primitives*
-  '(add1
-    sub1
+  '(1+
+    1-
     integer->char
     char->integer
     zero?
@@ -175,13 +175,15 @@
 
 (define (comp-boolean x si env)
   (if x
-      `((mov eax #t))
-      `((mov eax #f))))
+      `((mov eax ,the-true-value))
+      `((mov eax ,the-false-value))))
+
 
       ;; (begin ;; true
       ;; 	(emit "mov dword eax , " the-true-value))
       ;; (begin ;; false
       ;; 	(emit "mov dword eax , " the-false-value))))
+
 
 
 (define (comp-char x si env)
@@ -209,20 +211,23 @@
 (define (comp-add1 x si env)
   (let ((arg1 (car (cdr x))))
     `(,@(comp arg1 si env)
-      (add eax 1))))
+      (add eax 4))))
 
   ;; (emit "add dword eax , " 
   ;; 	(shift-left 1 fixnum-shift)))
 
 
+
+
 (define (comp-sub1 x si env)
   (let ((arg1 (car (cdr x))))
     `(,@(comp arg1 si env)
-      (add eax 1))))
+      (sub eax 4))))
 
 ;; (comp (car (cdr x)) si env)
 ;;   (emit "sub dword eax , " 
 ;; 	(shift-left 1 fixnum-shift)))
+
 
 
 (define (comp-integer->char x si env)
@@ -822,6 +827,7 @@
 
 
 
+
 (define (comp-num< x si env)
   (let ((arg1 (car (cdr x)))
 	(arg2 (car (cdr (cdr x)))))
@@ -831,7 +837,7 @@
      
      ;; save onto stack
      `(
-       (mov (ref (+ esp si)) eax) ;;emit "mov dword [ esp " si "] , eax ")
+       (mov (ref (+ esp ,si)) eax) ;;emit "mov dword [ esp " si "] , eax ")
        )
      
      ;; compile arg2
@@ -839,13 +845,14 @@
 
      `(
        ;; are they equal?
-       (cmp (ref (+ esi si)) eax) ;;emit "cmp dword [ esp " si "] , eax ")
+       (cmp (ref (+ esp ,si)) eax) ;;emit "cmp dword [ esp " si "] , eax ")
 
        (mov eax 0)
-       (setl al)
+       (literal "setl al")
        (shl eax ,primitive-boolean-shift)
        (or eax ,(primitive-boolean-tag))
        ))))
+
 
 
     ;; (emit "mov dword eax , 0 ")
@@ -1813,8 +1820,8 @@
 	 (eq? (car x) 'quote)
 	 (null? (car (cdr x))))
     (comp-null x si env))
-   ((and (pair? x) (eq? (car x) 'add1)) (comp-add1 x si env))  
-   ((and (pair? x) (eq? (car x) 'sub1)) (comp-sub1 x si env))
+   ((and (pair? x) (eq? (car x) '1+)) (comp-add1 x si env))  
+   ((and (pair? x) (eq? (car x) '1-)) (comp-sub1 x si env))
 
    
    ((and (pair? x) (eq? (car x) 'integer->char)) (comp-integer->char x si env))

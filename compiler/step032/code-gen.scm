@@ -24,8 +24,13 @@
    ((and (pair? x) (eq? (car x) 'sub))     (gen-sub x port))  
    ((and (pair? x) (eq? (car x) 'or))     (gen-or x port))  
    ((and (pair? x) (eq? (car x) 'and))     (gen-and x port))  
+   ((and (pair? x) (eq? (car x) 'cmp))     (gen-cmp x port))  
    ((and (pair? x) (eq? (car x) 'call))     (gen-call x port))  
    ((and (pair? x) (eq? (car x) 'comment))     (gen-comment x port))  
+   ((and (pair? x) (eq? (car x) 'shl))     (gen-shl x port))  
+   ;;((and (pair? x) (eq? (car x) 'inc))     (gen-increment x port))  
+   ;;((and (pair? x) (eq? (car x) 'dec))     (gen-decrement x port))  
+
    (else
     (gen-error x port))))
 
@@ -129,6 +134,21 @@
 (define (gen-and x port)
   (begin
     (display "AND DWORD " port)
+    (gen-rm (car (cdr x)) port)
+    (display " , " port)
+    (gen-rmi (car (cdr (cdr x))) port)))
+
+(define (gen-cmp x port)
+  (begin
+    (display "CMP DWORD " port)
+    (gen-rm (car (cdr x)) port)
+    (display " , " port)
+    (gen-rmi (car (cdr (cdr x))) port)))
+
+
+(define (gen-shl x port)
+  (begin
+    (display "SHL DWORD " port)
     (gen-rm (car (cdr x)) port)
     (display " , " port)
     (gen-rmi (car (cdr (cdr x))) port)))

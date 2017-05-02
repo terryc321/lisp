@@ -909,6 +909,19 @@ test_case("(define f (lambda (x) x)) (f (+ 1 (+ 3 6))) ","10")
 test_case("5 ","5")
 test_case("(+ 1 2) ","3")
 
+# add 1 
+test_case("(1+ 5) ","6")
+
+# sub 1
+test_case("(1- 6) ","5")
+
+# less than
+test_case("#t","#t")
+
+
+
+
+
 
 # nested lambdas dont work
 #test_case("((lambda () ((lambda (x) (+ x x)) 5)))","10")
@@ -916,11 +929,16 @@ test_case("(+ 1 2) ","3")
 
 #test_case("(let ((x 5)) (lambda () (+ x x)))","10")
 test_case("((let ((x 5)) (lambda () (+ x x))))","10")
+test_case("(< 10 2) ","#f")
+test_case("(< 2 10) ","#t")
+test_case("(< 2 2) ","#f")
 
 
-
-
-
+test_section(" IF ")
+test_case("(if #t 1 2)" , "1")
+test_case("(if #f 1 2)" , "2")
+test_case("(if #t 1)" , "1")
+test_case("(if #f 1)" , "#f")
 
 
 
