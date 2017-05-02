@@ -656,16 +656,17 @@ def fac_test(a,b):
     test_case(
         """
 (define (fac n)
-  (if (= n 1) 1
+  (if (< n 1) 1
       (* n (fac (- n 1)))))
 
         """ + a , b)
 
-#fac_test("(fac 1)" , "1")
-#fac_test("(fac 2)" , "2")
-#fac_test("(fac 3)" , "6")
-#fac_test("(fac 4)" , "24")
-#fac_test("(fac 5)" , "120")
+fac_test("(fac 1)" , "1")
+fac_test("(fac 2)" , "2")
+fac_test("(fac 3)" , "6")
+fac_test("(fac 4)" , "24")
+fac_test("(fac 5)" , "120")
+
 #fac_test("(fac 6)" , "720")
 #fac_test("(fac 10)" , "3628800")
 #fac_test("(fac 11)" , "39916800")
@@ -939,6 +940,16 @@ test_case("(if #t 1 2)" , "1")
 test_case("(if #f 1 2)" , "2")
 test_case("(if #t 1)" , "1")
 test_case("(if #f 1)" , "#f")
+
+
+test_case("(- 10 2) ","8")
+test_case("(- 10 7) ","3")
+test_case("(- 10 12) ","-2")
+
+test_case("(* 2 (* 3 4)) ","24")
+test_case("(* 2 3)","6")
+
+
 
 
 

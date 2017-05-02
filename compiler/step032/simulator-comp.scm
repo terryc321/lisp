@@ -9,7 +9,6 @@
 
 
 
-
 ;; assume input is a closed source file
 ;; read in definitions
 ;; last expression is one that fires it off ??
@@ -313,30 +312,40 @@
 	(false-label (gensym "if"))
 	(done-label  (gensym "if")))
 
+    (display "the if alternate ")
+    (display if-alternate)
+    (newline)
+          
+
     `(
       ,@(comp if-condition si env)
     
       ;; if false goto false
-      (cmp eax #f);;emit "cmp dword eax , " the-false-value)
+      (cmp eax ,the-false-value);;emit "cmp dword eax , " the-false-value)
 
-      (je ,false-label) ;;emit "je " false-label)
+      (je (label ,false-label)) ;;emit "je " false-label)
     
       ,@(comp if-consequence si env)
+      
       ;; goto done label
-      (jmp ,done-label)
+      (jmp (label ,done-label))
 
       ;; false label
       (label ,false-label)
-
+            
       ,@(if (null? if-alternate)
 	  (begin
 	    ;; if no alternate - slap in a FALSE value 
-	    (comp-boolean #f si env))
+	    `((mov eax ,the-false-value)))
 	  (begin	    
 	    (comp (car if-alternate) si env)))
 	
     ;; done label
       (label ,done-label))))
+
+
+
+
 
 
 
@@ -412,7 +421,6 @@
 
 
 
-
 (define (comp-add x si env)
   (let ((arg1 (car (cdr x)))
 	(arg2 (car (cdr (cdr x)))))
@@ -441,8 +449,8 @@
       ;; arg2 in EAX
       ;;(emit "sub dword [ ebp - " si "] , eax ")
       ;;(emit "mov dword eax , [ ebp - " si "] ")
-      (sub (ref (esp ,si)) eax) ;;emit "(sub dword [ esp " si "] , eax")
-      (mov eax (ref (+ esp si))))))
+      (sub (ref (+ esp ,si)) eax) ;;emit "(sub dword [ esp " si "] , eax")
+      (mov eax (ref (+ esp ,si))))))
 ;;(emit "mov dword eax , [ esp " si "] ")))
 
 
@@ -739,19 +747,22 @@
 (define (comp-mul x si env)
   (let ((arg1 (car (cdr x)))
 	(arg2 (car (cdr (cdr x)))))
-
-    (append
-     
-      (comp arg1 si env)
-
-      `((push eax))
     
-      (comp arg2 si env)
+    `(,@(comp arg1 si env)
 
-      `((mul (ref (+ esp si)))))))
+      (shr eax 2)
+      
+      (mov (ref (+ esp ,si)) eax)      
+
+      ,@(comp arg2 (- si word) env)
+
+      (shr eax 2)
+      
+      (mul (ref (+ esp ,si)))
+      (shl eax 2))))
 
 
-
+      
 
 
       
@@ -823,7 +834,6 @@
     (emit "setg al")
     (emit "shl dword eax , " primitive-boolean-shift)
     (emit "or dword eax , " (primitive-boolean-tag))))
-
 
 
 
@@ -902,6 +912,7 @@
     (emit "setge al")
     (emit "shl dword eax , " primitive-boolean-shift)
     (emit "or dword eax , " (primitive-boolean-tag))))
+
 
 
 

@@ -7,6 +7,8 @@
   (error "CODE :GEN: unknown expr " x " port:" port))
 
 
+
+
 ;; just do MAP TRANSLATE code-list
 (define (gen-dispatch x port)
   (cond
@@ -18,16 +20,19 @@
    ((and (pair? x) (eq? (car x) 'ret))  (gen-return x port))
    ((and (pair? x) (eq? (car x) 'mov))     (gen-mov x port))
    ((and (pair? x) (eq? (car x) 'jmp))     (gen-jmp x port))
+   ((and (pair? x) (eq? (car x) 'je))     (gen-je x port))
    ((and (pair? x) (eq? (car x) 'push))     (gen-push x port))
    ((and (pair? x) (eq? (car x) 'pop))     (gen-pop x port))  
    ((and (pair? x) (eq? (car x) 'add))     (gen-add x port))  
    ((and (pair? x) (eq? (car x) 'sub))     (gen-sub x port))  
+   ((and (pair? x) (eq? (car x) 'mul))     (gen-mul x port))  
    ((and (pair? x) (eq? (car x) 'or))     (gen-or x port))  
    ((and (pair? x) (eq? (car x) 'and))     (gen-and x port))  
    ((and (pair? x) (eq? (car x) 'cmp))     (gen-cmp x port))  
    ((and (pair? x) (eq? (car x) 'call))     (gen-call x port))  
    ((and (pair? x) (eq? (car x) 'comment))     (gen-comment x port))  
    ((and (pair? x) (eq? (car x) 'shl))     (gen-shl x port))  
+   ((and (pair? x) (eq? (car x) 'shr))     (gen-shr x port))  
    ;;((and (pair? x) (eq? (car x) 'inc))     (gen-increment x port))  
    ;;((and (pair? x) (eq? (car x) 'dec))     (gen-decrement x port))  
 
@@ -35,9 +40,9 @@
     (gen-error x port))))
 
 (define (gen x port)
-  ;;(display "generating code for ")
-  ;;(display x)
-  ;;(newline)
+  (display "generating code for ")
+  (display x)
+  (newline)
   (gen-dispatch x port)
   (newline port)
   ;;(display "... done\n")
@@ -108,6 +113,11 @@
     (display " , " port)
     (gen-rmi (car (cdr (cdr x))) port)))
 
+(define (gen-mul x port)
+  (begin
+    (display "MUL DWORD " port)
+    (gen-rmi (car (cdr x)) port)))
+
 
 (define (gen-add x port)
   (begin
@@ -153,6 +163,12 @@
     (display " , " port)
     (gen-rmi (car (cdr (cdr x))) port)))
 
+(define (gen-shr x port)
+  (begin
+    (display "SHR DWORD " port)
+    (gen-rm (car (cdr x)) port)
+    (display " , " port)
+    (gen-rmi (car (cdr (cdr x))) port)))
 
 
 (define (gen-call x port)
@@ -164,6 +180,19 @@
    ((gen-register? (car (cdr x)))
     (begin
       (display "CALL " port)
+      (gen-rm (car (cdr x)) port)))
+   (else (gen-error x port))))
+
+
+(define (gen-je x port)
+  (cond
+   ((gen-label? (car (cdr x)))
+    (begin
+      (display "JE " port)
+      (display (car (cdr (car (cdr x)))) port)))
+   ((gen-register? (car (cdr x)))
+    (begin
+      (display "JE " port)
       (gen-rm (car (cdr x)) port)))
    (else (gen-error x port))))
 
