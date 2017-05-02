@@ -665,7 +665,7 @@ fac_test("(fac 1)" , "1")
 fac_test("(fac 2)" , "2")
 fac_test("(fac 3)" , "6")
 fac_test("(fac 4)" , "24")
-fac_test("(fac 5)" , "120")
+
 
 #fac_test("(fac 6)" , "720")
 #fac_test("(fac 10)" , "3628800")
@@ -953,6 +953,7 @@ test_case("(* 2 3)","6")
 
 
 
+fac_test("(fac 5)" , "120")
 
 
 

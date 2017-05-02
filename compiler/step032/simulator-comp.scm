@@ -292,7 +292,6 @@
 
 
 
-
 (define (comp-car x si env)
   (let ((arg1 (car (cdr x))))
     (comp arg1 si env)
@@ -1833,8 +1832,6 @@
     (comp-null x si env))
    ((and (pair? x) (eq? (car x) '1+)) (comp-add1 x si env))  
    ((and (pair? x) (eq? (car x) '1-)) (comp-sub1 x si env))
-
-   
    ((and (pair? x) (eq? (car x) 'integer->char)) (comp-integer->char x si env))
    ((and (pair? x) (eq? (car x) 'char->integer)) (comp-char->integer x si env))
    ((and (pair? x) (eq? (car x) 'zero?)) (comp-zero? x si env))
