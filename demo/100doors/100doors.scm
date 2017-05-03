@@ -27,25 +27,35 @@
 ;(cons (> f 6) (> f 4))
 
 
-;(define twice (lambda (n) (+ n n)))
-;(twice 5)
 
 ;;(cons (cons (cons 1 2) (cons 3 4)) (cons (cons 5 6) (cons 7 8)))
 
 ;;(1+ 5)
 ;;(1- 3)
 
-(cons (+ 1 2) (+ 3 4))
+;(cons (+ 1 2) (+ 3 4))
+;(car (cons 1 2 ))
+;(cdr (cons 1 2 ))
 
-(car (cons 1 2 ))
-(cdr (cons 1 2 ))
-
-
-
-
-
+;(define twice (lambda (n) (+ n n)))
+;(twice 5)
+;(twice (twice 5))
 
 
+(* 2 3 )
+(- 10 3)
+(if (< 2 3) 4 5)
+
+(if (< 3 2) 4 5)
+
+(define fac (lambda (n)
+	      (if (< n 2) 1
+		  (* n (fac (- n 1))))))
+
+(fac 5)
+
+
+()
 
 
 
@@ -58,12 +68,30 @@
 
 
 
-;; ;; list of hundred items 
-;; (define (seq n)
-;;   (cond
-;;    ((= n 0) '())
-;;    (else (cons #f (seq (- n 1))))))
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+;; list of hundred items 
+(define (seq n)
+  (cond
+   ((= n 0) '())
+   (else (cons #f (seq (- n 1))))))
+
+
+(seq 100)
+
+3
 
 ;; (define (toggle n)  (not n))
 

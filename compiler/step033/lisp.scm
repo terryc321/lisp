@@ -324,18 +324,27 @@
 	 (comment "scheme_entry is called from driver.c")
 	 (label scheme_entry)
 
+	 ;; entry prologue
+	 (push ebp)
+	 (mov ebp esp)
+	 
 	 (comment "load heap address into esi , provided by c compiler")
-	 (mov esi (ref (+ esp 4)))
+	 (mov esi (ref (+ ebp 8)))
+	 
 	 )
        
        (f321 def-forms non-def-forms top-environment)
        
 
        `(
+
+ 	 ;; exit prologue
+	 (mov esp ebp)
+	 (pop ebp)
+	 
 	 (ret))))))
 
 	 
-
 
 (define (f321 df ndf ie)
   (cond

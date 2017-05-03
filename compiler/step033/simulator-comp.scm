@@ -169,7 +169,10 @@
 
 (define (comp-null x si env)
   (let ((nil '()))
-    `((mov eax ,nil))))
+    `((mov eax ,the-empty-list-value))))
+
+
+
 
 
 
@@ -420,6 +423,7 @@
 
 
 
+
     ;; ;;(emit "mov dword [ esp " (- si word) "] , eax ")
     
     ;; ;; arg2 in EAX
@@ -524,12 +528,20 @@
 	(arg2 (car (cdr (cdr x)))))
     `(,@(comp arg1 si env)
       
-      (mov (ref (+ esp ,si)) eax)
+      ;;(mov (ref (+ esp ,si)) eax)
+      (push eax)
       
       ,@(comp arg2 (- si word) env)
       
-      (add eax (ref (+ esp ,si)))
+      ;;(add eax (ref (+ esp ,si)))
+      (add eax (ref esp)) ;;(+ esp ,si)))
+
+      ;; discard 1 push
+      (add esp 4)
+      
       )))
+
+
 
 
 
@@ -540,15 +552,29 @@
     ;; compile arg1
       ,@(comp arg1 si env)
     ;; save onto stack
-    ;;(emit "push dword eax")
-      (mov (ref (+ esp ,si)) eax)
+      (push eax)
+      ;;emit "push dword eax")
+      ;;(mov (ref (+ esp ,si)) eax)
       ;; compile arg2
       ,@(comp arg2 (- si word) env)
       ;; arg2 in EAX
       ;;(emit "sub dword [ ebp - " si "] , eax ")
       ;;(emit "mov dword eax , [ ebp - " si "] ")
-      (sub (ref (+ esp ,si)) eax) ;;emit "(sub dword [ esp " si "] , eax")
-      (mov eax (ref (+ esp ,si))))))
+      ;;(sub (ref (+ esp ,si)) eax) ;;emit "(sub dword [ esp " si "] , eax")
+
+      ;; subtract on top of stack [esp] and eax
+      (sub (ref esp) eax)
+      ;; mov result back into eax 
+      (mov eax (ref esp))
+      ;; disgard arg1 
+      (add esp 4))))
+
+
+
+      
+      ;;(mov eax (ref (+ esp ,si)))
+
+      
 ;;(emit "mov dword eax , [ esp " si "] ")))
 
 
@@ -668,7 +694,8 @@
 	    ;;`((mov eax (ref (+ ebp ,(binding-stack-index binding))))))
 	    `(
 	      ;;(comment "local lookup " ,var)
-	      (mov eax (ref (+ esp ,(binding-stack-index binding))))
+	      ;;(mov eax (ref (+ esp ,(binding-stack-index binding))))
+	      (mov eax (ref (+ ebp ,(binding-stack-index binding))))
 	      ))
 	   ;;(emit "mov dword eax , [ ebp + " (binding-stack-index binding)  "] "))
 	   ((closure-binding? binding)
@@ -820,14 +847,22 @@
 
       (shr eax 2)
       
-      (mov (ref (+ esp ,si)) eax)      
+      ;;(mov (ref (+ esp ,si)) eax)
+      (push eax)
 
       ,@(comp arg2 (- si word) env)
 
       (shr eax 2)
       
-      (mul (ref (+ esp ,si)))
-      (shl eax 2))))
+      ;;(mul (ref (+ esp ,si)))
+      (mul (ref esp))
+      
+      (shl eax 2)
+
+      ;; disgard arg1
+      (add esp 4)
+      )))
+
 
 
       
@@ -868,7 +903,9 @@
      
      ;; save onto stack
      `(
-       (mov (ref (+ esp ,si)) eax) ;;emit "mov dword [ esp " si "] , eax ")
+       (push eax)
+       
+       ;;(mov (ref (+ esp ,si)) eax) ;;emit "mov dword [ esp " si "] , eax ")
        )
      
      ;; compile arg2
@@ -876,13 +913,19 @@
 
      `(
        ;; are they equal?
-       (cmp (ref (+ esp ,si)) eax) ;;emit "cmp dword [ esp " si "] , eax ")
+       ;;(cmp (ref (+ esp ,si)) eax) ;;emit "cmp dword [ esp " si "] , eax ")
+       (cmp (ref esp) eax)
 
        (mov eax 0)
        (literal "setl al")
        (shl eax ,primitive-boolean-shift)
        (or eax ,(primitive-boolean-tag))
+
+       ;; disgard arg1
+       (add esp 4)
+       
        ))))
+
 
 
 
@@ -1272,11 +1315,14 @@
 	   ;;(emit "push dword eax") ;; must NEVER !! do this -- destroys ESP frame pointer
        ;;(emit "mov dword [ ebp - " si-offset "] , eax ; save arg " index)
        ;;(comment "app : arg " ,nth)
-       (mov (ref (+ esp ,si)) eax)
+       ;;(mov (ref (+ esp ,si)) eax)
+       (push eax)
        
      )
      
      (comp-application-helper (+ nth 1) (cdr args) (- si word) env)))))
+
+
 
 
 
@@ -1318,6 +1364,8 @@
     ;; compile arguments
     ;; reserve two slots for RETURN-ADDRESS and CLOSURE-PTR slot
     (comp-application-helper 1 args (- si word) env)
+
+
     
     ;; compile procedure
     (comp fn si env)
@@ -1326,12 +1374,13 @@
     ;; untag the closure in EAX
       ;; -8 is binary 11...1111000  lower 3 bits zero")
       ;;(comment "untag closure")
-    (and eax -8) ;; "and dword eax , -8 ; untag closure ")
+    ;;(and eax -8) ;; "and dword eax , -8 ; untag closure ")
     
     ;; save un- tagged - closure on stack
     ;;(emit "mov dword [esp "  (- si word) " ] , eax ; closure ptr ")
     ;;(comment "save untagged closure on stack")
-    (mov (ref (+ esp ,(+ si 4))) eax)
+    
+    ;;(mov (ref (+ esp ,(+ si 4))) eax)
     
     ;;(push eax) ;;emit "push dword eax ; closure ptr")
     
@@ -1350,20 +1399,25 @@
     ;;(emit "mov dword [esp " (- si word) "] ,eax  ; raw closure ptr ")
     ;; obtain procedure CODE address
     ;;(comment ";; load CODE address ")
-    (mov eax (ref eax)) ;;emit "mov dword eax , [eax] ; load CODE address ")
+    
+    ;;(mov eax (ref eax)) ;;emit "mov dword eax , [eax] ; load CODE address ")
 
     ;;(comment ";; adjust ESP for non-tail call")
     
-    (add esp ,(+ si word))
+    ;;(add esp ,(+ si word))
     ;;(let ((adjust (+ si word)))
     
     ;;(emit "add dword esp , " (+ si word) "; adjust stack")
     ;;(comment ";; call closure")
     (call eax)
+
+    ;; disgard items push onto stack
+    (add esp ,(* (length args) word))
+    
     ;;(add esp ,(* word (+ 1 (length args))))
     ;;(emit "add dword esp , " (* word (+ 1 (length args))))
     ;;(comment ";; restore ESP after non-tail call ")
-    (sub esp ,(+ si word))
+    ;;(sub esp ,(+ si word))
 
     
     )
@@ -1372,6 +1426,8 @@
     
     ;;(emit "sub dword esp , " (+ si word) "; restore esp")
     )))
+
+
 
 
 
@@ -1717,14 +1773,15 @@
 
 
 
+;; arguments at EBP + 8 , EBP + 12 , EBP + 16 ....
 (define (comp-lambda-helper args)
   (define (helper args index)
     (cond
      ((null? args) '())
      (else (let ((sym (car args)))
 	     (cons (list sym 'local index)
-		   (helper (cdr args) (- index word)))))))
-  (helper args -4))
+		   (helper (cdr args) (+ index word)))))))
+  (helper args 8))
 
 
 
@@ -1826,41 +1883,59 @@
 	  ;; (display new-env)
 	  ;; (newline)
 
-	  (append 
+	    (append
+	     
 	  `(	  
 	    (jmp (label ,after-label))
 	    (label ,anon-name)
 
-	    ;(push ebp)
-	    ;(mov ebp esp)
+	    (comment "entry prologue")
+	    (push ebp)
+	    (mov ebp esp)
 	    
 	    )
 
-	  (let ((new-si (- (* n-args word))))
+	  ;; si not even used 
+	  
+	  (let ((new-si -4 )) ;;(- (* n-args word))))
 	    (comp `(begin ,@body) new-si new-env))
 
 	  
 	  `(
-	    ;(mov esp ebp)
-	    ;(pop ebp)
-	    (ret)	  
-	    (label ,after-label)	    
+
+	    (comment "exit prologue")
+	    (mov esp ebp)
+	    (pop ebp)
+	    
+	    (ret)
+
+	    
+	    (label ,after-label)
+	    
 	    (mov ebx esi) ; remember heap loc	  
 	    (mov (ref esi) (label ,anon-name))
-	    (add esi 4) ; bump heap 
+	    (add esi 4) ; bump heap
+	    
 	    )
 
-	  (comp-lambda-free-vars free-variables si env)
+	  ;(comp-lambda-free-vars free-variables si env)
   
 	    `(
 	    ;; important HEAP pointer esi is a multiple of 8
-	      ,@(emit-align-heap-pointer)
+	    ,@(emit-align-heap-pointer)
 	      
 	    (mov eax ebx) 	    
 	    (or eax 6) ; tag closure 110b
+
+	    
+	    
 	    )
+
+	    
 	    
 	    ))))))
+
+
 
 
 
