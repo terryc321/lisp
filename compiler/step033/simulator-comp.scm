@@ -1364,8 +1364,6 @@
     ;; compile arguments
     ;; reserve two slots for RETURN-ADDRESS and CLOSURE-PTR slot
     (comp-application-helper 1 args (- si word) env)
-
-
     
     ;; compile procedure
     (comp fn si env)
@@ -1374,7 +1372,7 @@
     ;; untag the closure in EAX
       ;; -8 is binary 11...1111000  lower 3 bits zero")
       ;;(comment "untag closure")
-    ;;(and eax -8) ;; "and dword eax , -8 ; untag closure ")
+    (and eax -8) ;; "and dword eax , -8 ; untag closure ")
     
     ;; save un- tagged - closure on stack
     ;;(emit "mov dword [esp "  (- si word) " ] , eax ; closure ptr ")
@@ -1400,7 +1398,7 @@
     ;; obtain procedure CODE address
     ;;(comment ";; load CODE address ")
     
-    ;;(mov eax (ref eax)) ;;emit "mov dword eax , [eax] ; load CODE address ")
+    (mov eax (ref eax)) ;;emit "mov dword eax , [eax] ; load CODE address ")
 
     ;;(comment ";; adjust ESP for non-tail call")
     
@@ -1920,13 +1918,13 @@
 
 	  ;(comp-lambda-free-vars free-variables si env)
   
-	    `(
+	  `(
+	    
 	    ;; important HEAP pointer esi is a multiple of 8
 	    ,@(emit-align-heap-pointer)
 	      
 	    (mov eax ebx) 	    
 	    (or eax 6) ; tag closure 110b
-
 	    
 	    
 	    )
@@ -1934,6 +1932,7 @@
 	    
 	    
 	    ))))))
+
 
 
 
