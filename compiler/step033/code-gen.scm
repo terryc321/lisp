@@ -26,8 +26,10 @@
    ((and (pair? x) (eq? (car x) 'add))     (gen-add x port))  
    ((and (pair? x) (eq? (car x) 'sub))     (gen-sub x port))  
    ((and (pair? x) (eq? (car x) 'div))     (gen-div x port))  
+   ((and (pair? x) (eq? (car x) 'not))     (gen-not x port))  
    ((and (pair? x) (eq? (car x) 'mul))     (gen-mul x port))  
    ((and (pair? x) (eq? (car x) 'or))     (gen-or x port))  
+   ((and (pair? x) (eq? (car x) 'xor))     (gen-xor x port))  
    ((and (pair? x) (eq? (car x) 'and))     (gen-and x port))  
    ((and (pair? x) (eq? (car x) 'cmp))     (gen-cmp x port))  
    ((and (pair? x) (eq? (car x) 'call))     (gen-call x port))  
@@ -48,6 +50,7 @@
   (newline port)
   ;;(display "... done\n")
   )
+
 
 
 
@@ -126,6 +129,12 @@
     (gen-rmi (car (cdr x)) port)))
 
 
+(define (gen-not x port)
+  (begin
+    (display "NOT DWORD " port)
+    (gen-rmi (car (cdr x)) port)))
+
+
 
 
 
@@ -149,6 +158,15 @@
     (gen-rm (car (cdr x)) port)
     (display " , " port)
     (gen-rmi (car (cdr (cdr x))) port)))
+
+
+(define (gen-xor x port)
+  (begin
+    (display "XOR DWORD " port)
+    (gen-rm (car (cdr x)) port)
+    (display " , " port)
+    (gen-rmi (car (cdr (cdr x))) port)))
+
 
 
 (define (gen-increment x port)

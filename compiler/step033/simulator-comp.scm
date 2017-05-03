@@ -27,6 +27,7 @@
 (define *wordsize*  4)
 
 
+
 (define *primitives*
   '(1+
     1-
@@ -291,33 +292,22 @@
       )))
 
 
+
+;; avoid one opcode by evaluating 2nd arg 
 (define (comp-sub x si env)
   (let ((arg1 (car (cdr x)))
 	(arg2 (car (cdr (cdr x)))))
     `(
-    ;; compile arg1
-      ,@(comp arg1 si env)
-    ;; save onto stack
-      ;;(push eax)
-      ;;emit "push dword eax")
+      
+      ,@(comp arg2 si env)
+      
       (mov (ref (+ esp ,si)) eax)
       
-      ;; compile arg2
-      ,@(comp arg2 (- si word) env)
-      ;; arg2 in EAX
-      ;;(emit "sub dword [ ebp - " si "] , eax ")
-      ;;(emit "mov dword eax , [ ebp - " si "] ")
-      (sub (ref (+ esp ,si)) eax) ;;emit "(sub dword [ esp " si "] , eax")
+      ,@(comp arg1 (- si word) env)
 
-      ;; subtract on top of stack [esp] and eax
-      ;;(sub (ref esp) eax)
-      ;; mov result back into eax 
-      (mov eax (ref (+ esp ,si)))
+      (sub eax (ref (+ esp ,si)))
       
-      ;;(add esp 4)
       )))
-
-
 
 
 
@@ -331,20 +321,15 @@
       (shr eax 2)
       
       (mov (ref (+ esp ,si)) eax)
-      ;;(push eax)
 
       ,@(comp arg2 (- si word) env)
 
       (shr eax 2)
       
       (mul (ref (+ esp ,si)))
-      ;;(mul (ref esp))
-      
+     
       (shl eax 2)
 
-      ;; disgard arg1
-      ;;(add esp 4)
-      
       )))
 
 
@@ -360,13 +345,14 @@
       (mov (ref (+ esp ,si)) eax)
 
       ,@(comp arg1 (- si word) env)
+
       (shr eax 2)
 
       (div (ref (+ esp ,si)))
       
       (shl eax 2)     
-      )
-    ))
+
+      )))
 
 
 
@@ -422,92 +408,88 @@
 
 
 
-
-
-
-    
-
-
-;;   (comp (car (cdr x)) si env)  
-;; (emit "cmp dword eax , " the-false-value)
-;; (emit "mov dword eax , 0")
-;; (emit "sete al" )  
-;; (emit "shl dword eax , " primitive-boolean-shift)
-;; (emit "or dword eax , " (primitive-boolean-tag)))
-
-
-
-;; (define (comp-div x si env)
-;;   (let ((arg1 (car (cdr x)))
-;; 	(arg2 (car (cdr (cdr x)))))
-;;     `(
-;;       ,@(comp arg1 si env)
-;;       (shr eax 2)
-;;       (mov (ref (+ esp ,si)) eax)
-;;       ,@(comp arg2 (- si word) env)
-;;       (shr eax 2)
-;;       (mov (ref (+ esp ,(- si word))) eax)
-;;       (mov eax (ref (+ esp ,si)))
-;;       (div (ref (+ esp ,(- si word))))
-;;       (shl eax 2)     
-;;       )))
-
-
-
-
-;; ****************** above stack index BELIEVED to be OKAY regards STACK INDEX ***********
-
-
-;; (comp (car (cdr x)) si env)
-;;   (emit "sub dword eax , " 
-;; 	(shift-left 1 fixnum-shift)))
-
-
-
-(define (comp-integer->char x si env)
-  (comp (car (cdr x)) si env)
-  (emit "shl dword eax , 6")
-  (emit "add dword eax , " (primitive-character-tag)))
-
-
-(define (comp-char->integer x si env)
-  (comp (car (cdr x)) si env)
-  (emit "shr dword eax , 6"))
-
-
-
-
 (define (comp-null? x si env)
-  (comp (car (cdr x)) si env)
-  (emit "cmp dword eax , " the-empty-list-value)
-  (emit "mov dword eax , 0")
-  (emit "sete al")
-  (emit "shl dword eax , " primitive-boolean-shift)
-  (emit "or dword eax , " (primitive-boolean-tag)))
+  (let ((arg1 (car (cdr x))))
+    `(
+      ,@(comp arg1 si env)
+
+      (cmp eax ,the-empty-list-value)
+      (mov eax 0)
+      (literal "sete al")
+      (shl eax ,primitive-boolean-shift)
+      (or eax ,(primitive-boolean-tag)))))
 
 
 
 
 (define (comp-boolean? x si env)
-  (comp (car (cdr x)) si env)  
-  (emit "and dword eax , " the-boolean-mask)
-  (emit "cmp dword eax , " the-boolean-tag)
-  (emit "mov dword eax , 0")
-  (emit "sete al")
-  (emit "shl dword eax , " primitive-boolean-shift)
-  (emit "or dword eax , "  (primitive-boolean-tag)))
+  (let ((arg1 (car (cdr x))))
+    `(
+      ,@(comp arg1 si env)
+           
+      (and eax ,the-boolean-mask) 
+      (cmp eax ,the-boolean-tag)
+      (mov eax 0) 
+      (literal "sete al")
+      (shl eax ,primitive-boolean-shift)
+      (or eax  ,(primitive-boolean-tag))
+      )))
 
 
 
 (define (comp-integer? x si env)
-  (comp (car (cdr x)) si env)
-  (emit "and dword eax , " the-integer-mask)
-  (emit "cmp dword eax , " the-integer-tag)
-  (emit "mov dword eax , 0")
-  (emit "sete al" )   
-  (emit "shl dword eax , " primitive-boolean-shift)
-  (emit "or dword eax , " (primitive-boolean-tag)))
+  (let ((arg1 (car (cdr x))))
+    `(
+      ,@(comp arg1 si env)
+           
+      (and eax ,the-integer-mask) 
+      (cmp eax ,the-integer-tag)
+      (mov eax 0) 
+      (literal "sete al")
+      (shl eax ,primitive-boolean-shift)
+      (or eax  ,(primitive-boolean-tag))
+      )))
 
+
+
+
+(define (comp-odd? x si env)
+  (let ((arg1 (car (cdr x))))
+    `(
+      ,@(comp arg1 si env)
+
+      ;; 1 shifted left 2 places is 4
+      ;; odd number will have fixnum lowest bit set
+      ;; 0b100
+      (and eax 4)
+      (cmp eax 4)
+      (literal "sete al")
+      (shl eax ,primitive-boolean-shift)
+      (or eax  ,(primitive-boolean-tag))
+      )))
+
+
+
+(define (comp-even? x si env)
+  (let ((arg1 (car (cdr x))))
+    `(
+      ,@(comp arg1 si env)
+
+      ;; 1 shifted left 2 places is 4
+      ;; odd number will have fixnum lowest bit set
+      ;; 0b100
+      (not eax)
+      (and eax 4)
+      (cmp eax 4)
+      (literal "sete al")
+      (shl eax ,primitive-boolean-shift)
+      (or eax  ,(primitive-boolean-tag))
+      )))
+
+
+
+
+  
 
 
 
@@ -553,17 +535,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 ;; just close our eyes if its a begin sequence and fingers crossed
 (define (comp-implicit-sequence x si env)
   (cond
@@ -575,17 +546,80 @@
 
 
 
+;; (let ...)
+(define (comp-let x si env)
+  (let ((bindings (car (cdr x)))
+	(body (cdr (cdr x)))
+	(local-env '()))    
+    (comp-let-bindings bindings body si env local-env)))
+
+
+(define (comp-let-bindings bindings body si env local-env)
+  (cond
+   ;; extend environment with local bindings
+   ;; no more bindings to do 
+   ((null? bindings)
+    
+    (display "LET: new local env : ")
+    (display local-env)
+    (newline)    
+    (display "LET: env : ")
+    (display env)
+    (newline)
+    
+    (comp-implicit-sequence body si (append local-env env)))
+   
+   ;; some more bindings to do
+   (else (let ((the-binding (car bindings)))
+	   (let ((the-sym (car the-binding))
+		 (the-sym-body (cdr the-binding)))
+
+	     (append
+	     (comp-implicit-sequence the-sym-body si env)
+	     ;; mov eax into si
+	     ;; si represents the free slot on stack
+	     ;;(emit "mov dword [ ebp " si "] , eax  ; let bound " the-sym)
+	     `(
+	       ;;(push eax)
+	       (mov (ref (+ esp ,si)) eax)
+	       )
+	     	     
+	     ;;(newline)
+	     ;;(display "LET: the symbol : ") (display the-sym) (newline)
+	     ;;(display "LET:the symbol body : ") (display the-sym-body) (newline)
+	     ;;	     
+	      (comp-let-bindings (cdr bindings)
+	     			 body
+	     			 (- si word)
+	     			 env
+	     			 (cons (list the-sym 'local si) local-env))))))))
 
 
 
 
-;;*******************************************************************
 
 
 
 
 
+;; ****************** above stack index BELIEVED to be OKAY regards STACK INDEX ***********
 
+
+;; (comp (car (cdr x)) si env)
+;;   (emit "sub dword eax , " 
+;; 	(shift-left 1 fixnum-shift)))
+
+
+
+(define (comp-integer->char x si env)
+  (comp (car (cdr x)) si env)
+  (emit "shl dword eax , 6")
+  (emit "add dword eax , " (primitive-character-tag)))
+
+
+(define (comp-char->integer x si env)
+  (comp (car (cdr x)) si env)
+  (emit "shr dword eax , 6"))
 
 
     ;; ;;(emit "mov dword [ esp " (- si word) "] , eax ")
@@ -708,59 +742,6 @@
 
 
 
-;; (let ...)
-(define (comp-let x si env)
-  (let ((bindings (car (cdr x)))
-	(body (cdr (cdr x)))
-	(local-env '()))
-    
-    (comp-let-bindings bindings body si env local-env)))
-
-
-
-
-
-
-(define (comp-let-bindings bindings body si env local-env)
-  (cond
-   ;; extend environment with local bindings
-   ;; no more bindings to do 
-   ((null? bindings)
-    (display "LET: new local env : ")
-    (display local-env)
-    (newline)    
-    (display "LET: env : ")
-    (display env)
-    (newline)    
-    (comp-implicit-sequence body si (append local-env env)))
-   
-   ;; some more bindings to do
-   (else (let ((the-binding (car bindings)))
-	   (let ((the-sym (car the-binding))
-		 (the-sym-body (cdr the-binding)))
-
-	     (append
-	     (comp-implicit-sequence the-sym-body si env)
-	     ;; mov eax into si
-	     ;; si represents the free slot on stack
-	     ;;(emit "mov dword [ ebp " si "] , eax  ; let bound " the-sym)
-	     `(
-	       ;;(push eax)
-	       (mov (ref (+ esp ,si)) eax)
-	       )
-	     	     
-	     ;;(newline)
-	     ;;(display "LET: the symbol : ") (display the-sym) (newline)
-	     ;;(display "LET:the symbol body : ") (display the-sym-body) (newline)
-	     ;;	     
-	      (comp-let-bindings (cdr bindings)
-	     			 body
-	     			 (- si word)
-	     			 env
-	     			 (cons (list the-sym 'local si) local-env))))))))
-
-
-
 
 
 
@@ -810,8 +791,8 @@
 	    ;;`((mov eax (ref (+ ebp ,(binding-stack-index binding))))))
 	    `(
 	      ;;(comment "local lookup " ,var)
-	      ;;(mov eax (ref (+ esp ,(binding-stack-index binding))))
-	      (mov eax (ref (+ ebp ,(binding-stack-index binding))))
+	      (mov eax (ref (+ esp ,(binding-stack-index binding))))
+	      ;;(mov eax (ref (+ ebp ,(binding-stack-index binding))))
 	      ))
 	   ;;(emit "mov dword eax , [ ebp + " (binding-stack-index binding)  "] "))
 	   ((closure-binding? binding)
@@ -821,8 +802,10 @@
 	   ;; (emit "mov dword eax , [ ebp + 8 ] ; closure ptr into eax")
 	   ;; (emit "mov dword eax , [ eax + " (binding-stack-index binding) "] "))
 	   ((toplevel-binding? binding)
-	    `((mov ebx "toplevel")
-	      (mov eax (ref (+ ebx ,(binding-index binding))))
+	    `(
+	      ;;(mov ebx "toplevel")
+	      (mov eax "toplevel")
+	      (mov eax (ref (+ eax ,(binding-index binding))))
 	      ))
 	   
 	   ;; toplevel definitions live in data section
@@ -830,6 +813,8 @@
 	   ;;(emit "mov dword eax , [ebx + " (binding-index binding)"]"))
 	   (else
 	    (error "comp-lookup : no binding for symbol " var)))))))
+
+
 
 
 
@@ -877,22 +862,6 @@
   (emit-align-heap-pointer)
   
   (emit "mov dword eax, ecx"))
-
-
-
-(define (comp-odd? x si env)
-  (comp (car (cdr x)) si env)
-  (emit "and dword eax , 0b0100")
-  (emit "shl dword eax , 5")
-  (emit "or dword eax , 0b11111"))
-
-
-(define (comp-even? x si env)
-  (comp (car (cdr x)) si env)
-  (emit "xor dword eax , 0b0100")  
-  (emit "and dword eax , 0b0100")  
-  (emit "shl dword eax , 5")
-  (emit "or dword eax , 0b11111"))
 
 
 
