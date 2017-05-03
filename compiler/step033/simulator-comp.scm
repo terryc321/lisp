@@ -1904,8 +1904,7 @@
 	  ;; (display new-env)
 	  ;; (newline)
 
-	    (append
-	     
+	    
 	  `(	  
 	    (jmp (label ,after-label))
 	    (label ,anon-name)
@@ -1914,16 +1913,12 @@
 	    (push ebp)
 	    (mov ebp esp)
 	    
-	    )
-
 	  ;; si not even used 
 	  
-	  (let ((new-si -4 )) ;;(- (* n-args word))))
-	    (comp `(begin ,@body) new-si new-env))
+	    ,@(let ((new-si -4 )) ;;(- (* n-args word))))
+		(comp `(begin ,@body) new-si new-env))
 
 	  
-	  `(
-
 	    (comment "exit prologue")
 	    (mov esp ebp)
 	    (pop ebp)
@@ -1937,12 +1932,8 @@
 	    (mov (ref esi) (label ,anon-name))
 	    (add esi 4) ; bump heap
 	    
-	    )
-
-	  ;(comp-lambda-free-vars free-variables si env)
-  
-	  `(
-	    
+	    ,@(comp-lambda-free-vars free-variables si env)
+  	    
 	    ;; important HEAP pointer esi is a multiple of 8
 	    ,@(emit-align-heap-pointer)
 	      
@@ -1950,14 +1941,7 @@
 	    (or eax 6) ; tag closure 110b
 	    
 	    
-	    )
-
-	    
-	    
 	    ))))))
-
-
-
 
 
 
@@ -1999,14 +1983,12 @@
    ;;((and (pair? x) (eq? (car x) 'vector-set!)) (comp-vector-set! x si env))
    ((and (pair? x) (eq? (car x) '/2)) (comp-div2 x si env))  
    ((and (pair? x) (eq? (car x) 'mul3+1)) (comp-mul3+1 x si env))
-
-   
+   ;;    
    ((and (pair? x) (eq? (car x) 'odd?)) (comp-odd? x si env))
    ((and (pair? x) (eq? (car x) 'even?)) (comp-even? x si env))
 
    ;; fixnum comparisons
-   ((and (pair? x) (eq? (car x) '=)) (comp-num= x si env))
-   ;; 
+   ((and (pair? x) (eq? (car x) '=)) (comp-num= x si env))  
    ((and (pair? x) (eq? (car x) '>)) (comp-num> x si env))
    ((and (pair? x) (eq? (car x) '<)) (comp-num< x si env))
    ((and (pair? x) (eq? (car x) '<=)) (comp-num<= x si env))
@@ -2024,7 +2006,6 @@
    
    ;; explicit lambda
    ((and (pair? x) (eq? (car x) 'lambda)) (comp-lambda x si env))
-
    
    ;; explicit tailcall
    ;;((and (pair? x) (eq? (car x) 'tailcall)) (comp-tailcall-application x si env))

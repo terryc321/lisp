@@ -47,11 +47,6 @@
 ;; (if (< 2 3) 4 5)
 ;; (if (< 3 2) 4 5)
 
-;; (define fac (lambda (n)
-;; 	      (if (< n 2) 1
-;; 		  (* n (fac (- n 1))))))
-
-;;(fac 5) ;;(fac 5))
 
 (cons 1 2 )
 (cons 1 (cons 2 (cons 3 4)))
@@ -135,28 +130,16 @@ h
 (cons (< 5 6) (cons (< 6 6) (< 7 6)))
 
 
+;;(fac 10)
+((lambda (x) x) 5)
 
+(define f2 ((lambda (x) x) 5))
 
+(define fac (lambda (n)
+	      (if (< n 2) 1
+		  (* n (fac (- n 1))))))
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+(fac 25) ;;(fac 5))
 
 
 
