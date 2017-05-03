@@ -25,6 +25,7 @@
    ((and (pair? x) (eq? (car x) 'pop))     (gen-pop x port))  
    ((and (pair? x) (eq? (car x) 'add))     (gen-add x port))  
    ((and (pair? x) (eq? (car x) 'sub))     (gen-sub x port))  
+   ((and (pair? x) (eq? (car x) 'div))     (gen-div x port))  
    ((and (pair? x) (eq? (car x) 'mul))     (gen-mul x port))  
    ((and (pair? x) (eq? (car x) 'or))     (gen-or x port))  
    ((and (pair? x) (eq? (car x) 'and))     (gen-and x port))  
@@ -47,6 +48,7 @@
   (newline port)
   ;;(display "... done\n")
   )
+
 
 
 
@@ -117,6 +119,12 @@
   (begin
     (display "MUL DWORD " port)
     (gen-rmi (car (cdr x)) port)))
+
+(define (gen-div x port)
+  (begin
+    (display "DIV DWORD " port)
+    (gen-rmi (car (cdr x)) port)))
+
 
 
 

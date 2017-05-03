@@ -36,6 +36,7 @@
     null?
     boolean?
     integer?
+    /
     *
     +
     -
@@ -228,6 +229,235 @@
     `(,@(comp arg1 si env)
       (sub eax 4))))
 
+
+
+(define (comp-cons x si env)
+  (let ((arg1 (car (cdr x)))
+	(arg2 (car (cdr (cdr x)))))
+    
+    `(
+      ;; compile arg1
+      ,@(comp arg1 si env)
+      
+      ;; save onto stack
+      (mov (ref (+ esp ,si)) eax)
+      ;;(push eax)
+
+    ;;(emit "mov dword [ esp " si "] , eax ")
+    ;(emit "push dword eax")
+    
+    ;;(emit "push dword eax")
+    ;; compile arg2
+      ,@(comp arg2 (- si word) env) ;;(- si word) env)
+
+      ;;(push eax)
+      ;;(literal "call scheme_cons")
+      ;;(add esp ,(* 2 word))
+
+      ;; store CDR
+      (mov (ref (+ esi 4)) eax)      
+      (mov eax (ref (+ esp ,si)))
+      ;; store CAR
+      (mov (ref esi) eax)
+
+      (mov eax esi)
+      ;; tag result
+      (and eax -8)
+      (or eax 1)
+      (add esi 8))))
+
+
+
+;; ******************** Work In Progress ***************************
+
+
+
+(define (comp-add x si env)
+  (let ((arg1 (car (cdr x)))
+	(arg2 (car (cdr (cdr x)))))
+    `(,@(comp arg1 si env)
+      
+      (mov (ref (+ esp ,si)) eax)
+      ;;(push eax)
+      
+      ,@(comp arg2 (- si word) env)
+      
+      (add eax (ref (+ esp ,si)))
+      ;;(add eax (ref esp)) ;;(+ esp ,si)))
+
+      ;; discard 1 push
+      ;;(add esp 4)
+      
+      )))
+
+
+(define (comp-sub x si env)
+  (let ((arg1 (car (cdr x)))
+	(arg2 (car (cdr (cdr x)))))
+    `(
+    ;; compile arg1
+      ,@(comp arg1 si env)
+    ;; save onto stack
+      ;;(push eax)
+      ;;emit "push dword eax")
+      (mov (ref (+ esp ,si)) eax)
+      
+      ;; compile arg2
+      ,@(comp arg2 (- si word) env)
+      ;; arg2 in EAX
+      ;;(emit "sub dword [ ebp - " si "] , eax ")
+      ;;(emit "mov dword eax , [ ebp - " si "] ")
+      (sub (ref (+ esp ,si)) eax) ;;emit "(sub dword [ esp " si "] , eax")
+
+      ;; subtract on top of stack [esp] and eax
+      ;;(sub (ref esp) eax)
+      ;; mov result back into eax 
+      (mov eax (ref (+ esp ,si)))
+      
+      ;;(add esp 4)
+      )))
+
+
+
+
+
+;; eg 1 * 1 would be 4 * 4 in fixnum tagged form
+(define (comp-mul x si env)
+  (let ((arg1 (car (cdr x)))
+	(arg2 (car (cdr (cdr x)))))
+    
+    `(,@(comp arg1 si env)
+
+      (shr eax 2)
+      
+      (mov (ref (+ esp ,si)) eax)
+      ;;(push eax)
+
+      ,@(comp arg2 (- si word) env)
+
+      (shr eax 2)
+      
+      (mul (ref (+ esp ,si)))
+      ;;(mul (ref esp))
+      
+      (shl eax 2)
+
+      ;; disgard arg1
+      ;;(add esp 4)
+      
+      )))
+
+
+
+;; evaluate 2nd arg then 1st arg 
+(define (comp-div x si env)
+  (let ((arg1 (car (cdr x)))
+	(arg2 (car (cdr (cdr x)))))
+    
+    `(
+      ,@(comp arg2 si env)
+      (shr eax 2)      
+      (mov (ref (+ esp ,si)) eax)
+
+      ,@(comp arg1 (- si word) env)
+      (shr eax 2)
+
+      (div (ref (+ esp ,si)))
+      
+      (shl eax 2)     
+      )
+    ))
+
+
+
+(define (comp-not x si env)
+  (let ((arg1 (car (cdr x))))    
+    `(
+      
+      ,@(comp arg1 si env)
+
+      (cmp eax ,the-false-value)
+      (mov eax 0)
+      (literal "sete al")
+      (shl eax ,primitive-boolean-shift)
+      (or eax ,(primitive-boolean-tag))
+            
+      )))
+
+
+(define (comp-car x si env)
+  (let ((arg1 (car (cdr x))))
+    `(
+      ,@(comp arg1 si env)
+      ;; -1 because un-tag CONS ie decrement eax by 1
+      ;; then read memory address into eax
+      (mov eax (ref (- eax 1)))
+      )))
+
+
+(define (comp-cdr x si env)
+  (let ((arg1 (car (cdr x))))
+    `(
+      ,@(comp arg1 si env)
+      ;; 3 because un-tag CONS ie decrement eax by 1
+      ;; then want CDR which is 4 bytes further on.
+      (mov eax (ref (+ eax 3)))
+      )))
+
+
+
+(define (comp-zero? x si env)
+  (let ((arg1 (car (cdr x))))
+    `(
+      ,@(comp arg1 si env)
+
+      (cmp eax 0)
+      (mov eax 0)
+      (literal "sete al")
+      (shl eax ,primitive-boolean-shift)
+      (or eax ,(primitive-boolean-tag))
+
+      )))
+
+
+
+
+
+
+
+    
+
+
+;;   (comp (car (cdr x)) si env)  
+;; (emit "cmp dword eax , " the-false-value)
+;; (emit "mov dword eax , 0")
+;; (emit "sete al" )  
+;; (emit "shl dword eax , " primitive-boolean-shift)
+;; (emit "or dword eax , " (primitive-boolean-tag)))
+
+
+
+;; (define (comp-div x si env)
+;;   (let ((arg1 (car (cdr x)))
+;; 	(arg2 (car (cdr (cdr x)))))
+;;     `(
+;;       ,@(comp arg1 si env)
+;;       (shr eax 2)
+;;       (mov (ref (+ esp ,si)) eax)
+;;       ,@(comp arg2 (- si word) env)
+;;       (shr eax 2)
+;;       (mov (ref (+ esp ,(- si word))) eax)
+;;       (mov eax (ref (+ esp ,si)))
+;;       (div (ref (+ esp ,(- si word))))
+;;       (shl eax 2)     
+;;       )))
+
+
+
+
+;; ****************** above stack index BELIEVED to be OKAY regards STACK INDEX ***********
+
+
 ;; (comp (car (cdr x)) si env)
 ;;   (emit "sub dword eax , " 
 ;; 	(shift-left 1 fixnum-shift)))
@@ -246,15 +476,6 @@
 
 
 
-(define (comp-zero? x si env)
-  (comp (car (cdr x)) si env)
-  (emit "cmp dword eax , 0")
-  (emit "mov dword eax , 0")
-  (emit "sete al")
-  (emit "shl dword eax , " primitive-boolean-shift)
-  (emit "or dword eax , " (primitive-boolean-tag)))
-
-
 
 (define (comp-null? x si env)
   (comp (car (cdr x)) si env)
@@ -264,14 +485,6 @@
   (emit "shl dword eax , " primitive-boolean-shift)
   (emit "or dword eax , " (primitive-boolean-tag)))
 
-
-(define (comp-not x si env)
-  (comp (car (cdr x)) si env)  
-  (emit "cmp dword eax , " the-false-value)
-  (emit "mov dword eax , 0")
-  (emit "sete al" )  
-  (emit "shl dword eax , " primitive-boolean-shift)
-  (emit "or dword eax , " (primitive-boolean-tag)))
 
 
 
@@ -296,30 +509,6 @@
   (emit "or dword eax , " (primitive-boolean-tag)))
 
 
-
-(define (comp-car x si env)
-  (let ((arg1 (car (cdr x))))
-    `(
-      ,@(comp arg1 si env)
-      ;; -1 because un-tag CONS ie decrement eax by 1 , then read memory address into eax
-      (mov eax (ref (- eax 1)))
-      )))
-
-
-
-
-;;    (emit "mov dword eax , [ eax - 1 ] ")))
-
-
-(define (comp-cdr x si env)
-  (let ((arg1 (car (cdr x))))
-    `(
-      ,@(comp arg1 si env)
-      ;; 3 because un-tag CONS ie decrement eax by 1 , then want CDR which is 4 bytes further on.
-      (mov eax (ref (+ eax 3)))
-      )))
-
-;;    (emit "mov dword eax , [ eax + 3 ] ")))
 
 
 ;; (if cond conseq alt)
@@ -391,31 +580,6 @@
 
 
 ;;*******************************************************************
-
-
-
-(define (comp-cons x si env)
-  (let ((arg1 (car (cdr x)))
-	(arg2 (car (cdr (cdr x)))))
-    
-    `(
-      ;; compile arg1
-      ,@(comp arg1 si env)
-      
-      ;; save onto stack
-      ;;(mov (ref (+ esp ,si)) eax)
-      (push eax)
-
-    ;;(emit "mov dword [ esp " si "] , eax ")
-    ;(emit "push dword eax")
-    
-    ;;(emit "push dword eax")
-    ;; compile arg2
-      ,@(comp arg2 (- si word) env) ;;(- si word) env)
-
-      (push eax)
-      (literal "call scheme_cons")
-      (add esp ,(* 2 word)))))
 
 
 
@@ -520,54 +684,6 @@
 
 
 
-
-
-
-(define (comp-add x si env)
-  (let ((arg1 (car (cdr x)))
-	(arg2 (car (cdr (cdr x)))))
-    `(,@(comp arg1 si env)
-      
-      ;;(mov (ref (+ esp ,si)) eax)
-      (push eax)
-      
-      ,@(comp arg2 (- si word) env)
-      
-      ;;(add eax (ref (+ esp ,si)))
-      (add eax (ref esp)) ;;(+ esp ,si)))
-
-      ;; discard 1 push
-      (add esp 4)
-      
-      )))
-
-
-
-
-
-(define (comp-sub x si env)
-  (let ((arg1 (car (cdr x)))
-	(arg2 (car (cdr (cdr x)))))
-    `(
-    ;; compile arg1
-      ,@(comp arg1 si env)
-    ;; save onto stack
-      (push eax)
-      ;;emit "push dword eax")
-      ;;(mov (ref (+ esp ,si)) eax)
-      ;; compile arg2
-      ,@(comp arg2 (- si word) env)
-      ;; arg2 in EAX
-      ;;(emit "sub dword [ ebp - " si "] , eax ")
-      ;;(emit "mov dword eax , [ ebp - " si "] ")
-      ;;(sub (ref (+ esp ,si)) eax) ;;emit "(sub dword [ esp " si "] , eax")
-
-      ;; subtract on top of stack [esp] and eax
-      (sub (ref esp) eax)
-      ;; mov result back into eax 
-      (mov eax (ref esp))
-      ;; disgard arg1 
-      (add esp 4))))
 
 
 
@@ -835,33 +951,6 @@
   )
 
 
-
-
-
-;; eg 1 * 1 would be 4 * 4 in fixnum tagged form
-(define (comp-mul x si env)
-  (let ((arg1 (car (cdr x)))
-	(arg2 (car (cdr (cdr x)))))
-    
-    `(,@(comp arg1 si env)
-
-      (shr eax 2)
-      
-      ;;(mov (ref (+ esp ,si)) eax)
-      (push eax)
-
-      ,@(comp arg2 (- si word) env)
-
-      (shr eax 2)
-      
-      ;;(mul (ref (+ esp ,si)))
-      (mul (ref esp))
-      
-      (shl eax 2)
-
-      ;; disgard arg1
-      (add esp 4)
-      )))
 
 
 
@@ -1965,6 +2054,7 @@
    ((and (pair? x) (eq? (car x) '*)) (comp-mul x si env))
    ((and (pair? x) (eq? (car x) '+)) (comp-add x si env))
    ((and (pair? x) (eq? (car x) '-)) (comp-sub x si env))
+   ((and (pair? x) (eq? (car x) '/)) (comp-div x si env))   
    ((and (pair? x) (eq? (car x) 'if)) (comp-if x si env))   
    ((and (pair? x) (eq? (car x) 'cons)) (comp-cons x si env))
    ((and (pair? x) (eq? (car x) 'car)) (comp-car x si env))   

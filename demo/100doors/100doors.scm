@@ -37,13 +37,9 @@
 ;(car (cons 1 2 ))
 ;(cdr (cons 1 2 ))
 
-(define twice (lambda (n) (+ n n)))
+;;(define twice (lambda (n) (+ n n)))
 ;;(twice 5)
 ;;(twice (twice 5))
-
-
-
-
 
 
 ;; (* 2 3 )
@@ -51,11 +47,52 @@
 ;; (if (< 2 3) 4 5)
 ;; (if (< 3 2) 4 5)
 
-(define fac (lambda (n)
-	      (if (< n 2) 1
-		  (* n (fac (- n 1))))))
+;; (define fac (lambda (n)
+;; 	      (if (< n 2) 1
+;; 		  (* n (fac (- n 1))))))
 
-(fac (fac 5))
+;;(fac 5) ;;(fac 5))
+
+(cons 1 2 )
+(cons 1 (cons 2 (cons 3 4)))
+
+
+(+ 1 2)
+(+ 1 (+ 2 (+ 3 (+ 4 (+ 5 (+ 6 (+ 7 (+ 8 (+ 9 10)))))))))
+
+
+(- 10 7)
+(- 10 (- 1 2))
+
+
+(* 1 2)
+(* 1 (* 2 3))
+(* 1 (* 2 (* 3 4)))
+
+(/ 10 2)
+
+(/ (+ 2 10) 3)
+
+(not #t)
+;(not #f)
+
+
+(car (cons (+ 1 2) (+ 4 5)))
+
+(cdr (cons (+ 1 2) (+ 4 5)))
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
