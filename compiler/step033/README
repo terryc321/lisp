@@ -1,0 +1,18 @@
+
+
+
+simulator-comp.scm 
+
+try to figure out what is going on with the compiler ,
+
+try to figure out why it is so tricky to get to work
+
+
+
+#should really be called compile and make
+#./compile "/home/terry/lisp/demo/100doors/100doors.scm"
+#echo
+
+
+
+

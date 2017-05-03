@@ -16,67 +16,108 @@
 ;; Which are open, which are closed?
 
 
-;; list of hundred items 
-(define (seq n)
-  (cond
-   ((= n 0) '())
-   (else (cons #f (seq (- n 1))))))
+;(cons 1 2)
+;(cons 1 (cons 2 3))
+;(cons 1 (cons 2 (cons 3 4)))
+
+;123
+;(+ 1 2)
+;(define f 5)
+;(+ f f)
+;(cons (> f 6) (> f 4))
 
 
-(define (toggle n)
-  (not n))
+;(define twice (lambda (n) (+ n n)))
+;(twice 5)
+
+;;(cons (cons (cons 1 2) (cons 3 4)) (cons (cons 5 6) (cons 7 8)))
+
+;;(1+ 5)
+;;(1- 3)
+
+(cons (+ 1 2) (+ 3 4))
+
+(car (cons 1 2 ))
+(cdr (cons 1 2 ))
 
 
 
-;;(begin
-;;  (seq 100)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+;; ;; list of hundred items 
+;; (define (seq n)
+;;   (cond
+;;    ((= n 0) '())
+;;    (else (cons #f (seq (- n 1))))))
+
+
+;; (define (toggle n)  (not n))
+
+
+
+;; ;;(begin
+;; ;;  (seq 100)
   
-;;  (cons (toggle #t) (cons (toggle #f) '())))
+;; ;;  (cons (toggle #t) (cons (toggle #f) '())))
 
 
 
-(define (toggle-every-helper n m xs)
-  (cond
-   ((null? xs) '())
-   ((= n 1) (cons (toggle (car xs))
-		  (toggle-every-helper m m (cdr xs))))
-   (else (cons (car xs)
-	       (toggle-every-helper (- n 1) m (cdr xs))))))
+;; (define (toggle-every-helper n m xs)
+;;   (cond
+;;    ((null? xs) '())
+;;    ((= n 1) (cons (toggle (car xs))
+;; 		  (toggle-every-helper m m (cdr xs))))
+;;    (else (cons (car xs)
+;; 	       (toggle-every-helper (- n 1) m (cdr xs))))))
 
 
 
 
-(define (toggle-every n xs)
-  (toggle-every-helper n n xs))
+;; (define (toggle-every n xs)
+;;   (toggle-every-helper n n xs))
 
 
-(define (toggle-nth n xs)
-  (cond
-   ((> n 100) xs)
-   (else (toggle-nth (+ n 1) (toggle-every n xs)))))
+;; (define (toggle-nth n xs)
+;;   (cond
+;;    ((> n 100) xs)
+;;    (else (toggle-nth (+ n 1) (toggle-every n xs)))))
 
 
-(define (tog-to-n n xs)
-  (cond
-   ((null? xs) '())
-   ((car xs) (cons n (tog-to-n (+ n 1) (cdr xs))))
-   (else (tog-to-n (+ n 1) (cdr xs)))))
+;; (define (tog-to-n n xs)
+;;   (cond
+;;    ((null? xs) '())
+;;    ((car xs) (cons n (tog-to-n (+ n 1) (cdr xs))))
+;;    (else (tog-to-n (+ n 1) (cdr xs)))))
 
 
-;;(toggle-nth 1 (seq 100))
+;; ;;(toggle-nth 1 (seq 100))
 
-;; wrong arity !!
-;;(toggle-every 1 1 (seq 100))
-;;(toggle-every 2 2 (seq 100))
+;; ;; wrong arity !!
+;; ;;(toggle-every 1 1 (seq 100))
+;; ;;(toggle-every 2 2 (seq 100))
 
-;;(toggle-every 1 (seq 100))
-;;(toggle-every 2 (seq 100))
+;; ;;(toggle-every 1 (seq 100))
+;; ;;(toggle-every 2 (seq 100))
 
-;; all initially closed - ie #f closed door , #t open door
+;; ;; all initially closed - ie #f closed door , #t open door
 
-;;(toggle-nth 1 (seq 1000))
+;; ;;(toggle-nth 1 (seq 1000))
 
-(tog-to-n 1 (toggle-nth 1 (seq 100)))
+;; (tog-to-n 1 (toggle-nth 1 (seq 100)))
 
 
 
