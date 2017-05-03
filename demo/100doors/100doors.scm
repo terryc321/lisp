@@ -274,8 +274,6 @@
 ;;(fib 10)
 
 
-
-
 (define fac (lambda (n)
 	      (if (< n 2)
 		  1
@@ -298,5 +296,9 @@
    (else (cons #f (seq (- n 1))))))
 
 (seq 100)
+
+(let ((g 123))
+  (let ((f (lambda () g)))
+    (f)))
 
 

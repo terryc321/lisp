@@ -1,250 +1,29 @@
 
 
-is it possible to detect tail calls ?
+attempt to follow gholoum incremental compiler paper.
 
+procedure calls appear to work.
 
+si means stack index - the first FREE SLOT to save into using MOV
 
+rule 1 :  PRESERVE stack index 
 
-****************************************************************
+that means nothing like these commands in the generated code
+  PUSH DWORD EAX      -- alters ESP ruins indexing
+  POP DWORD EBX  -- alters ESP ruins indexing 
+  ADD DWORD ESP , 4 -- alters ESP ruins indexing
+  SUB DWORD ESP , 4 -- alters ESP ruins indexing
 
+must not alter the ESP register directly or indirectly unless DOING the procedure call
+in which case
 
-compiler takes a very simplistic view of program
+rule 2 :  PRESERVE esi HEAP alignment to multiple of 8 
 
-either
-toplevel definition - procedure takes a fixed number of args  , no rest args
+  ADD ESI , 8   -- clean simple and safe bump
 
-(define f (lambda (a b c) ...))
 
-applications are coded as calls to f after arguments have been put on stack
 
 
 
 
-****************************************************************
-
-tak x y z
-
-compile x
-save x
-compile y
-save y
-compile z
-save z
-call or jmp to TAK
-
-
-****************************************************************
-
-compilation of primitive cons
-
-(cons A B)
-
-compile A
-save A
-compile B
-do cons primitive
-
-****************************************************************
-
-Thu  6 Apr 00:13:26 BST 2017
-
-CPS-INTERPRETER / STEP013 contains really basic x86 32bit scheme compiler
-
-Main hurdle has been to realise that C compiler is NOT suitable for detailed memory
-mangling - rather the c compiler is SO COMPLEX that it is not practical to do anything ,
-because its all random flags, rather than clean semantics.
-
-if coming up against problems , write utility in assembler and it should fix the issue.
-
-There is a test suite in python3
-cd cps-interpreter/step013/
-then run ./test.py
-
-should state all tests PASS
-
-Type TAG Pointer Encoding Scheme is a little FUNKY , but works as long as understand
-limitations of C compiler.
-****************************************************************
-
-scheme compiler in file called comp.scm
-
-At the moment , it only handles a few basic primitives
-
-add1
-sub1
-+	addition fixnums
--	subtract fixnums
-cons
-car
-cdr
-eq?
-null?
-
-
-fixnums encoded in pointer
-pairs stored on the heap , again pairs encoded using tag of 1
-all pointers have 3 bit type tag
-
- tags
- 000  - number lower 2 bits zero 
- 001  - pointer
- 010  -    vectors  * to do *
- 011  -    strings  * to do *
- 100  - number lower 2 bits zero
- 101  -    symbols  * to do *
- 110  -    closures  * to do *
- 111  -  empty list , booleans and characters
-
-
-********************************************************************************
-
-
-the best part is under CPS-INTERPRETER directory
-
-there is a file called repl.scm
-load this into mit-scheme
-
-********************************************************************************
-SICP Register Machine 
-
-special forms : IF , LAMBDA , QUOTE , SET! , BEGIN ,  
-
-A macro expander is available.
-Quasiquote expander requires list and append.
-
-********************************************************************************
-that should pull in all the required defmacro expander and quasiquote.
-
-at the moment macro expansion is handled outside of the lisp interpreter ,
-so lisp interpreter only sees a few core forms ,
-dont ask me what they are i think i forgot
- LET
- IF
- SET!
- LAMBDA 
-
-could of done away with LET using
- ((lambda let-vars  ... let body ....) ... let-arguments ... )
- but then i just see a SEA of LAMBDAs and have no idea whats going on.
-
-then i think that really many more CORE forms , makes debugging easier because culprit
-is easy to identify , whereas if its all macro expanded out ,
-maybe need to track where that expression came from.
-
-because the interpreter , the evaluator anyway is in CPS , call/cc is a simple two liner .
-
-
-other things
- COND = macro expands into 
- 
-
-
-also thinking of a way to play connect4 , but that went quiet for a time.
-thought about lists , but WAY too slow.
-nice idea about assignment to SYMBOLS , seems fairly fast ,
-mutating board coupled with alpha beta search .
-none of that works for sure though....
-
-
-
-
-what follows is just rambling 
-********************************************************************************
-
-6th March 2017  -- main focus is cps-interpreter/  directory
-it has a repl , macro expander , quasiquote capability
-
-
-
-lisp
-ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
-
-subject		:	algorithm		*	implemented ?
-*******************************************************************************
-quasiquote
-bawden algorithm to expand quasiquote
-can be included as part of macro system
-naive defmacro expansion algorithm implements usual culprits
-let let* letrec cond when unless
-	
-kohlbecker
-try achieve hygenic macros by renaming
-
-macro stepper
-want to be able to step through macro expansion process one step at a time
-
-tokeniser
-keep track of source line column offset locations of tokens in file stream , repl whatever.
-
-parser
-generate s expression of stream of tokens
-if it is not possible invoke fail continuation
-
-debug program
-high priority want to know how and when the program got to this point
-forth i dont think has an environment
-backus fp uses streams and again rejected the environment
-
-core.scm	:	core syntax of scheme and required primitives
-quote
-if
-lambda
-set
-
-gensym	; some way generate unique symbols
-
-derived.scm	:	derived syntax in terms of core
-let		; evaluate all expressions then form environment extended then evaluate body
-let*		; evaluate let expressions one by one extending environment as each is evaluated
-letrec		; 
-
-environment	:
-problematic printing environment because likely it is circular in places.
-
-
-cps-conversion
-convert expression into continuation passing style
-bugs -
-excess lambdas
-does not handle derived syntax
-
-macros
-choose expand macros at run-time slow , or at compile time , or on first pass.
-
-when macro
-(when condition ....)
-
-compiler
-
-quoted expressions
-if access to memory model of machine can lay out complex quoted expressions beforehand
-so running the program is already built with these things laid out in memory
-
-ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
-
-
-
-
-
-
-
-
-
-
-
-guile-2.0
-emacs
-"GNU Emacs 24.5.1 (i686-pc-linux-gnu, GTK+ Version 3.18.9)
- of 2016-04-25 on lgw01-56, modified by Debian"
-
-package-install geiser
-package-install paredit
-
-ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
-
-fixed-point
-repeatedly apply function until we reach same value
-
-
-ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo
 
