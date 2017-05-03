@@ -38,6 +38,7 @@
     boolean?
     integer?
     /
+    /2
     *
     +
     -
@@ -469,7 +470,6 @@
       )))
 
 
-
 (define (comp-even? x si env)
   (let ((arg1 (car (cdr x))))
     `(
@@ -488,8 +488,164 @@
 
 
 
+;; fixnum lower 2 bits should be zero
+;; and with -4
+;; -4 in twos complement is X
+(define (comp-div2 x si env)
+  (let ((arg1 (car (cdr x))))
+    `(
+      ,@(comp arg1 si env)
 
-  
+      (shr eax 1)
+      (and eax -4)
+      
+      )))
+
+
+;; multiply EAX by ?
+;; the result ends in EDX : EAX
+;; lower 2 bits zero 0 0  = means number tag
+;; multiply by 3 then add 1
+;;  1 tagged is number 4
+;;      1 0 0
+(define (comp-mul3+1 x si env)
+  (let ((arg1 (car (cdr x))))
+    `(
+      ,@(comp arg1 si env)
+
+      (mov ebx 3)
+      (mul ebx)
+      ;; 4 is 1 shifted left twice 00 is fixnum tag
+      (add eax 4)      
+      )))
+
+
+
+
+(define (comp-begin x si env)  
+  (cond   
+   ((null? (cdr x))
+    `((mov eax #f)))
+   
+   ;; (emit "mov dword eax , " the-false-value))
+   (else
+    (append
+      (comp (car (cdr x)) si env)
+      (comp-implicit-sequence (cdr (cdr x)) si env)))))
+
+
+
+
+(define (comp-num= x si env)
+  (let ((arg1 (car (cdr x)))
+	(arg2 (car (cdr (cdr x)))))
+    `( 
+      ,@(comp arg1 si env)
+     
+      (mov (ref (+ esp ,si)) eax)
+      
+      ,@(comp arg2 (- si word) env)
+
+       ;; are they equal?
+       (cmp (ref (+ esp ,si)) eax)
+
+       (mov eax 0)
+       (literal "sete al")
+       (shl eax ,primitive-boolean-shift)
+       (or eax ,(primitive-boolean-tag))
+       )))
+
+
+
+(define (comp-num< x si env)
+  (let ((arg1 (car (cdr x)))
+	(arg2 (car (cdr (cdr x)))))
+    `(
+      ,@(comp arg1 si env)
+     
+      (mov (ref (+ esp ,si)) eax)
+      
+      ,@(comp arg2 (- si word) env)
+
+      (cmp (ref (+ esp ,si)) eax)
+
+      (mov eax 0)
+      (literal "setl al")
+      (shl eax ,primitive-boolean-shift)
+      (or eax ,(primitive-boolean-tag))
+
+      )))
+
+
+(define (comp-num> x si env)
+  (let ((arg1 (car (cdr x)))
+	(arg2 (car (cdr (cdr x)))))
+    `(
+      ,@(comp arg1 si env)
+     
+      (mov (ref (+ esp ,si)) eax)
+      
+      ,@(comp arg2 (- si word) env)
+
+      (cmp (ref (+ esp ,si)) eax)
+
+      (mov eax 0)
+      (literal "setg al")
+      (shl eax ,primitive-boolean-shift)
+      (or eax ,(primitive-boolean-tag))
+
+      )))
+
+       
+(define (comp-num>= x si env)
+  (let ((arg1 (car (cdr x)))
+	(arg2 (car (cdr (cdr x)))))
+    `(
+      ,@(comp arg1 si env)
+
+      (mov (ref (+ esp ,si)) eax)
+      
+      ,@(comp arg2 (- si word) env)
+
+      (cmp (ref (+ esp ,si)) eax) 
+
+      (mov eax 0)
+      
+      (literal "setge al")
+
+      (shl eax ,primitive-boolean-shift)
+
+      (or eax ,(primitive-boolean-tag))
+
+      )))
+
+
+      
+(define (comp-num<= x si env)
+  (let ((arg1 (car (cdr x)))
+	(arg2 (car (cdr (cdr x)))))
+    `(
+      ,@(comp arg1 si env)
+
+      (mov (ref (+ esp ,si)) eax)
+      
+      ,@(comp arg2 (- si word) env)
+
+      (cmp (ref (+ esp ,si)) eax) 
+
+      (mov eax 0)
+      
+      (literal "setle al")
+
+      (shl eax ,primitive-boolean-shift)
+
+      (or eax ,(primitive-boolean-tag))
+
+      )))
+
+
+
+
 
 
 
@@ -744,6 +900,24 @@
 
 
 
+;; assume x is a lambda 
+;; define f x
+;; should really be called TOPLEVEL-DEFINE
+(define (comp-define x si env)
+  (let ((var (car (cdr x)))
+	(val (car (cdr (cdr x)))))
+    ;; compile the val
+    (append 
+     (comp val si env)
+    ;; find global index for the var
+    (let ((binding (assoc var env)))
+      (cond
+       ((toplevel-binding? binding)
+	;; toplevel definitions live in data section
+	`((literal "mov dword ebx , toplevel")
+	  (literal "mov dword [ebx + " ,(binding-index binding) "] , eax")))
+       (else
+	(error "comp-define : no SLOT for TOPLEVEL DEFINE found " var)))))))
 
 
 
@@ -872,15 +1046,6 @@
 ;; fc -4     00
 
 
-;; fixnum lower 2 bits should be zero
-;; and with -4
-;; -4 in twos complement is X
-(define (comp-div2 x si env)
-  (let ((arg1 (car (cdr x))))
-    (comp arg1 si env)
-    (emit "shr dword eax , 1 ")
-    (emit "and dword eax , -4 ")))
-
 
   
   ;; (emit "nop")
@@ -896,20 +1061,6 @@
   ;;(emit "shl dword eax , 2"))
 
 
-;; multiply EAX by ?
-;; the result ends in EDX : EAX
-;; lower 2 bits zero 0 0  = means number tag
-;; multiply by 3 then add 1
-;;  1 tagged is number 4
-;;      1 0 0
-(define (comp-mul3+1 x si env)
-  (comp (car (cdr x)) si env)
-  (emit "mov dword ebx , 3")  
-  (emit "mul dword ebx")
-  ;; 4 is 1 shifted left twice 00 is fixnum tag
-  (emit "add dword eax , 4"))
-
-
 
 
 
@@ -920,192 +1071,6 @@
   )
 
 
-
-
-
-      
-
-(define (comp-num= x si env)
-  (let ((arg1 (car (cdr x)))
-	(arg2 (car (cdr (cdr x)))))
-    (append 
-     ;; compile arg1
-     (comp arg1 si env)
-     
-     ;; save onto stack
-     `(
-       (mov (ref (+ esp ,si)) eax) ;;emit "mov dword [ esp " si "] , eax ")
-       )
-     
-     ;; compile arg2
-     (comp arg2 (- si word) env)
-
-     `(
-       ;; are they equal?
-       (cmp (ref (+ esp ,si)) eax) ;;emit "cmp dword [ esp " si "] , eax ")
-
-       (mov eax 0)
-       (literal "sete al")
-       (shl eax ,primitive-boolean-shift)
-       (or eax ,(primitive-boolean-tag))
-       ))))
-
-
-
-(define (comp-num< x si env)
-  (let ((arg1 (car (cdr x)))
-	(arg2 (car (cdr (cdr x)))))
-    (append 
-     ;; compile arg1
-     (comp arg1 si env)
-     
-     ;; save onto stack
-     `(
-       (push eax)
-       
-       ;;(mov (ref (+ esp ,si)) eax) ;;emit "mov dword [ esp " si "] , eax ")
-       )
-     
-     ;; compile arg2
-     (comp arg2 (- si word) env)
-
-     `(
-       ;; are they equal?
-       ;;(cmp (ref (+ esp ,si)) eax) ;;emit "cmp dword [ esp " si "] , eax ")
-       (cmp (ref esp) eax)
-
-       (mov eax 0)
-       (literal "setl al")
-       (shl eax ,primitive-boolean-shift)
-       (or eax ,(primitive-boolean-tag))
-
-       ;; disgard arg1
-       (add esp 4)
-       
-       ))))
-
-
-
-
-(define (comp-num<= x si env)
-  (let ((arg1 (car (cdr x)))
-	(arg2 (car (cdr (cdr x)))))
-    (append 
-     ;; compile arg1
-     (comp arg1 si env)
-     
-     ;; save onto stack
-     `(
-       (mov (ref (+ esp ,si)) eax) ;;emit "mov dword [ esp " si "] , eax ")
-       )
-     
-     ;; compile arg2
-     (comp arg2 (- si word) env)
-
-     `(
-       ;; are they equal?
-       (cmp (ref (+ esp ,si)) eax) ;;emit "cmp dword [ esp " si "] , eax ")
-
-       (mov eax 0)
-       (literal "setle al")
-       (shl eax ,primitive-boolean-shift)
-       (or eax ,(primitive-boolean-tag))
-       ))))
-
-
-
-
-(define (comp-num> x si env)
-  (let ((arg1 (car (cdr x)))
-	(arg2 (car (cdr (cdr x)))))
-    (append 
-     ;; compile arg1
-     (comp arg1 si env)
-     
-     ;; save onto stack
-     `(
-       (mov (ref (+ esp ,si)) eax) ;;emit "mov dword [ esp " si "] , eax ")
-       )
-     
-     ;; compile arg2
-     (comp arg2 (- si word) env)
-
-     `(
-       ;; are they equal?
-       (cmp (ref (+ esp ,si)) eax) ;;emit "cmp dword [ esp " si "] , eax ")
-
-       (mov eax 0)
-       (literal "setg al")
-       (shl eax ,primitive-boolean-shift)
-       (or eax ,(primitive-boolean-tag))
-       ))))
-
-
-
-(define (comp-num>= x si env)
-  (let ((arg1 (car (cdr x)))
-	(arg2 (car (cdr (cdr x)))))
-    (append 
-     ;; compile arg1
-     (comp arg1 si env)
-     
-     ;; save onto stack
-     `(
-       (mov (ref (+ esp ,si)) eax) ;;emit "mov dword [ esp " si "] , eax ")
-       )
-     
-     ;; compile arg2
-     (comp arg2 (- si word) env)
-
-     `(
-       ;; are they equal?
-       (cmp (ref (+ esp ,si)) eax) ;;emit "cmp dword [ esp " si "] , eax ")
-
-       (mov eax 0)
-       (literal "setge al")
-       (shl eax ,primitive-boolean-shift)
-       (or eax ,(primitive-boolean-tag))
-       ))))
-
-
-
-
-
-
-
-(define (comp-begin x si env)  
-  (cond   
-   ((null? (cdr x))
-    `((mov eax #f)))
-   
-   ;; (emit "mov dword eax , " the-false-value))
-   (else
-    (append
-      (comp (car (cdr x)) si env)
-      (comp-implicit-sequence (cdr (cdr x)) si env)))))
-
-
-
-
-
-;; assume x is a lambda 
-;; define f x
-;; should really be called TOPLEVEL-DEFINE
-(define (comp-define x si env)
-  (let ((var (car (cdr x)))
-	(val (car (cdr (cdr x)))))
-    ;; compile the val
-    (append 
-     (comp val si env)
-    ;; find global index for the var
-    (let ((binding (assoc var env)))
-      (cond
-       ((toplevel-binding? binding)
-	;; toplevel definitions live in data section
-	`((literal "mov dword ebx , toplevel")
-	  (literal "mov dword [ebx + " ,(binding-index binding) "] , eax")))
-       (else
-	(error "comp-define : no SLOT for TOPLEVEL DEFINE found " var)))))))
 
 
 
@@ -2032,9 +1997,10 @@
    ((and (pair? x) (eq? (car x) 'make-vector)) (comp-make-vector x si env))
    ;;((and (pair? x) (eq? (car x) 'vector-ref)) (comp-vector-ref x si env))
    ;;((and (pair? x) (eq? (car x) 'vector-set!)) (comp-vector-set! x si env))
-   ((and (pair? x) (eq? (car x) 'div2)) (comp-div2 x si env))  
+   ((and (pair? x) (eq? (car x) '/2)) (comp-div2 x si env))  
    ((and (pair? x) (eq? (car x) 'mul3+1)) (comp-mul3+1 x si env))
 
+   
    ((and (pair? x) (eq? (car x) 'odd?)) (comp-odd? x si env))
    ((and (pair? x) (eq? (car x) 'even?)) (comp-even? x si env))
 
