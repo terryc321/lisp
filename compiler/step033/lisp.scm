@@ -232,6 +232,7 @@
     (stage-4b forms outfile)))
 
 
+
 (define (stage-4b forms outfile)
     (let ((arity (toplevel-procedures forms))
 	  (def-forms (toplevel-definitions forms))
@@ -262,8 +263,8 @@
       (display "stage-4b: first open stack index = :")
       (display last-stack-index)
       (newline)
-            
-	    
+
+      	    
       (append
 
        `(
@@ -276,6 +277,7 @@
 
 	 (section text)
 	 (align 32)
+
 	 (comment " ---------- scheme_car ----------------")
 	 (label scheme_car)
 	 (literal "nop")
@@ -286,8 +288,6 @@
 	 (mov eax (ref (+ eax 0)))
 	 (ret)
 
-	 
-
 	 (comment " ----------- scheme_cdr ----------------")
 	 (label scheme_cdr)
 	 (literal "nop")
@@ -297,39 +297,18 @@
 	 (comment "take the CDR ")
 	 (mov eax (ref (+ eax 4)))
 	 (ret)
-
-	 (comment " ----------- scheme_cons ------------- ")
-	 (label scheme_cons)	 
-	 (comment "store CAR ")
-	 (mov eax (ref (+ esp 8)))
-	 (mov (ref (+ esi 0)) eax)
-
-	 (comment "store CDR ")
-	 (mov eax (ref (+ esp 4)))
-	 (mov (ref (+ esi 4)) eax)
-
-	 (comment " remember HEAP now ")
-	 (mov eax esi)
 	 
-	 (comment "tag result")	 
-	 (and eax -8)
-	 (or eax 1)
-
-	 (comment "bump heap")
-	 (add esi 8)
-	 (ret)
-	 	 
-
 	 (align 32)
 	 (comment "scheme_entry is called from driver.c")
 	 (label scheme_entry)
 
 	 ;; entry prologue
-	 (push ebp)
-	 (mov ebp esp)
+	 ;; (push ebp)
+	 ;; (mov ebp esp)
 	 
 	 (comment "load heap address into esi , provided by c compiler")
-	 (mov esi (ref (+ ebp 8)))
+	 ;;(mov esi (ref (+ ebp 8)))
+	 (mov esi (ref (+ esp 4)))
 	 
 	 )
        
@@ -339,8 +318,8 @@
        `(
 
  	 ;; exit prologue
-	 (mov esp ebp)
-	 (pop ebp)
+	 ;; (mov esp ebp)
+	 ;; (pop ebp)
 	 
 	 (ret))))))
 
@@ -362,6 +341,30 @@
 	    (f322 (cdr ndf) ie)))))
 
 
+
+
+
+;; 	 (comment " ----------- scheme_cons ------------- ")
+;; 	 (label scheme_cons)	 
+;; 	 (comment "store CAR ")
+;; 	 (mov eax (ref (+ esp 8)))
+;; 	 (mov (ref (+ esi 0)) eax)
+
+;; 	 (comment "store CDR ")
+;; 	 (mov eax (ref (+ esp 4)))
+;; 	 (mov (ref (+ esi 4)) eax)
+
+;; 	 (comment " remember HEAP now ")
+;; 	 (mov eax esi)
+	 
+;; 	 (comment "tag result")	 
+;; 	 (and eax -8)
+;; 	 (or eax 1)
+
+;; 	 (comment "bump heap")
+;; 	 (add esi 8)
+;; 	 (ret)
+	 	 
 
 
 

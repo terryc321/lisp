@@ -48,99 +48,114 @@
 ;; (if (< 3 2) 4 5)
 
 
-;; (cons 1 2 )
-;; (cons 1 (cons 2 (cons 3 4)))
+(cons 1 2 )
+(cons 1 (cons 2 (cons 3 4)))
 
 
-;; (+ 1 2)
-;; (+ 1 (+ 2 (+ 3 (+ 4 (+ 5 (+ 6 (+ 7 (+ 8 (+ 9 10)))))))))
-
-
-
-;; (* 1 2)
-;; (* 1 (* 2 3))
-;; (* 1 (* 2 (* 3 4)))
-
-;; (/ 10 2)
-
-;; (/ (+ 2 10) 3)
-
-;; (not #t)
-;; ;(not #f)
-
-
-;; (car (cons (+ 1 2) (+ 4 5)))
-
-;; (cdr (cons (+ 1 2) (+ 4 5)))
-
-;; (zero? 0)
-;; ;(zero? 1)
-
-;; (- 10 7)
-;; ;;(- 10 (- 1 2))
-
-;; (boolean? #t)
-;; (boolean? 0)
-
-;; (null? ())
-;; (null? #f)
-
-;; (if #t (+ 3 4) (+ 7 8))
-;; (if #f (+ 9 6) (+ 12 4))
-;; (if #f 123)
-
-
-;; (integer? 123)
-
-;; (let ((a (+ 2 4))) (+ a a))
-
-
-;; (define f 123)
-;; (+ f f)
+(+ 1 2)
+(+ 1 (+ 2 (+ 3 (+ 4 (+ 5 (+ 6 (+ 7 (+ 8 (+ 9 10)))))))))
 
 
 
-;; (define g 456)
+(* 1 2)
+(* 1 (* 2 3))
+(* 1 (* 2 (* 3 4)))
 
-;; (define h (cons f g))
+(/ 10 2)
 
-;; h
+(/ (+ 2 10) 3)
 
-;; ;;(even? 5)
-;; ;;(even? 6)
-
-;; (cons (cons (odd? 3) (odd? 4))
-;;       (cons (even? 3) (even? 4)))
-
-
-;; (/2 120)
-
-;; (mul3+1 2)
-
-;; (begin)
-;; (begin 1 2 3)
-
-;; (= 2 3)
-;; ;(= 3 3)
-
-;; (cons (>= 5 6) (cons (>= 6 6) (>= 7 6)))
-;; (cons (= 5 6) (cons (= 6 6) (= 7 6)))
-;; (cons (<= 5 6) (cons (<= 6 6) (<= 7 6)))
-;; (cons (> 5 6) (cons (> 6 6) (> 7 6)))
-;; (cons (< 5 6) (cons (< 6 6) (< 7 6)))
+(not #t)
+;(not #f)
 
 
-;; ;;(fac 10)
-;; ((lambda (x) x) 5)
+(car (cons (+ 1 2) (+ 4 5)))
+
+(cdr (cons (+ 1 2) (+ 4 5)))
+
+(zero? 0)
+;(zero? 1)
+
+(- 10 7)
+;;(- 10 (- 1 2))
+
+(boolean? #t)
+(boolean? 0)
+
+(null? ())
+(null? #f)
+
+(if #t (+ 3 4) (+ 7 8))
+(if #f (+ 9 6) (+ 12 4))
+(if #f 123)
 
 
-;; (define f2 ((lambda (x) x) 5))
+(integer? 123)
+
+(let ((a (+ 2 4))) (+ a a))
+
+
+(define f 123)
+(+ f f)
+
+
+
+(define g 456)
+
+(define h (cons f g))
+
+h
+
+;;(even? 5)
+;;(even? 6)
+
+(cons (cons (odd? 3) (odd? 4))
+      (cons (even? 3) (even? 4)))
+
+
+(/2 120)
+
+(mul3+1 2)
+
+(begin)
+(begin 1 2 3)
+
+(= 2 3)
+;(= 3 3)
+
+(cons (>= 5 6) (cons (>= 6 6) (>= 7 6)))
+(cons (= 5 6) (cons (= 6 6) (= 7 6)))
+(cons (<= 5 6) (cons (<= 6 6) (<= 7 6)))
+(cons (> 5 6) (cons (> 6 6) (> 7 6)))
+(cons (< 5 6) (cons (< 6 6) (< 7 6)))
+
+
+;;(fac 10)
+((lambda (x) x) 5)
+
+
+(define f2 ((lambda (x) x) 5))
+
+(define fac (lambda (n)
+	      (if (< n 2) 1
+		  (* n (fac (- n 1))))))
+
+(fac 25) ;;(fac 5))
+
 
 
 
 
 ;;()
 
+;; ;; list of hundred items 
+;; (define (seq n)
+;;   (cond
+;;    ((= n 0) '())
+;;    (else (cons #f (seq (- n 1))))))
+
+
+;;(seq 100)
 
 ;3
 
@@ -263,40 +278,6 @@
 ;; (n-doors 10)
 
 
-(define fib (lambda (n)
-	      (if (= n 1)
-		  1
-		  (if (= n 2)
-		      1
-		      (+ (fib (- n 1))
-			 (fib (- n 2)))))))
 
-;;(fib 10)
-
-
-
-
-(define fac (lambda (n)
-	      (if (< n 2)
-		  1
-		  (* n (fac (- n 1))))))
-
-;;(cons (fac 10) (fib 10))
-
-
-;;(fib 10)
-(cons 
- (cons (fac 10) (cons (fac 9) (fac 5)))
- (cons (fib 10) (cons (fib 9) (fib 5))))
-
-
-
-;; list of hundred items 
-(define (seq n)
-  (cond
-   ((= n 0) '())
-   (else (cons #f (seq (- n 1))))))
-
-(seq 100)
 
 

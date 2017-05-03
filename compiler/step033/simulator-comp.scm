@@ -28,6 +28,7 @@
 
 
 
+
 (define *primitives*
   '(1+
     1-
@@ -914,8 +915,10 @@
       (cond
        ((toplevel-binding? binding)
 	;; toplevel definitions live in data section
-	`((literal "mov dword ebx , toplevel")
-	  (literal "mov dword [ebx + " ,(binding-index binding) "] , eax")))
+	`(
+	  ;;(literal "mov dword ebx , toplevel")
+	  (literal "mov dword [toplevel + " ,(binding-index binding) "] , eax")
+	  ))
        (else
 	(error "comp-define : no SLOT for TOPLEVEL DEFINE found " var)))))))
 
@@ -978,8 +981,10 @@
 	   ((toplevel-binding? binding)
 	    `(
 	      ;;(mov ebx "toplevel")
-	      (mov eax "toplevel")
-	      (mov eax (ref (+ eax ,(binding-index binding))))
+	      ;;(mov eax "toplevel")
+	      ;;(mov eax (ref (+ eax ,(binding-index binding))))
+	      (literal "mov eax , [toplevel + " ,(binding-index binding) "]")
+	      
 	      ))
 	   
 	   ;; toplevel definitions live in data section
@@ -1328,33 +1333,12 @@
   (cond
    ((null? args) '())
    (else
-    (append
-     (comp (car args) si env)
-     ;;(emit "mov dword [esp " si "] , eax")
-
-     `(
+    `(
+      ,@(comp (car args) si env)
        
-     ;;(push eax) ;;emit "push dword eax") 
-	   ;;(emit "push dword eax") ;; must NEVER !! do this -- destroys ESP frame pointer
-       ;;(emit "mov dword [ ebp - " si-offset "] , eax ; save arg " index)
-       ;;(comment "app : arg " ,nth)
-       ;;(mov (ref (+ esp ,si)) eax)
-       (push eax)
-       
-     )
+       (mov (ref (+ esp ,si)) eax)
      
-     (comp-application-helper (+ nth 1) (cdr args) (- si word) env)))))
-
-
-
-
-
-
-
-
-
-
-
+       ,@(comp-application-helper (+ nth 1) (cdr args) (- si word) env)))))
 
 
 
@@ -1366,92 +1350,94 @@
 ;; arg2
 ;; arg3
 ;; arg4
+    
+;; (display "* regular function call *")
+;; (newline)
+;; (display "* FN * = ")
+;; (display fn)
+;; (newline)
+;; (display "* ARGS * = ")
+;; (display args)
+;; (newline)
 
 
 (define (comp-application x si env)
   (let ((fn (car x))
 	(args (cdr x)))
-
-    
-    ;; (display "* regular function call *")
-    ;; (newline)
-    ;; (display "* FN * = ")
-    ;; (display fn)
-    ;; (newline)
-    ;; (display "* ARGS * = ")
-    ;; (display args)
-    ;; (newline)
-    
-    (append
+    `(
      
     ;; compile arguments
     ;; reserve two slots for RETURN-ADDRESS and CLOSURE-PTR slot
-    (comp-application-helper 1 args (- si word) env)
+    ,@(comp-application-helper 1 args (- si (* 2 word)) env)
     
     ;; compile procedure
-    (comp fn si env)
+    ,@(comp fn (- si (* (+ 3 (length args)) word)) env)
 
-    `(
     ;; untag the closure in EAX
-      ;; -8 is binary 11...1111000  lower 3 bits zero")
-      ;;(comment "untag closure")
-    (and eax -8) ;; "and dword eax , -8 ; untag closure ")
+    ;; -8 is binary 11...1111000  lower 3 bits zero")
+    (and eax -8) 
     
-    ;; save un- tagged - closure on stack
-    ;;(emit "mov dword [esp "  (- si word) " ] , eax ; closure ptr ")
-    ;;(comment "save untagged closure on stack")
-    
-    ;;(mov (ref (+ esp ,(+ si 4))) eax)
-    
-    ;;(push eax) ;;emit "push dword eax ; closure ptr")
-    
-    ;;(emit "push dword eax")
-    ;;(emit "sub dword eax , 110b ; untag closure ")
-    ;;(emit "mov dword [ebp - " (+ si 4) " ] , eax ; closure ptr ")   
-        
-    ;;(comp fn (- si (* (+ 2 (length args)) word)) env)
-    ;; presumably there is a closure left in EAX register
-    ;;(emit "mov dword eax , [esp " (- si word) "] ; closure ptr ")   
-    ;; save closure ptr
-    ;;(emit "mov dword [esp - 4 ] , eax ; closure ptr ")
-    ;; get closure into eax
-    ;;(emit "mov dword eax , [esp " (- si word) "]  ; untag closure ")
-    ;; save closure onto stack
-    ;;(emit "mov dword [esp " (- si word) "] ,eax  ; raw closure ptr ")
-    ;; obtain procedure CODE address
-    ;;(comment ";; load CODE address ")
-    
-    (mov eax (ref eax)) ;;emit "mov dword eax , [eax] ; load CODE address ")
+    ;; save un- tagged - closure ptr on stack
+    (mov (ref (+ esp ,(- si word))) eax)
 
-    ;;(comment ";; adjust ESP for non-tail call")
+    ;; load CODE address from closure
+    (mov eax (ref eax)) 
+
+    ;; adjust ESP so when CALL goes through
+    ;; if adjust stack here , after call ,
+    ;; assuming the procedure called leaves ESP unchanged
+    ;; just do the opposite
+    (add esp ,(+ si word))
     
-    ;;(add esp ,(+ si word))
-    ;;(let ((adjust (+ si word)))
-    
-    ;;(emit "add dword esp , " (+ si word) "; adjust stack")
-    ;;(comment ";; call closure")
+    ;; call closure
     (call eax)
 
-    ;; disgard items push onto stack
-    (add esp ,(* (length args) word))
+    ;; restore stack original position
+    (sub esp ,(+ si word))
     
-    ;;(add esp ,(* word (+ 1 (length args))))
-    ;;(emit "add dword esp , " (* word (+ 1 (length args))))
-    ;;(comment ";; restore ESP after non-tail call ")
-    ;;(sub esp ,(+ si word))
-
-    
-    )
-
-    
-    
-    ;;(emit "sub dword esp , " (+ si word) "; restore esp")
     )))
 
 
 
 
 
+
+
+;;(emit "mov dword [esp "  (- si word) " ] , eax ; closure ptr ")
+;;(comment "save untagged closure on stack")    
+;;(mov (ref (+ esp ,(+ si 4))) eax)    
+;;(push eax) ;;emit "push dword eax ; closure ptr")
+
+;;(emit "push dword eax")
+;;(emit "sub dword eax , 110b ; untag closure ")
+;;(emit "mov dword [ebp - " (+ si 4) " ] , eax ; closure ptr ")   
+
+;;(comp fn (- si (* (+ 2 (length args)) word)) env)
+;; presumably there is a closure left in EAX register
+;;(emit "mov dword eax , [esp " (- si word) "] ; closure ptr ")   
+;; save closure ptr
+;;(emit "mov dword [esp - 4 ] , eax ; closure ptr ")
+;; get closure into eax
+;;(emit "mov dword eax , [esp " (- si word) "]  ; untag closure ")
+;; save closure onto stack
+;;(emit "mov dword [esp " (- si word) "] ,eax  ; raw closure ptr ")
+;; obtain procedure CODE address
+;;(comment ";; load CODE address ")
+;;(comment ";; adjust ESP for non-tail call")
+
+;;(add esp ,(+ si word))
+;;(let ((adjust (+ si word)))
+
+;;(emit "add dword esp , " (+ si word) "; adjust stack")
+;;(comment ";; call closure")
+
+;;(add esp ,(* word (+ 1 (length args))))
+;;(emit "add dword esp , " (* word (+ 1 (length args))))
+;;(comment ";; restore ESP after non-tail call ")
+;;(sub esp ,(+ si word))
+
+    
+    
 
 
 
@@ -1794,16 +1780,16 @@
 
 
 
-;; arguments at EBP + 8 , EBP + 12 , EBP + 16 ....
+
+;; arg1 = esp -8 , arg2 = esp-12 , arg3 = esp-16
 (define (comp-lambda-helper args)
   (define (helper args index)
     (cond
      ((null? args) '())
      (else (let ((sym (car args)))
 	     (cons (list sym 'local index)
-		   (helper (cdr args) (+ index word)))))))
-  (helper args 8))
-
+		   (helper (cdr args) (- index word)))))))
+  (helper args -8))
 
 
 
@@ -1849,11 +1835,12 @@
 		 (cons var (remove-toplevel (cdr vars) env))))))))
 
 
+
 ;; for each free variable ,
-;; 1st .. closure arg 0 ... + 4 
-;; 2nd .. closure arg 1 ... + 8
-;; 3rd .. closure arg 2 ... + 12
-;; 4th .. closure arg 3 ... + 16
+;; 1st .. closure arg 1 ... + 8 
+;; 2nd .. closure arg 2 ... + 16
+;; 3rd .. closure arg 3 ... + 24
+;; 4th .. closure arg 4 ... + 32
 (define (comp-lambda-free-vars fv si env)
   (cond
    ((null? fv) '())
@@ -1864,7 +1851,8 @@
        (comp-lookup f si env)		   
        `(
 	 (mov (ref esi) eax)
-	 (add esi 4) ;bump
+	 ;; again bump 8 bytes quick confirm heap always aligned
+	 (add esi 8) 
 	 )
        (comp-lambda-free-vars fother si env))))))
 
@@ -1908,38 +1896,38 @@
 	  `(	  
 	    (jmp (label ,after-label))
 	    (label ,anon-name)
-
-	    (comment "entry prologue")
-	    (push ebp)
-	    (mov ebp esp)
 	    
-	  ;; si not even used 
-	  
-	    ,@(let ((new-si -4 )) ;;(- (* n-args word))))
-		(comp `(begin ,@body) new-si new-env))
 
+	    ;; si is first empty FREE SLOT completely open to abuse
+	    ;; esp - 4 : closure
+	    ;; esp - 8 :
+	    ;;
+	    ;; e.g
+	    ;; n-args = 0    esp - 8 first free slot   (* 2 word)
+	    ;; n-args = 1    esp - 12 first free slot  (* 3 word)
+	    ,@(let ((new-si (- (* (+ 2 n-args) word))))
+		(comp `(begin ,@body) new-si new-env))
 	  
-	    (comment "exit prologue")
-	    (mov esp ebp)
-	    (pop ebp)
 	    
 	    (ret)
-
 	    
 	    (label ,after-label)
 	    
 	    (mov ebx esi) ; remember heap loc	  
 	    (mov (ref esi) (label ,anon-name))
-	    (add esi 4) ; bump heap
+
+	    ;; bump heap 8 bytes
+	    ;; so we waste 4 bytes but easier to verify heap always aligned
+	    ;; for initial versions of compiler
+	    (add esi 8) 
 	    
 	    ,@(comp-lambda-free-vars free-variables si env)
   	    
 	    ;; important HEAP pointer esi is a multiple of 8
-	    ,@(emit-align-heap-pointer)
+	    ;;,@(emit-align-heap-pointer)
 	      
 	    (mov eax ebx) 	    
 	    (or eax 6) ; tag closure 110b
-	    
 	    
 	    ))))))
 
