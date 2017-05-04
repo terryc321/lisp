@@ -28,7 +28,6 @@
 
 
 
-
 (define *primitives*
   '(1+
     1-
@@ -158,6 +157,7 @@
 ;;   (newline *out*))
 
 
+;; THIS DOES NOT WORK !!!!
 (define (emit-align-heap-pointer)
   `((add eax 8)
     (and eax -8)))
@@ -702,7 +702,6 @@
 
 
 
-
 ;; (let ...)
 (define (comp-let x si env)
   (let ((bindings (car (cdr x)))
@@ -738,6 +737,7 @@
 	     ;;(emit "mov dword [ ebp " si "] , eax  ; let bound " the-sym)
 	     `(
 	       ;;(push eax)
+	       (comment "let binding for variable " ,the-sym)
 	       (mov (ref (+ esp ,si)) eax)
 	       )
 	     	     
@@ -973,7 +973,9 @@
 	      ))
 	   ;;(emit "mov dword eax , [ ebp + " (binding-stack-index binding)  "] "))
 	   ((closure-binding? binding)
-	    `((mov eax (ref (+ esp 4)))
+	    `(
+	      (comment "closure binding for variable " ,var)
+	      (mov eax (ref (- esp 4)))
 	      (mov eax (ref (+ eax ,(binding-stack-index binding))))
 	      ))
 	   ;; (emit "mov dword eax , [ ebp + 8 ] ; closure ptr into eax")
@@ -992,6 +994,7 @@
 	   ;;(emit "mov dword eax , [ebx + " (binding-index binding)"]"))
 	   (else
 	    (error "comp-lookup : no binding for symbol " var)))))))
+
 
 
 

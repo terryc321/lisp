@@ -263,66 +263,65 @@
 ;; (n-doors 10)
 
 
-(define fib (lambda (n)
-	      (if (= n 1)
-		  1
-		  (if (= n 2)
-		      1
-		      (+ (fib (- n 1))
-			 (fib (- n 2)))))))
+;; (define fib (lambda (n)
+;; 	      (if (= n 1)
+;; 		  1
+;; 		  (if (= n 2)
+;; 		      1
+;; 		      (+ (fib (- n 1))
+;; 			 (fib (- n 2)))))))
 
 ;;(fib 10)
 
 
-(define fac (lambda (n)
-	      (if (< n 2)
-		  1
-		  (* n (fac (- n 1))))))
+;; (define fac (lambda (n)
+;; 	      (if (< n 2)
+;; 		  1
+;; 		  (* n (fac (- n 1))))))
 
 ;;(cons (fac 10) (fib 10))
 
 
 ;;(fib 10)
-(cons 
- (cons (fac 10) (cons (fac 9) (fac 5)))
- (cons (fib 10) (cons (fib 9) (fib 5))))
+;; (cons 
+;;  (cons (fac 10) (cons (fac 9) (fac 5)))
+;;  (cons (fib 10) (cons (fib 9) (fib 5))))
 
 
 
-;; list of hundred items 
-(define seq (lambda (n)
-  (cond
-   ((= n 0) '())
-   (else (cons #f (seq (- n 1)))))))
+;; ;; list of hundred items 
+;; (define seq (lambda (n)
+;;   (cond
+;;    ((= n 0) '())
+;;    (else (cons #f (seq (- n 1)))))))
 
-(seq 100)
+;; (seq 100)
 
 
 ;; lambdas in toplevel LETs behave Oddly also.
 
 
-(define fac2 (lambda (n m)
-	      (if (< n 2)
-		  m
-		  (fac2 (- n 1) (* n m)))))
+;; (define fac2 (lambda (n m)
+;; 	      (if (< n 2)
+;; 		  m
+;; 		  (fac2 (- n 1) (* n m)))))
 
 
-(fac2 10 1)
+;; (fac2 10 1)
 
 
-(define fac3 (lambda (n m)
-	      (if (< n 2)
-		  m
-		  (tailcall (fac3 (- n 1) (* n m))))))
+;; (define fac3 (lambda (n m)
+;; 	      (if (< n 2)
+;; 		  m
+;; 		  (tailcall (fac3 (- n 1) (* n m))))))
 
-(cons 
- (fac3 5 1)
- (cons 
-  (fac3 6 1)
-  (cons
-   (fac3 7 1)
-   (fac3 8 1))))
-
+;; (cons 
+;;  (fac3 5 1)
+;;  (cons 
+;;   (fac3 6 1)
+;;   (cons
+;;    (fac3 7 1)
+;;    (fac3 8 1))))
 
 
 ;; (define t2 (lambda ()
@@ -333,31 +332,32 @@
 ;; (t2)
 
 
-(+ (fac3 7 1)
-   (fac3 8 1))
+;; (+ (fac3 7 1)
+;;    (fac3 8 1))
+
+;; (let ((g1 123))
+;;   (let ((f3 (lambda () g1)))
+;;     (f3)))
 
 
-
-(let ((g1 123))
-  (let ((f3 (lambda () g1)))
-    (f3)))
-
-
-
-
-(let ((g1 123))
-  (let ((g2 234))
-    g1))
+;; (let ((g1 123))
+;;   (let ((g2 234))
+;;     g1))
    
+;; (let ((g1 123))
+;;   (let ((g2 234))
+;;     g2))
+
+
+;; ((let ((g1 123))
+;;   (let ((f3 (lambda () g1)))
+;;     f3)))
+
+
+;; ((lambda (x) (+ x 1)) 10)
+
 (let ((g1 123))
-  (let ((g2 234))
-    g2))
+  ((lambda () (+ g1 g1))))
 
 
-((let ((g1 123))
-  (let ((f3 (lambda () g1)))
-    f3)))
-
-
-((lambda (x) (+ x 1)) 10)
 
