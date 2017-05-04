@@ -37,19 +37,9 @@
 ;(car (cons 1 2 ))
 ;(cdr (cons 1 2 ))
 
-
-;; list of hundred items 
-(define seq (lambda (n)
-  (cond
-   ((= n 0) '())
-   (else (cons #f (seq (- n 1)))))))
-
-(seq 100)
-
-
-(define twice (lambda (n) (+ n n)))
-(twice 5)
-(twice (twice 5))
+;;(define twice (lambda (n) (+ n n)))
+;;(twice 5)
+;;(twice (twice 5))
 
 
 ;; (* 2 3 )
@@ -58,103 +48,118 @@
 ;; (if (< 3 2) 4 5)
 
 
-;; (cons 1 2 )
-;; (cons 1 (cons 2 (cons 3 4)))
+(cons 1 2 )
+(cons 1 (cons 2 (cons 3 4)))
 
 
-;; (+ 1 2)
-;; (+ 1 (+ 2 (+ 3 (+ 4 (+ 5 (+ 6 (+ 7 (+ 8 (+ 9 10)))))))))
-
-
-
-;; (* 1 2)
-;; (* 1 (* 2 3))
-;; (* 1 (* 2 (* 3 4)))
-
-;; (/ 10 2)
-
-;; (/ (+ 2 10) 3)
-
-;; (not #t)
-;; ;(not #f)
-
-
-;; (car (cons (+ 1 2) (+ 4 5)))
-
-;; (cdr (cons (+ 1 2) (+ 4 5)))
-
-;; (zero? 0)
-;; ;(zero? 1)
-
-;; (- 10 7)
-;; ;;(- 10 (- 1 2))
-
-;; (boolean? #t)
-;; (boolean? 0)
-
-;; (null? ())
-;; (null? #f)
-
-;; (if #t (+ 3 4) (+ 7 8))
-;; (if #f (+ 9 6) (+ 12 4))
-;; (if #f 123)
-
-
-;; (integer? 123)
-
-;; (let ((a (+ 2 4))) (+ a a))
-
-
-;; (define f 123)
-;; (+ f f)
+(+ 1 2)
+(+ 1 (+ 2 (+ 3 (+ 4 (+ 5 (+ 6 (+ 7 (+ 8 (+ 9 10)))))))))
 
 
 
-;; (define g 456)
+(* 1 2)
+(* 1 (* 2 3))
+(* 1 (* 2 (* 3 4)))
 
-;; (define h (cons f g))
+(/ 10 2)
 
-;; h
+(/ (+ 2 10) 3)
 
-;; ;;(even? 5)
-;; ;;(even? 6)
-
-;; (cons (cons (odd? 3) (odd? 4))
-;;       (cons (even? 3) (even? 4)))
-
-
-;; (/2 120)
-
-;; (mul3+1 2)
-
-;; (begin)
-;; (begin 1 2 3)
-
-;; (= 2 3)
-;; ;(= 3 3)
-
-;; (cons (>= 5 6) (cons (>= 6 6) (>= 7 6)))
-;; (cons (= 5 6) (cons (= 6 6) (= 7 6)))
-;; (cons (<= 5 6) (cons (<= 6 6) (<= 7 6)))
-;; (cons (> 5 6) (cons (> 6 6) (> 7 6)))
-;; (cons (< 5 6) (cons (< 6 6) (< 7 6)))
+(not #t)
+;(not #f)
 
 
-;; ;;(fac 10)
-;; ((lambda (x) x) 5)
+(car (cons (+ 1 2) (+ 4 5)))
+
+(cdr (cons (+ 1 2) (+ 4 5)))
+
+(zero? 0)
+;(zero? 1)
+
+(- 10 7)
+;;(- 10 (- 1 2))
+
+(boolean? #t)
+(boolean? 0)
+
+(null? ())
+(null? #f)
+
+(if #t (+ 3 4) (+ 7 8))
+(if #f (+ 9 6) (+ 12 4))
+(if #f 123)
 
 
-;; (define f2 ((lambda (x) x) 5))
+(integer? 123)
+
+(let ((a (+ 2 4))) (+ a a))
+
+
+(define f 123)
+(+ f f)
+
+
+
+(define g 456)
+
+(define h (cons f g))
+
+h
+
+;;(even? 5)
+;;(even? 6)
+
+(cons (cons (odd? 3) (odd? 4))
+      (cons (even? 3) (even? 4)))
+
+
+(/2 120)
+
+(mul3+1 2)
+
+(begin)
+(begin 1 2 3)
+
+(= 2 3)
+;(= 3 3)
+
+(cons (>= 5 6) (cons (>= 6 6) (>= 7 6)))
+(cons (= 5 6) (cons (= 6 6) (= 7 6)))
+(cons (<= 5 6) (cons (<= 6 6) (<= 7 6)))
+(cons (> 5 6) (cons (> 6 6) (> 7 6)))
+(cons (< 5 6) (cons (< 6 6) (< 7 6)))
+
+
+;;(fac 10)
+((lambda (x) x) 5)
+
+
+(define f2 ((lambda (x) x) 5))
+
+(define fac (lambda (n)
+	      (if (< n 2) 1
+		  (* n (fac (- n 1))))))
+
+(fac 25) ;;(fac 5))
+
 
 
 
 
 ;;()
 
+;; ;; list of hundred items 
+;; (define (seq n)
+;;   (cond
+;;    ((= n 0) '())
+;;    (else (cons #f (seq (- n 1))))))
+
+
+;;(seq 100)
 
 ;3
 
-(define (toggle n)  (not n))
+;; (define (toggle n)  (not n))
 
 
 
@@ -165,35 +170,35 @@
 
 
 
-
-(define (toggle-every-helper n m xs)
-  (cond
-   ((null? xs) '())
-   ((= n 1) (cons (toggle (car xs))
-		  (toggle-every-helper m m (cdr xs))))
-   (else (cons (car xs)
-	       (toggle-every-helper (- n 1) m (cdr xs))))))
-
+;; (define (toggle-every-helper n m xs)
+;;   (cond
+;;    ((null? xs) '())
+;;    ((= n 1) (cons (toggle (car xs))
+;; 		  (toggle-every-helper m m (cdr xs))))
+;;    (else (cons (car xs)
+;; 	       (toggle-every-helper (- n 1) m (cdr xs))))))
 
 
-(define (toggle-every n xs)
-  (toggle-every-helper n n xs))
 
 
-(define (toggle-nth n xs)
-  (cond
-   ((> n 100) xs)
-   (else (toggle-nth (+ n 1) (toggle-every n xs)))))
+;; (define (toggle-every n xs)
+;;   (toggle-every-helper n n xs))
 
 
-(define (tog-to-n n xs)
-  (cond
-   ((null? xs) '())
-   ((car xs) (cons n (tog-to-n (+ n 1) (cdr xs))))
-   (else (tog-to-n (+ n 1) (cdr xs)))))
+;; (define (toggle-nth n xs)
+;;   (cond
+;;    ((> n 100) xs)
+;;    (else (toggle-nth (+ n 1) (toggle-every n xs)))))
 
 
-;;(toggle-nth 1 (seq 100))
+;; (define (tog-to-n n xs)
+;;   (cond
+;;    ((null? xs) '())
+;;    ((car xs) (cons n (tog-to-n (+ n 1) (cdr xs))))
+;;    (else (tog-to-n (+ n 1) (cdr xs)))))
+
+
+;; ;;(toggle-nth 1 (seq 100))
 
 ;; ;; wrong arity !!
 ;; ;;(toggle-every 1 1 (seq 100))
@@ -206,13 +211,7 @@
 
 ;; ;;(toggle-nth 1 (seq 1000))
 
-(let ((result (toggle-nth 1 (seq 100))))
-  (cons
-   (tog-to-n 1 result)
-   result))
-
-
-       ;;(tog-to-n 1 )
+;; (tog-to-n 1 (toggle-nth 1 (seq 100)))
 
 
 
@@ -277,4 +276,8 @@
 
 
 ;; (n-doors 10)
+
+
+
+
 

@@ -2,7 +2,109 @@
 \documentclass[a4paper,12pt]{article}
 \begin{document}
 
+
+
+
 \begin{verbatim}
+  ((let ((g1 123))
+    (let ((f3 (lambda () g1)))
+      f3)))
+\end{verbatim}
+
+
+\begin{verbatim}
+
+(define t2 (lambda ()
+  ((let ((g1 123))
+    (let ((f3 (lambda () g1)))
+   	  f3)))))
+	  
+(t2)
+\end{verbatim}
+
+
+
+\newpage
+
+Bump Heap in multiple of 8 
+
+Tried to be clever and bump the heap in 4 bytes then do fancy boolean logic.
+It failed and stuff like this was happenining
+
+\begin{verbatim}
+ (cons (fac 5) (fac 10)) => (5 . 55)
+\end{verbatim}
+
+was actually calling the fibonacci function instead of the factorial.
+
+
+\newpage
+
+Procedure Call Protocol
+
+\begin{verbatim}
+
+The stack index si , is always a Negative quantity because x86 stack
+grows downwards in memory.
+Our Frame is based from the ESP register 
+  ...
+  ... <- si
+  ...
+  ...
+
+
+si means FREE to WRITE to that location ESP - si
+ 
+ e.g  suppose si had a value of -4
+       MOV [ ESP - si ] , EAX
+
+ 3 argument procedure call example
+
+  ...
+  ... <- si
+  ...
+  ...
+
+we want it to look like this after we are finished
+ 
+  ???     <- si + 4  : where want ESP to point to just before CALL opcode
+  EMPTY SLOT <- si
+  CLOSURE <- si - 4
+  ARG 1   <- si - 8
+  ARG 2   <- si - 12
+  ARG 3   <- si - 16
+
+  on entry to call want ESP to point to si + 4
+
+ after CALL opcode , ESP is decremented by 4
+  into our empty slot , the RETURN address is written in
+   jump to CALLed location , on return resumes where RETURN address
+   points to.
+
+ only difference on a TAIL CALL we want to collapse the stack
+
+  ORIGINAL RETURN ADDRESS <- ESP  (want to keep this)
+  ...
+  ...
+  ...
+  ...
+
+  ???     <- si + 4  : where want ESP to point to just before CALL opcode
+  EMPTY SLOT <- si
+  CLOSURE <- si - 4
+  ARG 1   <- si - 8
+  ARG 2   <- si - 12
+  ARG 3   <- si - 16
+
+
+
+\end{verbatim}
+
+
+\newpage
+
+\begin{verbatim}
+Here we can see the madness ... 
 
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 heres a problematic CONS , it doesnt seem to work when in procedure calls
