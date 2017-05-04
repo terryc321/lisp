@@ -300,15 +300,6 @@
 
 ;; lambdas in toplevel LETs behave Oddly also.
 
-;; (let ((g1 123))
-;;   (let ((f3 (lambda () g1)))
-;;     (f3)))
-
-
-;; ((let ((g1 123))
-;;   (let ((f3 (lambda () g1)))
-;;     f3)))
-
 
 (define fac2 (lambda (n m)
 	      (if (< n 2)
@@ -347,8 +338,26 @@
 
 
 
+(let ((g1 123))
+  (let ((f3 (lambda () g1)))
+    (f3)))
 
 
 
 
+(let ((g1 123))
+  (let ((g2 234))
+    g1))
+   
+(let ((g1 123))
+  (let ((g2 234))
+    g2))
+
+
+((let ((g1 123))
+  (let ((f3 (lambda () g1)))
+    f3)))
+
+
+((lambda (x) (+ x 1)) 10)
 
