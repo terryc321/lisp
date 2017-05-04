@@ -37,19 +37,9 @@
 ;(car (cons 1 2 ))
 ;(cdr (cons 1 2 ))
 
-
-;; list of hundred items 
-(define seq (lambda (n)
-  (cond
-   ((= n 0) '())
-   (else (cons #f (seq (- n 1)))))))
-
-(seq 100)
-
-
-(define twice (lambda (n) (+ n n)))
-(twice 5)
-(twice (twice 5))
+;;(define twice (lambda (n) (+ n n)))
+;;(twice 5)
+;;(twice (twice 5))
 
 
 ;; (* 2 3 )
@@ -154,7 +144,7 @@
 
 ;3
 
-(define (toggle n)  (not n))
+;; (define (toggle n)  (not n))
 
 
 
@@ -165,34 +155,35 @@
 
 
 
-(define (toggle-every-helper n m xs)
-  (cond
-   ((null? xs) '())
-   ((= n 1) (cons (toggle (car xs))
-		  (toggle-every-helper m m (cdr xs))))
-   (else (cons (car xs)
-	       (toggle-every-helper (- n 1) m (cdr xs))))))
+;; (define (toggle-every-helper n m xs)
+;;   (cond
+;;    ((null? xs) '())
+;;    ((= n 1) (cons (toggle (car xs))
+;; 		  (toggle-every-helper m m (cdr xs))))
+;;    (else (cons (car xs)
+;; 	       (toggle-every-helper (- n 1) m (cdr xs))))))
 
 
 
-(define (toggle-every n xs)
-  (toggle-every-helper n n xs))
+
+;; (define (toggle-every n xs)
+;;   (toggle-every-helper n n xs))
 
 
-(define (toggle-nth n xs)
-  (cond
-   ((> n 100) xs)
-   (else (toggle-nth (+ n 1) (toggle-every n xs)))))
+;; (define (toggle-nth n xs)
+;;   (cond
+;;    ((> n 100) xs)
+;;    (else (toggle-nth (+ n 1) (toggle-every n xs)))))
 
 
-(define (tog-to-n n xs)
-  (cond
-   ((null? xs) '())
-   ((car xs) (cons n (tog-to-n (+ n 1) (cdr xs))))
-   (else (tog-to-n (+ n 1) (cdr xs)))))
+;; (define (tog-to-n n xs)
+;;   (cond
+;;    ((null? xs) '())
+;;    ((car xs) (cons n (tog-to-n (+ n 1) (cdr xs))))
+;;    (else (tog-to-n (+ n 1) (cdr xs)))))
 
 
-;;(toggle-nth 1 (seq 100))
+;; ;;(toggle-nth 1 (seq 100))
 
 ;; ;; wrong arity !!
 ;; ;;(toggle-every 1 1 (seq 100))
@@ -205,13 +196,7 @@
 
 ;; ;;(toggle-nth 1 (seq 1000))
 
-(let ((result (toggle-nth 1 (seq 100))))
-  (cons
-   (tog-to-n 1 result)
-   result))
-
-
-       ;;(tog-to-n 1 )
+;; (tog-to-n 1 (toggle-nth 1 (seq 100)))
 
 
 
@@ -276,4 +261,94 @@
 
 
 ;; (n-doors 10)
+
+
+(define fib (lambda (n)
+	      (if (= n 1)
+		  1
+		  (if (= n 2)
+		      1
+		      (+ (fib (- n 1))
+			 (fib (- n 2)))))))
+
+;;(fib 10)
+
+
+(define fac (lambda (n)
+	      (if (< n 2)
+		  1
+		  (* n (fac (- n 1))))))
+
+;;(cons (fac 10) (fib 10))
+
+
+;;(fib 10)
+(cons 
+ (cons (fac 10) (cons (fac 9) (fac 5)))
+ (cons (fib 10) (cons (fib 9) (fib 5))))
+
+
+
+;; list of hundred items 
+(define seq (lambda (n)
+  (cond
+   ((= n 0) '())
+   (else (cons #f (seq (- n 1)))))))
+
+(seq 100)
+
+
+;; lambdas in toplevel LETs behave Oddly also.
+
+;; (let ((g1 123))
+;;   (let ((f3 (lambda () g1)))
+;;     (f3)))
+
+
+;; ((let ((g1 123))
+;;   (let ((f3 (lambda () g1)))
+;;     f3)))
+
+
+(define fac2 (lambda (n m)
+	      (if (< n 2)
+		  m
+		  (fac2 (- n 1) (* n m)))))
+
+(fac2 10 1)
+
+
+(define fac3 (lambda (n m)
+	      (if (< n 2)
+		  m
+		  (tailcall (fac3 (- n 1) (* n m))))))
+
+(cons 
+ (fac3 5 1)
+ (cons 
+  (fac3 6 1)
+  (cons
+   (fac3 7 1)
+   (fac3 8 1))))
+
+
+
+
+;; (define t2 (lambda ()
+;; 	     ((let ((g1 123))
+;; 		(let ((f3 (lambda () g1)))
+;; 		  f3)))))
+
+;; (t2)
+
+
+(+ (fac3 7 1)
+   (fac3 8 1))
+
+
+
+
+
+
+
 
