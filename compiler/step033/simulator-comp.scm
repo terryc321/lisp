@@ -1453,14 +1453,51 @@
 
 
 
-(define (comp-tailcall-collapse args si index env)
+
+(define (comp-tailcall-collapse n si)
   (cond
-   ((null? args) #f)
-   (else (begin
-	   (let ((offset (* index word)))
-	     (emit "mov dword eax , [ esp " (- si offset) "] ; collapse element " index)
-	     (emit "mov dword [ esp - " offset "] , eax ")
-	     (comp-tailcall-collapse (cdr args) si (+ index 1) env))))))
+   ((< n 0) '())
+   (else
+    `(
+      (mov eax (ref (+ esp ,(- si (* n word)))))
+      (mov (ref (- esp ,(* (+ n 1) word))) eax)
+      ,@(comp-tailcall-collapse (- n 1) si)))))
+
+      
+    ;; (let ((offset (* index word)))
+    ;;   (emit "mov dword eax , [ esp " (- si offset) "] ; collapse element " index)
+    ;;   (emit "mov dword [ esp - " offset "] , eax ")
+    ;;   (comp-tailcall-collapse (- n 1) si))))))
+
+
+
+;;  0 -> -4
+;;  -4 to -8
+;;  -8 to -12
+;;  -12 to -16  reason for  (+ n 1)
+;;      (mov (ref (- esp ,(* (+ n 1) word))) eax)
+
+
+;; from Viewpoint of procedure we are doing TAIL call IN
+;; situation looks like this 
+;; ESP - 0  : [ original RET Address    ]
+;; ESP - 4  : [ orignal CLOSURE Pointer ]
+;; ESP - 8  : [ original ARG 1          ]
+;; ESP - 12 : [ original ARG 2          ]
+;; ..
+;;
+;;                                               ** want end up in this position **
+;; ESP - si - 0    : [ new untagged CLOSURE ptr ] -> ESP - 4
+;; ESP - si - 4    : [ new ARG 1                ] -> ESP - 8
+;; ESP - si - 8    : [ new ARG 2                ] -> ESP - 12
+;; ESP - si - 12   : [ new ARG 3                ] -> ESP - 16
+;;
+;; mov eax , (+ esp si)
+;;                        mov (+ esp -4) , eax
+;; mov eax , (+ esp (- si word)) 
+;;                        mov (+ esp -8) , eax
+;; mov eax , (+ esp (- si (* 2 word)))
+;;                        mov (+ esp -12) , eax
 
 
 
@@ -1468,47 +1505,89 @@
 (define (comp-tailcall-application x si env)
   (let ((fn (car (car (cdr x))))
 	(args (cdr (car (cdr x)))))
+
+    `(
+      ;; compile arguments
+      ;; reserve two slots for RETURN-ADDRESS and CLOSURE-PTR slot
+      ,@(comp-application-helper 1 args (- si (* 1 word)) env)
     
-    (display "* tail call optimisation *") (newline)
-    (display "* FN * = ")
-    (display fn)
-    (newline)
-    (display "* ARGS * = ")
-    (display args)
-    (newline)
+      ;; compile procedure
+      ,@(comp fn (- si (* (+ 1 (length args)) word)) env)
 
-    ;; ------- first section is verbatim of normal procedure application ----------
-    ;; compile arguments
-    ;; reserve two slots for RETURN-ADDRESS and CLOSURE-PTR slot
-    (comp-application-helper args (- si (* 2 word)) env)
-
-    ;; compile procedure
-    (comp fn (- si (* (+ 2 (length args)) word)) env)
+      ;; untag the closure in EAX
+      ;; -8 is binary 11...1111000  lower 3 bits zero")
+      (and eax -8) 
     
-    ;; untag the closure in EAX 
-    (emit "and dword eax , -8 ; untag closure -8 is binary 11...1111000  lower 3 bits zero")
+      ;; save un- tagged - closure ptr on stack
+      (mov (ref (+ esp ,si)) eax)
 
-    ;;(emit "mov dword [esp "  (- si word) " ] , eax ; closure ptr ")
-    ;; save un- tagged - closure on stack directly 
-    (emit "mov dword [esp "  (- word) " ] , eax ; closure ptr ")
+      ;; collapse the stack
+      ;; collapse ARGS and also CLOSURE up stack
+      ,@(comp-tailcall-collapse (length args) si)
+      
+      ;; reload closure
+      ;; choice either [esp - 4] or [esp - ?si - 4 ]       
+      (mov eax (ref (- esp 4)))
+      
+      ;; load CODE address from closure at offset 0
+      (mov eax (ref eax)) 
+      
+      ;; do tail call
+      (jmp eax))))
 
-    ;; obtain procedure CODE address
-    ;; placed it into EBX register because tailcall-collapse over writes EAX register
-    (emit "mov dword ebx , [eax] ; load CODE address ")
+
+
+
+
+
+
+
+
+
+
+;; ;; x = (tailcall (fn . args))
+;; (define (comp-tailcall-application x si env)
+;;   (let ((fn (car (car (cdr x))))
+;; 	(args (cdr (car (cdr x)))))
     
-    ;; collapse the stack
-    ;;   leave original return ip intact at ESP [ 0 ]
-    ;;   put procedure closure at ESP [ - 4 ]
-    ;;   put arg1 at ESP [ - 8 ]
-    ;;   put arg2 at ESP [ - 12 ]
-    ;;   put arg3 at ESP [ - 16 ]
-    (comp-tailcall-collapse args si 2 env)
+;;     (display "* tail call optimisation *") (newline)
+;;     (display "* FN * = ")
+;;     (display fn)
+;;     (newline)
+;;     (display "* ARGS * = ")
+;;     (display args)
+;;     (newline)
 
-    ;; CODE address is still safe in EBX register , so just jump to it
-    ;; now do the tail call
-    (emit "jmp ebx ; tail call")))
+;;     ;; ------- first section is verbatim of normal procedure application ----------
+;;     ;; compile arguments
+;;     ;; reserve two slots for RETURN-ADDRESS and CLOSURE-PTR slot
+;;     (comp-application-helper args (- si (* 2 word)) env)
 
+;;     ;; compile procedure
+;;     (comp fn (- si (* (+ 2 (length args)) word)) env)
+    
+;;     ;; untag the closure in EAX 
+;;     (emit "and dword eax , -8 ; untag closure -8 is binary 11...1111000  lower 3 bits zero")
 
+;;     ;;(emit "mov dword [esp "  (- si word) " ] , eax ; closure ptr ")
+;;     ;; save un- tagged - closure on stack directly 
+;;     (emit "mov dword [esp "  (- word) " ] , eax ; closure ptr ")
+
+;;     ;; obtain procedure CODE address
+;;     ;; placed it into EBX register because tailcall-collapse over writes EAX register
+;;     (emit "mov dword ebx , [eax] ; load CODE address ")
+    
+;;     ;; collapse the stack
+;;     ;;   leave original return ip intact at ESP [ 0 ]
+;;     ;;   put procedure closure at ESP [ - 4 ]
+;;     ;;   put arg1 at ESP [ - 8 ]
+;;     ;;   put arg2 at ESP [ - 12 ]
+;;     ;;   put arg3 at ESP [ - 16 ]
+;;     (comp-tailcall-collapse args si 2 env)
+
+;;     ;; CODE address is still safe in EBX register , so just jump to it
+;;     ;; now do the tail call
+;;     (emit "jmp ebx ; tail call")))
 
 
 
@@ -1799,18 +1878,15 @@
 ;; b : 16
 ;; c : 24
 ;; d : 32
-;;
 
-;; arguments are placed in closure at offset word
-;; then every word thereafter ... word*2 word*3 word*4 ...
 (define (comp-closure-helper args)
   (define (helper args index)
     (cond
      ((null? args) '())
      (else (let ((sym (car args)))
 	     (cons (list sym 'closure index)
-		   (helper (cdr args) (+ index word)))))))
-  (helper args 4))
+		   (helper (cdr args) (+ index (* 2 word))))))))
+  (helper args 8))
 
 
 (define (remove-primitives vars)
@@ -1935,7 +2011,6 @@
 
 
 
-
 (define (comp x si env)
   (cond
    ((symbol? x) (comp-lookup x si env))
@@ -1996,7 +2071,7 @@
    ((and (pair? x) (eq? (car x) 'lambda)) (comp-lambda x si env))
    
    ;; explicit tailcall
-   ;;((and (pair? x) (eq? (car x) 'tailcall)) (comp-tailcall-application x si env))
+   ((and (pair? x) (eq? (car x) 'tailcall)) (comp-tailcall-application x si env))
    
    ;; tak 
    ;;((and (pair? x) (eq? (car x) 'tak)) (comp-tak x si env))

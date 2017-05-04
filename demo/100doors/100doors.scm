@@ -290,15 +290,65 @@
 
 
 ;; list of hundred items 
-(define (seq n)
+(define seq (lambda (n)
   (cond
    ((= n 0) '())
-   (else (cons #f (seq (- n 1))))))
+   (else (cons #f (seq (- n 1)))))))
 
 (seq 100)
 
-(let ((g 123))
-  (let ((f (lambda () g)))
-    (f)))
+
+;; lambdas in toplevel LETs behave Oddly also.
+
+;; (let ((g1 123))
+;;   (let ((f3 (lambda () g1)))
+;;     (f3)))
+
+
+;; ((let ((g1 123))
+;;   (let ((f3 (lambda () g1)))
+;;     f3)))
+
+
+(define fac2 (lambda (n m)
+	      (if (< n 2)
+		  m
+		  (fac2 (- n 1) (* n m)))))
+
+(fac2 10 1)
+
+
+(define fac3 (lambda (n m)
+	      (if (< n 2)
+		  m
+		  (tailcall (fac3 (- n 1) (* n m))))))
+
+(cons 
+ (fac3 5 1)
+ (cons 
+  (fac3 6 1)
+  (cons
+   (fac3 7 1)
+   (fac3 8 1))))
+
+
+
+
+;; (define t2 (lambda ()
+;; 	     ((let ((g1 123))
+;; 		(let ((f3 (lambda () g1)))
+;; 		  f3)))))
+
+;; (t2)
+
+
+(+ (fac3 7 1)
+   (fac3 8 1))
+
+
+
+
+
+
 
 
