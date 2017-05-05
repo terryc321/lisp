@@ -1938,45 +1938,26 @@
 
 
 
+;; comp-lambda args fv body
+;; args = (car (cdr x))
+;; body = (cdr (cdr x))
+;; fv   = (remove-toplevel (remove-primitives (freevars x)))
 
 
 ;; for each formal parameter [ <args> ]  of the lambda expression
 ;; (lambda <args> body)
-(define (comp-lambda x si env)
+(define (comp-lambda args body free si env)
   (let ((anon-name (gensym "lambda"))	
-	(args (car (cdr x)))	
-	(body (cdr (cdr x)))
-	(after-label (gensym "after"))
-	(free-variables (remove-toplevel (remove-primitives (freevars x)) env)))
+	(after-label (gensym "after")))
       (let ((n-args (length args)))
 	(let ((extra-env (comp-lambda-helper args))
-	      (free-env  (comp-closure-helper free-variables))) 
+	      (free-env  (comp-closure-helper free)))
 	  (let ((new-env (append extra-env free-env env )))
-	      
-	  ;; (display "* comp-lambda * : ")
-	  ;; (display "extra env = ")
-	  ;; (display extra-env)
-	  ;; (newline)
-
-	  ;; (display "* comp-lambda * : ")
-	  ;; (display "free = ")
-	  ;; (display free-variables)
-	  ;; (newline)
-	  ;; (display "free-env = ")
-	  ;; (display free-env)
-	  ;; (newline)
-
-	  ;; (display "* comp-lambda * : ")
-	  ;; (display "new-env = ")
-	  ;; (display new-env)
-	  ;; (newline)
-
 	    
 	  `(	  
 	    (jmp (label ,after-label))
 	    (label ,anon-name)
 	    
-
 	    ;; si is first empty FREE SLOT completely open to abuse
 	    ;; esp - 4 : closure
 	    ;; esp - 8 :
@@ -1986,8 +1967,7 @@
 	    ;; n-args = 1    esp - 12 first free slot  (* 3 word)
 	    ,@(let ((new-si (- (* (+ 2 n-args) word))))
 		(comp `(begin ,@body) new-si new-env))
-	  
-	    
+	  	    
 	    (ret)
 	    
 	    (label ,after-label)
@@ -2000,7 +1980,7 @@
 	    ;; for initial versions of compiler
 	    (add esi 8) 
 	    
-	    ,@(comp-lambda-free-vars free-variables si env)
+	    ,@(comp-lambda-free-vars free si env)
   	    
 	    ;; important HEAP pointer esi is a multiple of 8
 	    ;;,@(emit-align-heap-pointer)
@@ -2011,8 +1991,7 @@
 	    ))))))
 
 
-
-
+	
 
 (define (comp x si env)
   (cond
@@ -2072,7 +2051,19 @@
    ((and (pair? x) (eq? (car x) 'let)) (comp-let x si env))
    
    ;; explicit lambda
-   ((and (pair? x) (eq? (car x) 'lambda)) (comp-lambda x si env))
+   ((and (pair? x) (eq? (car x) 'lambda))
+    (let ((args (car (cdr x)))	
+	  (body (cdr (cdr x)))
+	  (free (remove-toplevel (remove-primitives (freevars x)) env)))
+      (comp-lambda args body free si env)))
+
+   ;; explicit closure -- user provided free variables
+   ((and (pair? x) (eq? (car x) 'closure))
+    (let ((args (car (cdr x)))
+	  (free (car (cdr (cdr x))))
+	  (body (cdr (cdr (cdr x)))))
+      (comp-lambda args body free si env)))
+   
    
    ;; explicit tailcall
    ((and (pair? x) (eq? (car x) 'tailcall)) (comp-tailcall-application x si env))
