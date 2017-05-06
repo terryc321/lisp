@@ -38,7 +38,7 @@
 ;(cdr (cons 1 2 ))
 
 
-(define *n-doors* 100)
+(define *n-doors* 1000)
 
 
 ;; list of hundred items 
