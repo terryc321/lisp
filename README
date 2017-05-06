@@ -1,8 +1,79 @@
 
+An attempt to follow gholoum incremental compiler paper.
 
-attempt to follow gholoum incremental compiler paper.
+Demos
+*****************************************************
 
-procedure calls appear to work.
+ 100doors - 100doors open and closing puzzle , leads to sequence of square numbers 
+ queens   - n queens puzzle
+ 
+
+Motivation
+*****************************************************
+With all the drawbacks , when it works , it works surprisingly well.
+
+queens puzzle runs in about 3 seconds equivalent to what mit-scheme compiled bench file seems to do.
+so its a respectable compiler for these toy programs.
+
+
+
+Technical Overview
+********************
+
+The heart of the compiler is located in STEP034
+  ../compiler/step034/ 
+
+  simulator-comp.scm  =  generates x86 opcodes in s expression format
+    mainly in the hope that peep hole optimiser might 
+	  
+Theres no register allocator , but its interesting to see how it would help.
+
+All the primitives are OPEN CODED , theres not much thought put into them just a simple set of
+x86 operations i knew would would and slapped them in .
+
+
+
+
+
+
+LET local bindings
+*******************************
+Let assigns items to stack , does not create a closure.
+
+
+Assignment conversion MISSING - set! is not handled yet , so that means no LETRECs .
+*******************************
+LETRECs are just 
+I had an idea that if the only functions are toplevel , ie no function nesting ,
+then there is no point in having closures because any free variable must either be undefined - ie wrong program
+or its a toplevel variable , and these arent captured in closures anyway because toplevel is always available.
+
+
+Complex Quoted Expressions MISSING
+***********************************
+this isnt a problem , was able to get a similar system to have pre-built list structure in NASM file which meant
+zero startup time , rather than CONSing something together then doing whatever runtime should do .
+
+
+
+Garbage Collector MISSING
+***************************
+This is MILD NIGGLE in general, it stops long running computations .
+
+List structured memory - is cute for lisp s expressions , but it does not work for vectors which require
+continuous memory regions.
+
+Bump and two finger algorithm seems a good choice.
+
+
+New DataTypes
+****************
+New datatypes affect the Garbage Collector because it has to be aware of structure of the type , what is
+and is not a pointer to some other object.
+
+
+PROCEDURE CALLS work.
+**********************
 
 si means stack index - the first FREE SLOT to save into using MOV
 
@@ -21,6 +92,28 @@ rule 2 :  PRESERVE esi HEAP alignment to multiple of 8
 
   ADD ESI , 8   -- clean simple and safe bump
 
+  misaligned HEAP leads to fantastically wild bugs like in a single file
+  fib and factorial were defined - calling fib procedure would call the factorial - i kid ye not.
+
+
+TAIL CALLS work - tricky to get right , requires good nights sleep and a clear head to write.
+*********************************************************************************************
+
+figuring out the required offsets , noting that SI stack index grows downwards and other issues
+makes it difficult problem.
+
+tail calls appear to work , and compile correctly by evaluating the new arguments ,
+collapsing the stack and doing a JMP.
+
+The simple compiler is not smart enough yet to tell when it is a tail call , so have a special form
+  (tailcall (f ... ))
+
+I dont think this is a big issue to fix , maybe just detect when last item in an implicit begin
+sequence should be a tailcall . But primitives in tail call position arent tailcalls , so
+theres that to be aware of .
+
+maybe ??
+ (primitive-call + ... ...)
 
 
 
