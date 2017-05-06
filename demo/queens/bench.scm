@@ -231,6 +231,11 @@
 ;;   a+b?2)
 
 
+(define (1+ n) (+ n 1))
+(define (1- n) (- n 1))
+
+
+
 (define (add1 n) (1+ n))
 (define (sub1 n) (1- n))
 
@@ -241,8 +246,8 @@
 
 
 (define good?
-  (closure (new-pl up down try)  ()
-  ;;(lambda (new-pl up down try)
+  ;;(closure (new-pl up down try)  ()
+  (lambda (new-pl up down try)
     (cond
      ((null? new-pl) #t)
      (else (let ((next-pos (car new-pl)))
@@ -256,7 +261,8 @@
 		     try)))))))
 
 (define legal?
-  (closure (try legal-pl) ()
+  ;;(closure (try legal-pl) ()
+  (lambda (try legal-pl) 
     (good? legal-pl (add1 try) (sub1 try) try)))
 
 
@@ -313,21 +319,28 @@
 ;;(queens 5)
 ;;(queens 6)
 
-;;(length (queens 8))
+
+(newline)
+(newline)
+(newline)
+
+(display (queens 12))
+(newline)
+
+(newline)
+(newline)
+(newline)
+
+(display (length (queens 12)))
+(newline)
+
+;;(queens 12)
 
 
-;; ;; queens 12 expected 14200 solutions
-;; (let ((solution (queens 12)))
-;;   (cons solution
-;; 	(length solution)))
 
 
 
-;; ((4 . (9 . (7 . (2 . (11 . (6 . (12 . (10 . (8 . (5 . (3 . (1 . ()
 
-(let ((solution (queens 13)))
-  (cons solution
-	(length solution)))
 
 
 

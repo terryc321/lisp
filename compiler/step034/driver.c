@@ -132,8 +132,6 @@ void pretty_print(unsigned int val){
   */
   else if ((val & PAIR_MASK ) == PAIR_TAG ) {
     /* un tag - take off 1 byte , not 4 bytes if int * ptr */
-    unsigned int the_car = scheme_car(val);
-    unsigned int the_cdr = scheme_cdr(val);
 
     /*
     printf("\nthe CAR address is %p " , the_car);
@@ -142,9 +140,29 @@ void pretty_print(unsigned int val){
     */
     
     printf("(");
-    pretty_print(the_car);
-    printf(" . ");
-    pretty_print(the_cdr);
+
+    while(1){
+          unsigned int the_car = scheme_car(val);
+	  pretty_print(the_car);
+
+	  val = scheme_cdr(val);
+
+	  if (47 == val){
+	    // empty list = end of the list
+	    break;
+	  }
+	  else if ((val & PAIR_MASK ) == PAIR_TAG) {
+	    // still a CONS pair , thats okay , keep going
+	    printf(" ");	    
+	  }
+	  else {
+	    printf(" . ");
+	    pretty_print(val);
+	    break;
+	  }
+
+    }
+    
     printf(")");    
     
   }

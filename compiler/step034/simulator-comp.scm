@@ -2,7 +2,7 @@
 ;; tidy proc name , removes minus sign from
 ;;
 
-;;(use-modules (ice-9 pretty-print))
+(use-modules (ice-9 pretty-print))
 
 ;;(load  "/home/terry/lisp/free-variables/freevar.scm")
 
@@ -928,18 +928,24 @@
 
 
 (define (toplevel-binding? x)
-  (and (= (length x) 3)
+  (and
+   (pair? x)
+   (= (length x) 3)
        (eq? (car (cdr x)) 'toplevel)))
 
 
 (define (local-binding? x)
-  (and (= (length x) 3)
-       (eq? (car (cdr x)) 'local)))
+  (and
+   (pair? x)
+   (= (length x) 3)
+   (eq? (car (cdr x)) 'local)))
 
 
 (define (closure-binding? x)
-  (and (= (length x) 3)
-       (eq? (car (cdr x)) 'closure)))
+  (and
+   (pair? x)
+   (= (length x) 3)
+   (eq? (car (cdr x)) 'closure)))
 
 
 (define (binding-stack-index x)
@@ -959,6 +965,10 @@
 (define (comp-lookup var si env)
   (if (not (symbol? var))
       (begin
+	  (display "COMP : Expected variable to be a symbol : ")
+	  (pretty-print var)
+	  (newline)
+
 	(error "comp-lookup expected " var " to be a symbol variable "))
       (begin
   
@@ -993,7 +1003,19 @@
 	   ;;(emit "mov dword ebx , toplevel ;; toplevel define " var)
 	   ;;(emit "mov dword eax , [ebx + " (binding-index binding)"]"))
 	   (else
+	    (display "COMP-LOOKUP : failure - no binding for symbol : ")
+	    (newline)
+	    
+	    (display "COMP-LOOKUP : var = : ")
+	    (pretty-print var)
+	    (newline)
+	    (display "COMP-LOOKUP : env = : ")	    
+	    (pretty-print env)
+	    (newline)
+	    
+	    
 	    (error "comp-lookup : no binding for symbol " var)))))))
+
 
 
 
@@ -1994,6 +2016,20 @@
 	
 
 (define (comp x si env)
+  (display "COMP : expression  : ")
+  (newline)
+  (pretty-print x)
+  (newline)
+  (display "-------------------------")
+  (newline)
+  
+  (display "COMP : environment : ")
+  (newline)
+  (pretty-print env)
+  (newline)
+  (display "-------------------------")
+  (newline)
+  
   (cond
    ((symbol? x) (comp-lookup x si env))
    ((null? x) (comp-null x si env))

@@ -316,18 +316,16 @@
 ;;(length (queens 8))
 
 
-;; ;; queens 12 expected 14200 solutions
-;; (let ((solution (queens 12)))
-;;   (cons solution
-;; 	(length solution)))
+;; queens 12 expected 14200 solutions
+(let ((solution (queens 12)))
+  (cons solution
+	(length solution)))
 
 
 
 ;; ((4 . (9 . (7 . (2 . (11 . (6 . (12 . (10 . (8 . (5 . (3 . (1 . ()
 
-(let ((solution (queens 13)))
-  (cons solution
-	(length solution)))
+
 
 
 
