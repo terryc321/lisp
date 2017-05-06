@@ -4,7 +4,9 @@ An attempt to follow gholoum incremental compiler paper.
 Demos
 *****************************************************
 
- 100doors - 100doors open and closing puzzle , leads to sequence of square numbers 
+ 100doors - 100doors open and closing puzzle , leads to sequence of square numbers
+            funny bug in 1000doors , solves 100doors then counts to 1000 - how humourous. 
+	    
  queens   - n queens puzzle
  
 
