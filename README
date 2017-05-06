@@ -29,9 +29,7 @@ The heart of the compiler is located in STEP034
 Theres no register allocator , but its interesting to see how it would help.
 
 All the primitives are OPEN CODED , theres not much thought put into them just a simple set of
-x86 operations i knew would would and slapped them in .
-
-
+x86 operations i knew would work and slapped them in .
 
 
 
@@ -43,7 +41,7 @@ Let assigns items to stack , does not create a closure.
 
 Assignment conversion MISSING - set! is not handled yet , so that means no LETRECs .
 *******************************
-LETRECs are just 
+LETRECs are can be macro expanded as SET! and LETs 
 I had an idea that if the only functions are toplevel , ie no function nesting ,
 then there is no point in having closures because any free variable must either be undefined - ie wrong program
 or its a toplevel variable , and these arent captured in closures anyway because toplevel is always available.
@@ -102,18 +100,21 @@ TAIL CALLS work - tricky to get right , requires good nights sleep and a clear h
 figuring out the required offsets , noting that SI stack index grows downwards and other issues
 makes it difficult problem.
 
-tail calls appear to work , and compile correctly by evaluating the new arguments ,
+tail calls compile correctly by evaluating the new arguments ,
 collapsing the stack and doing a JMP.
 
 The simple compiler is not smart enough yet to tell when it is a tail call , so have a special form
   (tailcall (f ... ))
 
 I dont think this is a big issue to fix , maybe just detect when last item in an implicit begin
-sequence should be a tailcall . But primitives in tail call position arent tailcalls , so
-theres that to be aware of .
+sequence should be a tailcall .
 
-maybe ??
- (primitive-call + ... ...)
+But primitives in tail call position are not tailcalls - confusing eh.
+, so theres that to be aware of also .
+
+maybe (primitive-call + ... ...) so we can tell when something is a primitive or not ?.
+
+
 
 
 
