@@ -1,106 +1,127 @@
-
-
-
-;;; TAK in x86 assembler using Base Pointer EBP
-;;; follow C convention of pushing arguments in order right to left
-
-	global tak1
-	global tak2
-	global tak3
-	global tak
-	
-
-	
-tak1:	push dword ebp ; entry prologue
-	mov dword ebp , esp
-	mov dword eax , [ebp + 8] ; x
-	mov dword esp , ebp	  ; exit prolog
-	pop dword ebp
-	ret
-
-tak2:	push dword ebp ; entry prologue
-	mov dword ebp , esp
-	mov dword eax , [ebp + 12] ; y
-	mov dword esp , ebp	  ; exit prolog
-	pop dword ebp
-	ret
-
-tak3:	push dword ebp ; entry prologue
-	mov dword ebp , esp
-	mov dword eax , [ebp + 16] ; z
-	mov dword esp , ebp	  ; exit prolog
-	pop dword ebp
-	ret
-
-
-	
-tak:	push dword ebp
-	mov dword ebp , esp
-	
-	mov dword eax , [ebp + 12] ; y
-	mov dword ebx , [ebp + 8] ; x
-	cmp dword eax , ebx
-	jb tak_2
-	
-	mov dword eax , [ebp + 16] ; z = done
-	jmp tak_exit
-
-
-	;; TAK : ARG Z
-tak_2:  mov dword eax , [ebp + 16] ; z 
-	dec dword eax 		; z - 1
-	mov dword ebx , [ebp + 8] ; x
-	mov dword ecx , [ebp + 12] ; y
-	push dword ecx
-	push dword ebx
-	push dword eax
-	call tak
-	add dword esp , 12 	; drop z y x-1
-	;; tak z-1 x y in EAX register
-	push dword eax
-
-	;; TAK : ARG Y
-	
-	;; x y z all add 4 to get originals
-	mov dword eax , [ebp + 12] ; y 
-	dec dword eax 		; y - 1
-	mov dword ebx , [ebp + 16] ; z
-	mov dword ecx , [ebp + 8] ; x
-	push dword ecx
-	push dword ebx
-	push dword eax
-	call tak
-	add dword esp , 12 	; drop z y x-1
-	
-	;; tak y-1 z x in EAX register
-	push dword eax
-
-	;; TAK : ARG X
-	mov dword eax , [ebp + 8] ; x 
-	dec dword eax 		; x - 1
-	mov dword ebx , [ebp + 12] ; y
-	mov dword ecx , [ebp + 16] ; z
-	push dword ecx
-	push dword ebx
-	push dword eax
-	call tak
-	add dword esp , 12 	; drop z y x-1
-	;; tak x-1 y z in EAX register
-	push dword eax
-
-	;; TAK : (TAK ARGX)(TAK ARGY)(TAK ARGZ)
-	call tak
-	add dword esp , 12 	; drop TAKs
-
-	;; result in EAX register
-
-tak_exit:  	mov dword esp , ebp	  ; exit prolog
-	pop dword ebp
-	ret
-
-
-	
-	
-	
-	
-	
+global scheme_entry
+global scheme_car
+global scheme_cdr
+section .data
+align 32
+toplevel:  times 3 dd 0 
+section .text
+align 32
+;;  ---------- scheme_car ---------------- 
+scheme_car: nop
+nop
+MOV DWORD  EAX  , [ ESP  + 4]
+;; untag CONS  
+DEC DWORD  EAX 
+;; take the CDR  
+MOV DWORD  EAX  , [ EAX ]
+ret
+;;  ----------- scheme_cdr ---------------- 
+scheme_cdr: nop
+nop
+MOV DWORD  EAX  , [ ESP  + 4]
+;; untag CONS  
+DEC DWORD  EAX 
+;; take the CDR  
+MOV DWORD  EAX  , [ EAX  + 4]
+ret
+align 32
+;; scheme_entry is called from driver.c 
+scheme_entry: nop
+;; load heap address into esi , provided by c compiler 
+MOV DWORD  ESI  , [ ESP  + 4]
+JMP after5502
+lambda5501: nop
+MOV DWORD  EAX  , [ ESP  - 12]
+MOV DWORD [ ESP  - 20] ,  EAX 
+MOV DWORD  EAX  , [ ESP  - 8]
+CMP DWORD [ ESP  - 20] ,  EAX 
+MOV DWORD  EAX  , 0
+setl al
+SHL DWORD  EAX  , 7
+OR DWORD  EAX  , 31
+CMP DWORD  EAX  , 31
+JE if5503
+MOV DWORD  EAX  , 4
+MOV DWORD [ ESP  - 36] ,  EAX 
+MOV DWORD  EAX  , [ ESP  - 8]
+SUB DWORD  EAX  , [ ESP  - 36]
+MOV DWORD [ ESP  - 36] ,  EAX 
+MOV DWORD  EAX  , [ ESP  - 12]
+MOV DWORD [ ESP  - 40] ,  EAX 
+MOV DWORD  EAX  , [ ESP  - 16]
+MOV DWORD [ ESP  - 44] ,  EAX 
+mov eax , [toplevel + 4]
+AND DWORD  EAX  , -8
+MOV DWORD [ ESP  - 32] ,  EAX 
+MOV DWORD  EAX  , [ EAX ]
+ADD DWORD  ESP  , -24
+CALL  EAX 
+SUB DWORD  ESP  , -24
+MOV DWORD [ ESP  - 28] ,  EAX 
+MOV DWORD  EAX  , 4
+MOV DWORD [ ESP  - 40] ,  EAX 
+MOV DWORD  EAX  , [ ESP  - 12]
+SUB DWORD  EAX  , [ ESP  - 40]
+MOV DWORD [ ESP  - 40] ,  EAX 
+MOV DWORD  EAX  , [ ESP  - 16]
+MOV DWORD [ ESP  - 44] ,  EAX 
+MOV DWORD  EAX  , [ ESP  - 8]
+MOV DWORD [ ESP  - 48] ,  EAX 
+mov eax , [toplevel + 4]
+AND DWORD  EAX  , -8
+MOV DWORD [ ESP  - 36] ,  EAX 
+MOV DWORD  EAX  , [ EAX ]
+ADD DWORD  ESP  , -28
+CALL  EAX 
+SUB DWORD  ESP  , -28
+MOV DWORD [ ESP  - 32] ,  EAX 
+MOV DWORD  EAX  , 4
+MOV DWORD [ ESP  - 44] ,  EAX 
+MOV DWORD  EAX  , [ ESP  - 16]
+SUB DWORD  EAX  , [ ESP  - 44]
+MOV DWORD [ ESP  - 44] ,  EAX 
+MOV DWORD  EAX  , [ ESP  - 8]
+MOV DWORD [ ESP  - 48] ,  EAX 
+MOV DWORD  EAX  , [ ESP  - 12]
+MOV DWORD [ ESP  - 52] ,  EAX 
+mov eax , [toplevel + 4]
+AND DWORD  EAX  , -8
+MOV DWORD [ ESP  - 40] ,  EAX 
+MOV DWORD  EAX  , [ EAX ]
+ADD DWORD  ESP  , -32
+CALL  EAX 
+SUB DWORD  ESP  , -32
+MOV DWORD [ ESP  - 36] ,  EAX 
+mov eax , [toplevel + 4]
+AND DWORD  EAX  , -8
+MOV DWORD [ ESP  - 24] ,  EAX 
+MOV DWORD  EAX  , [ EAX ]
+ADD DWORD  ESP  , -16
+CALL  EAX 
+SUB DWORD  ESP  , -16
+JMP if5504
+if5503: nop
+MOV DWORD  EAX  , [ ESP  - 16]
+if5504: nop
+ret
+after5502: nop
+MOV DWORD  EBX  ,  ESI 
+MOV DWORD [ ESI ] , lambda5501
+ADD DWORD  ESI  , 8
+MOV DWORD  EAX  ,  EBX 
+OR DWORD  EAX  , 6
+mov dword [toplevel + 4] , eax
+MOV DWORD  EAX  , 72
+MOV DWORD [ ESP  - 12] ,  EAX 
+MOV DWORD  EAX  , 48
+MOV DWORD [ ESP  - 16] ,  EAX 
+MOV DWORD  EAX  , 24
+MOV DWORD [ ESP  - 20] ,  EAX 
+mov eax , [toplevel + 4]
+AND DWORD  EAX  , -8
+MOV DWORD [ ESP  - 8] ,  EAX 
+MOV DWORD  EAX  , [ EAX ]
+ADD DWORD  ESP  , 0
+CALL  EAX 
+SUB DWORD  ESP  , 0
+ret

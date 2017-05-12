@@ -28,6 +28,10 @@
 				 (number->string n))))
 
 
+(define (ac-define? exp)
+  (and (pair? exp)
+       (eq? (car exp) 'define)))
+
 (define (ac-lambda? exp)
   (and (pair? exp)
        (eq? (car exp) 'lambda)))
@@ -79,8 +83,9 @@
 		 (cons (cons sym n2) gens))))
 	;; 
 	(begin 
-	  (kab sym ;;(ac-gensym sym 1)
+	  (kab (ac-gensym sym 1) ;; sym
 	       (cons (cons sym 1) gens))))))
+
 
 
 
@@ -108,9 +113,11 @@
    ((ac-constant? exp) (cont exp env gens))
    ((ac-lambda? exp) (ac-lambda exp env gens cont))
    ((ac-begin? exp) (ac-begin exp env gens cont))
+   ((ac-define? exp) (ac-define exp env gens cont))
    ((pair? exp) (ac-app exp env gens cont))
    (else
     (error "dont know how to process this " exp env gens cont))))
+
 
 
 
@@ -163,6 +170,18 @@
 						 exp2)
 					 env
 					 gens3))))))))
+
+
+
+
+(define (ac-define exp env gens cont) #f)
+
+  ;; (ac (car (cdr exp)) '() env gens (lambda (exp2 env2 gens2)
+  ;; 				     (ac (car (cdr (cdr exp))) env2 gens2
+					
+  ;; 				    (cont `(define ,@exp2 ,@exp3)
+  ;; 					  env2
+  ;; 					  gens2))))
 
 
 

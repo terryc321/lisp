@@ -32,8 +32,8 @@ MOV DWORD  ESI  , [ ESP  + 4]
 MOV DWORD  EAX  , 492
 ;; let binding for variable  g1 
 MOV DWORD [ ESP  - 4] ,  EAX 
-JMP after150
-lambda149: nop
+JMP after160
+lambda159: nop
 ;; closure binding for variable  g1 
 MOV DWORD  EAX  , [ ESP  - 4]
 MOV DWORD  EAX  , [ EAX  + 8]
@@ -43,9 +43,9 @@ MOV DWORD  EAX  , [ ESP  - 4]
 MOV DWORD  EAX  , [ EAX  + 8]
 ADD DWORD  EAX  , [ ESP  - 8]
 ret
-after150: nop
+after160: nop
 MOV DWORD  EBX  ,  ESI 
-MOV DWORD [ ESI ] , lambda149
+MOV DWORD [ ESI ] , lambda159
 ADD DWORD  ESI  , 8
 MOV DWORD  EAX  , [ ESP  - 4]
 MOV DWORD [ ESI ] ,  EAX 
