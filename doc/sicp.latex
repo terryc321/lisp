@@ -2,7 +2,38 @@
 \documentclass[a4paper,12pt]{article}
 \begin{document}
 
+There is a lot involved in making a lisp compiler.
+The more complex it becomes , the greater the chance an error has been introduced.
+A compiler that is even a bit unreliable is well , lets look at proving compiler properties.
+or at the very least , lets make it comprehensible so we can figure out what it is trying to do
 
+
+The system has to be able to bootstrap itself, 
+
+
+
+Garbage collection algorithm
+
+
+
+The stack , does it overflow and how can you tell ?
+
+The bootstrap compiler
+This uses a simpler register based system so once opcode for that .
+The assembler.
+
+
+
+
+
+
+
+
+
+
+
+
+\newpage
 
 
 \begin{verbatim}
@@ -366,6 +397,7 @@ Exploring CPS conversion and compilation to x86 32 bit register machine code.
 
 
 \newpage
+
 
 \begin{verbatim}
 (define tak (lambda (x y z)

@@ -29,8 +29,8 @@ align 32
 scheme_entry: nop
 ;; load heap address into esi , provided by c compiler 
 MOV DWORD  ESI  , [ ESP  + 4]
-JMP after5502
-lambda5501: nop
+JMP after160
+lambda159: nop
 MOV DWORD  EAX  , [ ESP  - 12]
 MOV DWORD [ ESP  - 20] ,  EAX 
 MOV DWORD  EAX  , [ ESP  - 8]
@@ -40,7 +40,7 @@ setl al
 SHL DWORD  EAX  , 7
 OR DWORD  EAX  , 31
 CMP DWORD  EAX  , 31
-JE if5503
+JE if161
 MOV DWORD  EAX  , 4
 MOV DWORD [ ESP  - 36] ,  EAX 
 MOV DWORD  EAX  , [ ESP  - 8]
@@ -99,14 +99,14 @@ MOV DWORD  EAX  , [ EAX ]
 ADD DWORD  ESP  , -16
 CALL  EAX 
 SUB DWORD  ESP  , -16
-JMP if5504
-if5503: nop
+JMP if162
+if161: nop
 MOV DWORD  EAX  , [ ESP  - 16]
-if5504: nop
+if162: nop
 ret
-after5502: nop
+after160: nop
 MOV DWORD  EBX  ,  ESI 
-MOV DWORD [ ESI ] , lambda5501
+MOV DWORD [ ESI ] , lambda159
 ADD DWORD  ESI  , 8
 MOV DWORD  EAX  ,  EBX 
 OR DWORD  EAX  , 6
