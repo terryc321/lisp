@@ -4,6 +4,7 @@
 
 ;; interpreter doesnt like nested definitions yet??
 
+
 ;; There are 100 doors in a row that are all initially closed.
 ;; You make 100 passes by the doors.
 ;; The first time through, visit every door and   toggle   the door
@@ -356,8 +357,16 @@
 
 ;; ((lambda (x) (+ x 1)) 10)
 
-(let ((g1 123))
-  ((lambda () (+ g1 g1))))
+;;(let ((g1 123))
+;;  ((lambda () (+ g1 g1))))
+
+;; list of hundred items 
+(define seq (lambda (n)
+  (cond
+   ((= n 0) '())
+   (else (cons #f (seq (- n 1)))))))
+
+(seq 100)
 
 
 
