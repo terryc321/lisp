@@ -1,0 +1,27 @@
+
+
+
+swap-heap.py	    test if we can exchange from and to space heaps correctly
+
+
+
+
+simple mark sweep garbage collector
+
+start with initial set of roots
+recursively iterate over reachable set
+until each reachable object has been marked live
+then all other objects can be garbage collected
+
+implicit assumption that each object is understood and
+somehow the system knows the difference between
+pointers and if that pointer is to an object in heap
+or some random value that is pushed onto the stack
+
+implicit assumption theres a stack also, not sure why.
+
+
+
+
+
+
