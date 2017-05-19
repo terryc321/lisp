@@ -11,6 +11,7 @@ results = []
 fails = []
 passes = []
 
+
 def test_section(title):
     print("TEST SECTION :")
     print(title)

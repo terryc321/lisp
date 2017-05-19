@@ -309,6 +309,7 @@
 
 
 
+
 ;; just close our eyes if its a begin sequence and fingers crossed
 (define (comp-implicit-sequence x si env)
   (cond
@@ -320,49 +321,107 @@
 ;;*******************************************************************
 
 
+;; push dword eax <-- alters ESP register , thats no good for us.
+;; 
+
 
 (define (comp-cons x si env)
   (let ((arg1 (car (cdr x)))
-	(arg2 (car (cdr (cdr x)))))
-    
-    
+	(arg2 (car (cdr (cdr x)))))    
     ;; compile arg1
-    (comp arg1 si env)
-      
-    ;; save onto stack
-    ;;(emit "mov dword [ esp " si "] , eax ")
-    (emit "push dword eax")
-    
-    ;;(emit "push dword eax")
+    (comp arg1 si env)      
+    ;; save ARG1
+    (emit "mov dword [ esp " si "] , eax ")
+    ;;
     ;; compile arg2
     (comp arg2 (- si word) env) ;;(- si word) env)
-            
-    ;;(emit "mov dword [ esp " (- si word) "] , eax ")
+    ;; save ARG2        
+    (emit "mov dword [ esp " (- si word) "] , eax ")
+
     
-    ;; arg2 in EAX
-    ;;(emit "mov dword [ esp " b "] , eax")
+    ;; call allocator and return with free slot in ESI register
+    (emit "add dword esp , " (- si word))
+    (emit "pushad")
+    (emit "call scheme_cons")
+    (emit "popad")
+    (emit "sub dword esp , " (- si word))))
+
+
+
+
+
+
+    ;; ;; arg2 in EAX
+    ;; ;;(emit "mov dword [ esp " b "] , eax")
     
-    ;;(emit "mov dword [ esp " (- si word) "] , eax ")
-    ;; heap in ESI register  
-    ;;(emit "mov dword eax , [ esp " b "] ")
+    ;; ;;(emit "mov dword [ esp " (- si word) "] , eax ")
+    ;; ;; heap in ESI register  
+    ;; ;;(emit "mov dword eax , [ esp " b "] ")
     
-    ;; store CDR in HEAP
-    (emit "mov dword [ esi + 4 ] , eax ")
-    ;; load arg1 into EAX
-    (emit "mov dword eax , [ esp " si " ] ") ;;" si "] ")
+    ;; ;; store CDR in HEAP
+    ;; (emit "mov dword [ esi + 4 ] , eax ")
+    ;; ;; load arg1 into EAX
+    ;; (emit "mov dword eax , [ esp " si " ] ") ;;" si "] ")
     
-    (emit "add dword esp ,4 ")
+    ;; ;;(emit "add dword esp ,4 ")
     
-    ;; store CAR in HEAP
-    (emit "mov dword [ esi ] , eax ")
-    ;; tag result
-    (emit "mov dword eax , esi ")
-    ;; xxx001 is a PAIR tag
-    (emit "and dword eax , (-8) ")
-    ;;(emit "inc dword eax")
-    (emit "or dword eax , 001b")    
-    ;; bump HEAP ESI 
-    (emit "add dword esi , "  (* 2 word))))
+    ;; ;; store CAR in HEAP
+    ;; (emit "mov dword [ esi ] , eax ")
+    ;; ;; tag result
+    ;; (emit "mov dword eax , esi ")
+    ;; ;; xxx001 is a PAIR tag
+    ;; (emit "and dword eax , (-8) ")
+    ;; ;;(emit "inc dword eax")
+    ;; (emit "or dword eax , 001b")    
+    ;; ;; bump HEAP ESI 
+    ;; (emit "add dword esi , "  (* 2 word))))
+
+
+       
+    
+
+
+
+;; (define (comp-cons x si env)
+;;   (let ((arg1 (car (cdr x)))
+;; 	(arg2 (car (cdr (cdr x)))))
+    
+    
+;;     ;; compile arg1
+;;     (comp arg1 si env)      
+;;     ;; save ARG1
+;;     (emit "mov dword [ esp " si "] , eax ")
+
+;;     ;; compile arg2
+;;     (comp arg2 (- si word) env) ;;(- si word) env)
+;;     ;; save ARG2        
+;;     (emit "mov dword [ esp " (- si word) "] , eax ")
+;;     ;; arg2 in EAX
+;;     ;;(emit "mov dword [ esp " b "] , eax")
+    
+;;     ;;(emit "mov dword [ esp " (- si word) "] , eax ")
+;;     ;; heap in ESI register  
+;;     ;;(emit "mov dword eax , [ esp " b "] ")
+    
+;;     ;; store CDR in HEAP
+;;     (emit "mov dword [ esi + 4 ] , eax ")
+;;     ;; load arg1 into EAX
+;;     (emit "mov dword eax , [ esp " si " ] ") ;;" si "] ")
+    
+;;     ;;(emit "add dword esp ,4 ")
+    
+;;     ;; store CAR in HEAP
+;;     (emit "mov dword [ esi ] , eax ")
+;;     ;; tag result
+;;     (emit "mov dword eax , esi ")
+;;     ;; xxx001 is a PAIR tag
+;;     (emit "and dword eax , (-8) ")
+;;     ;;(emit "inc dword eax")
+;;     (emit "or dword eax , 001b")    
+;;     ;; bump HEAP ESI 
+;;     (emit "add dword esi , "  (* 2 word))))
+
+
 
 
 
@@ -372,15 +431,17 @@
     ;; compile arg1 
     (comp arg1 si env)
     ;; save arg onto stack
-    (emit "push dword eax")
-    ;;(emit "mov dword [ esp " si "] , eax ")
+    ;;(emit "push dword eax")
+    (emit "mov dword [ esp " si "] , eax ")
     
     ;; compile arg2
     (comp arg2 (- si word) env)
     ;; arg2 is in EAX 
     ;;(emit "add dword eax , [ ebp - " si " ]")
     (emit "add dword eax , [ esp ]")
-    (emit "add dword esp , 4")))
+    ;;(emit "add dword esp , 4")
+    ))
+
     
 
 

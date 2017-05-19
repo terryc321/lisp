@@ -1,5 +1,19 @@
 
-An attempt to follow gholoum incremental compiler paper.
+
+
+
+lisp/forth
+lisp/forth/100doors	- solve puzzle in assembler code with input-output c code 
+
+lisp/forth/queens	- solve puzzle in assembler
+
+lisp/forth/zurg		- solve puzzle in assembler
+
+
+*****************************************************
+
+Also - An attempt to follow gholoum incremental compiler paper.
+
 
 Demos
 *****************************************************

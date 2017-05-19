@@ -1,8 +1,9 @@
 
 
 all:
-	~/lisp/compile.sh tak.scm tak.asm
+	~/lisp/compiler/compile.sh tak.scm tak.asm
 	nasm -f elf -F dwarf -o tak.o tak.asm
+
 
 #gcc -ggdb -O0 -o test.o -c test.c
 #gcc -ggdb -O0 -o ctak test.o tak.o

@@ -1,9 +1,0 @@
-#!/bin/bash
-
-./compile '/home/terry/lisp/demo/100doors/100doors.scm' '/home/terry/lisp/demo/100doors/100doors.asm'
-
-cd '/home/terry/lisp/demo/100doors/'
-
-make
-
-./driver
