@@ -25,7 +25,6 @@ extern unsigned int scheme_cdr(unsigned int ptr);
 #define CHAR_TAG  15
 #define CHAR_SHIFT 8
 
-
 #define BOOL_MASK 127
 #define BOOL_TAG  31
 #define BOOL_SHIFT 8
@@ -52,7 +51,9 @@ extern unsigned int scheme_cdr(unsigned int ptr);
 #define TRUE_VALUE    159
 
 /* heap size should be a multiple of 8 bytes  */
-#define HEAP_SIZE  100000000
+#define BITMAP_SIZE (sizeof(int) * 32  ) 
+#define HEAP_SIZE  (sizeof(int) * 123)
+
 
 
 
@@ -81,11 +82,34 @@ on 32 bit machine , int takes 4 bytes
 
 */
 
-
+// allocptr is used by the allocator
+// it is a byte pointer , why ? , maybe a
+// 
 static char *allocptr;
 
 static char *heap_to;
 static char *heap_from;
+
+
+// might only need one forwarded bitmap
+// have two for now
+static int *bitmap_forwarded_to;
+static int *bitmap_forwarded_from;
+static int bitmap_size;
+
+// tell us after we have untagged a heap pointer ,
+// if that pointer is to an object in the heap ,
+// or its something else
+static int *bitmap_isobject_to;
+static int *bitmap_isobject_from;
+
+// belief that no pointer should point into a particular object
+// e.g
+// closure-ref
+// vector-ref
+// string-ref
+
+
 
 
 
@@ -110,7 +134,8 @@ char *scheme_cons(int b, int a){
 
 
 char *scheme_closure(int num, ...){
-  // fancy pants variable argument procedure that builds the closure data structure
+  // fancy pants variable argument procedure in C , o-o .
+  // that builds the closure data structure
   // really just like code to build a vector
   int *res = (int *)allocptr;
   
@@ -137,11 +162,12 @@ char *scheme_closure(int num, ...){
 
 
 char *scheme_make_vector(int num){
-  // not really sure these warnings are valid since not using any registers directly anymore.
+  // not really sure these warnings are valid since
+  // not using any registers directly anymore.
   // e.g old version ESI register was the HEAP allocator bump pointer.
   
-  // important - we do NOT make a C library system call in this routine  
-  // no registers are preserved 
+  // ??important - we do NOT make a C library system call in this routine  
+  // ??no registers are preserved 
   printf("making a vector of size [%d]\n",num);
 
   // vector format = [ SIZE-of-Vector-untagged ELEM-1 ELEM-2 ELEM-3 ... ]
@@ -167,6 +193,11 @@ char *scheme_make_vector(int num){
 }
 
 
+
+
+
+
+
 int scheme_vector_set(int val, int offset, int vec){
 
   // untag vector
@@ -176,7 +207,7 @@ int scheme_vector_set(int val, int offset, int vec){
   // untag offset (assuming its a fixnum)
   int index = offset >> 2 ;
 
-  printf("vector_set : index = [%d] : value \n",index);
+  //printf("vector_set : index = [%d] : value \n",index);
   
   int *vptr = (int *)vecptr;
   vptr[index + 1] = val;
@@ -196,28 +227,11 @@ int scheme_vector_ref(int offset, int vec){
   // untag offset (assuming its a fixnum)
   int index = offset >> 2 ;
 
-  printf("vector_ref : index = [%d] : value \n",index);
+  //printf("vector_ref : index = [%d] : value \n",index);
   
   int *vptr = (int *)vecptr;
   return vptr[index + 1];  
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -407,7 +421,7 @@ void scheme_pretty_print(unsigned int val){
 int main(int argc, char **argv){
 
   // ------------------ allocate heaps --- FROM HEAP ----------
-  heap_from = (char *)malloc(sizeof(int) * HEAP_SIZE * 2);  
+  heap_from = (char *)malloc(HEAP_SIZE);  
   if (!heap_from){   
     return 1;
   }
@@ -421,7 +435,7 @@ int main(int argc, char **argv){
   }
 
   // ------------------ allocate heaps --- TO HEAP -----------
-  heap_to = (char *)malloc(sizeof(int) * HEAP_SIZE * 2);  
+  heap_to = (char *)malloc(HEAP_SIZE);  
   if (!heap_to){   
     return 1;
   }
@@ -437,17 +451,73 @@ int main(int argc, char **argv){
   // setup allocptr
   allocptr = heap_from;
 
-    
-  
-  int i = 0 ;
-  
+  // setup bitmaps
+  bitmap_size = (HEAP_SIZE / 32) + 4;
+  bitmap_forwarded_to = (int *)malloc(sizeof(int) * bitmap_size);
+  bitmap_forwarded_from = (int *)malloc(sizeof(int) *bitmap_size);
+  bitmap_isobject_to = (int *)malloc(sizeof(int) *bitmap_size);
+  bitmap_isobject_from = (int *)malloc(sizeof(int) *bitmap_size);
 
-  // we may choose to clear the heap at startup 
+  printf("--- before cleaning ---\n");
+  printf("heap_from = %p\n",heap_from);
+  printf("heap_to = %p\n",heap_to);
+  printf("bitmap_size = %d\n",bitmap_size);
+  
+  printf("bitmap_forwarded_from = %p\n",bitmap_forwarded_from);
+  printf("bitmap_forwarded_to = %p\n",bitmap_forwarded_to);
+  printf("bitmap_isobject_from = %p\n",bitmap_isobject_from);
+  printf("bitmap_isobject_to = %p\n",bitmap_isobject_to);
+  printf("--- after cleaning ---\n");
+  
+  printf("bitmap_size = %d \n" , bitmap_size);
+  if ( !allocptr
+       || !heap_from
+       || !heap_to
+       || !bitmap_forwarded_to
+       || !bitmap_forwarded_from
+       || !bitmap_isobject_to
+       || !bitmap_isobject_from ){
+    printf("Insufficient Memory - exiting before things get much worse.\n");
+    return 3;
+  }
+
+  // ------- clean all bitmaps -----------
+  int i = 0 ;  
+  
+  for (i = 0 ; i < (bitmap_size - 1) ; i ++){
+    bitmap_forwarded_to[i] = 0;
+  }    
+  for (i = 0 ; i < bitmap_size ; i ++){
+    bitmap_forwarded_from[i] = 0;
+  }
+  for (i = 0 ; i < bitmap_size ; i ++){
+    bitmap_isobject_to[i] = 0;
+  }
+  for (i = 0 ; i < bitmap_size ; i ++){
+    bitmap_isobject_from[i] = 0;
+  }
+
+    
+  // we may choose to clear the heaps at startup 
+  for (i = 0 ; i < (HEAP_SIZE ) ; i ++){
+    heap_from[i] = 0;
+  }
+  for (i = 0 ; i < (HEAP_SIZE) ; i ++){
+    heap_to[i] = 0;
+  }
+  
+  
+  
+  printf("heap_from = %p\n",heap_from);
+  printf("heap_to = %p\n",heap_to);
+  printf("bitmap_forwarded_from = %p\n",bitmap_forwarded_from);
+  printf("bitmap_forwarded_to = %p\n",bitmap_forwarded_to);
+  printf("bitmap_isobject_from = %p\n",bitmap_isobject_from);
+  printf("bitmap_isobject_to = %p\n",bitmap_isobject_to);
+
+  
   
   /*
-  for (i = 0 ; i < (HEAP_SIZE) ; i ++){
-    ptr[i] = 0;
-  }
 
   FILE *fp = fopen("test.log","w");
   if (!fp){

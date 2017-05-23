@@ -1,8 +1,24 @@
+--- before cleaning ---
+heap_from = 0xb56c7008
+heap_to = 0xb3842008
+bitmap_size = 1000004
+bitmap_forwarded_from = 0xb30a0008
+bitmap_forwarded_to = 0xb3471008
+bitmap_isobject_from = 0xb28fe008
+bitmap_isobject_to = 0xb2ccf008
+--- after cleaning ---
+bitmap_size = 1000004 
+heap_from = 0xb56c7008
+heap_to = 0xb3842008
+bitmap_forwarded_from = 0xb30a0008
+bitmap_forwarded_to = 0xb3471008
+bitmap_isobject_from = 0xb28fe008
+bitmap_isobject_to = 0xb2ccf008
 100
-#<closure 0x87a80008>
-#<closure 0x87a80010>
-#<closure 0x87a80018>
-#<closure 0x87a80020>
-#<closure 0x87a80028>
-#<closure 0x87a80030>
+#<closure 0xb56c7008>
+#<closure 0xb56c7010>
+#<closure 0xb56c7018>
+#<closure 0xb56c7020>
+#<closure 0xb56c7028>
+#<closure 0xb56c7030>
 ((1 4 9 16 25 36 49 64 81 100) #t #f #f #t #f #f #f #f #t #f #f #f #f #f #f #t #f #f #f #f #f #f #f #f #t #f #f #f #f #f #f #f #f #f #f #t #f #f #f #f #f #f #f #f #f #f #f #f #t #f #f #f #f #f #f #f #f #f #f #f #f #f #f #t #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #t #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #t)
