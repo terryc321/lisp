@@ -1,8 +1,13 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdarg.h>
+
+
 
 int *scheme_cons(int a, int b);
+char *scheme_closure(int n, ...);
+
 
 extern unsigned int scheme_entry();
 extern unsigned int scheme_car(unsigned int ptr);
@@ -93,12 +98,37 @@ int *scheme_cons(int b, int a){
 
 
 
+char *scheme_closure(int num, ...){
+  int *res = (int *)allocptr;
+  va_list arguments;
+  va_start(arguments , num);
+  int i = 0;
+  for (i = 0 ; i < num ; i ++){
+    res[i] = va_arg(arguments , int);
+    allocptr = allocptr + 4;
+  }
+  va_end(arguments);
+  if ( (((int)allocptr) % 8) != 0 ){
+    allocptr = allocptr + 4;
+  }  
+  return res;  
+}
 
 
 
 
 
 
+
+
+
+
+
+
+
+
+
+/*
 char *allocate(int n);
 char *allocate(int n){
   printf("allocating %d cells : %p : %p \n",n, allocptr ,allocptr + 4);
@@ -124,7 +154,7 @@ char *allocate(int n){
   // machine code never sees res , because popad immediately follows
   return res;
 }
-
+*/
 
 
 
@@ -315,7 +345,7 @@ void pretty_print(unsigned int val){
 
 int main(int argc, char **argv){
 
-  // allocate from heap
+  // ------------------ allocate heaps --- FROM HEAP ----------
   heap_from = (char *)malloc(sizeof(int) * HEAP_SIZE * 2);  
   if (!heap_from){   
     return 1;
@@ -329,7 +359,7 @@ int main(int argc, char **argv){
     return 2;
   }
 
-  // allocate to heap
+  // ------------------ allocate heaps --- TO HEAP -----------
   heap_to = (char *)malloc(sizeof(int) * HEAP_SIZE * 2);  
   if (!heap_to){   
     return 1;
@@ -346,8 +376,7 @@ int main(int argc, char **argv){
   // setup allocptr
   allocptr = heap_from;
 
-  
-  
+    
   
   int i = 0 ;
   

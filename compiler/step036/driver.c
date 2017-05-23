@@ -1,8 +1,12 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdarg.h>
 
-int *scheme_cons(int a, int b);
+
+
+char *scheme_cons(int b, int a);
+char *scheme_closure(int n, ...);
 
 extern unsigned int scheme_entry();
 extern unsigned int scheme_car(unsigned int ptr);
@@ -78,7 +82,7 @@ static char *heap_to;
 static char *heap_from;
 
 
-int *scheme_cons(int b, int a){
+char *scheme_cons(int b, int a){
   // important - we do NOT make a C library system call in this routine  
   // no registers are preserved 
   //printf("allocatin CONS cell : a = %d , b = %d \n" , a , b);
@@ -88,7 +92,25 @@ int *scheme_cons(int b, int a){
   //last_alloc_esi = res;
   allocptr = allocptr + 8;
   //printf("Cons check %d : %d \n", res[0] , res[1]);  
-  return res;
+  return (char *)res;
+}
+
+
+
+char *scheme_closure(int num, ...){
+  int *res = (int *)allocptr;
+  va_list arguments;
+  va_start(arguments , num);
+  int i = 0;
+  for (i = 0 ; i < num ; i ++){
+    res[i] = va_arg(arguments , int);
+    allocptr = allocptr + 4;
+  }
+  va_end(arguments);
+  if ( (((int)allocptr) % 8) != 0 ){
+    allocptr = allocptr + 4;
+  }  
+  return (char *)res;  
 }
 
 
@@ -99,6 +121,13 @@ int *scheme_cons(int b, int a){
 
 
 
+
+
+
+
+
+
+/*
 char *allocate(int n);
 char *allocate(int n){
   printf("allocating %d cells : %p : %p \n",n, allocptr ,allocptr + 4);
@@ -124,7 +153,7 @@ char *allocate(int n){
   // machine code never sees res , because popad immediately follows
   return res;
 }
-
+*/
 
 
 

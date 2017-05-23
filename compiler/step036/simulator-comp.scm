@@ -267,26 +267,6 @@
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-;; ******************** Work In Progress ***************************
-
-
-
 (define (comp-add x si env)
   (let ((arg1 (car (cdr x)))
 	(arg2 (car (cdr (cdr x)))))
@@ -1909,12 +1889,21 @@
 
 
 
+;; ----------- OLD -version !!! 
 ;; suppose free variables are a b c d
 ;; assigns closure offsets of multiples of 8 byte boundary.
 ;; a : 8
 ;; b : 16
 ;; c : 24
 ;; d : 32
+;; ----------- NEW -version !!! 
+;; suppose free variables are a b c d
+;; assigns closure offsets of multiples of 4 byte boundary.
+;; a : 4
+;; b : 8
+;; c : 12
+;; d : 16
+;; much more compact
 
 (define (comp-closure-helper args)
   (define (helper args index)
@@ -1922,8 +1911,9 @@
      ((null? args) '())
      (else (let ((sym (car args)))
 	     (cons (list sym 'closure index)
-		   (helper (cdr args) (+ index (* 2 word))))))))
-  (helper args 8))
+		   (helper (cdr args) (+ index word)))))))
+  (helper args 4))
+
 
 
 (define (remove-primitives vars)
@@ -1963,12 +1953,12 @@
       (append
        (comp-lookup f si env)		   
        `(
-	 (mov (ref esi) eax)
+	 (push dword eax)
+	 ;;(mov (ref esi) eax)
 	 ;; again bump 8 bytes quick confirm heap always aligned
-	 (add esi 8) 
+	 ;;(add esi 8) 
 	 )
        (comp-lambda-free-vars fother si env))))))
-
 
 
 
@@ -1976,7 +1966,6 @@
 ;; args = (car (cdr x))
 ;; body = (cdr (cdr x))
 ;; fv   = (remove-toplevel (remove-primitives (freevars x)))
-
 
 ;; for each formal parameter [ <args> ]  of the lambda expression
 ;; (lambda <args> body)
@@ -1990,13 +1979,19 @@
 	    
 	  `(	  
 	    (jmp (label ,after-label))
+
+	    ;; ------ runtime for LAMBDA ----------------------
 	    (label ,anon-name)
 	    
 	    ;; si is first empty FREE SLOT completely open to abuse
+	    ;; esp - 0 : where return address goes
 	    ;; esp - 4 : closure
-	    ;; esp - 8 :
+	    ;; esp - 8 : where arg1 will go 
 	    ;;
 	    ;; e.g
+	    ;; if no arguments and just the closure then ESP - 8 is first free slot
+	    ;; if 1 arg given formally , then ESP - 12 is first free slot
+	    ;; if 2 arg given formally , then ESP - 16 is first free slot ...
 	    ;; n-args = 0    esp - 8 first free slot   (* 2 word)
 	    ;; n-args = 1    esp - 12 first free slot  (* 3 word)
 	    ,@(let ((new-si (- (* (+ 2 n-args) word))))
@@ -2005,24 +2000,42 @@
 	    (ret)
 	    
 	    (label ,after-label)
-	    
-	    (mov ebx esi) ; remember heap loc	  
-	    (mov (ref esi) (label ,anon-name))
 
-	    ;; bump heap 8 bytes
-	    ;; so we waste 4 bytes but easier to verify heap always aligned
-	    ;; for initial versions of compiler
-	    (add esi 8) 
+	    ;; ------- create the CLOSURE for the lambda  --------
+	    ;; similar to comp-cons approach , want to load up stack with free variable lookup code
+	    ;; that pushes values onto stack
+	    (add esp ,si)
+
+	    ;; cater that free variables are loaded on C stack
+	    ;; C calling convention is backwards
+	    ,@(comp-lambda-free-vars (reverse free) si env)
+
+	    (literal "push dword " ,anon-name)	    
+	    (literal "push dword " ,(+ 1 (length free)))
 	    
-	    ,@(comp-lambda-free-vars free si env)
-  	    
+	    (literal "call scheme_closure")
+
+	    ;; tidy up pushed args
+	    ;; for each free variable , drop item from stack add esp , 4
+	    ;; then + 1 : an extra drop for the procedure location anon-name
+	    ;; then + 2 : an extra drop for the number of variable arguments we pass in
+	    (literal "add dword esp , " ,(* word (+ 2 (length free))))
+	    
+	    ;; restore stack
+	    (sub esp ,si)
+	    
 	    ;; important HEAP pointer esi is a multiple of 8
 	    ;;,@(emit-align-heap-pointer)
 	      
-	    (mov eax ebx) 	    
+	    ;;(mov eax ebx)
+	    
 	    (or eax 6) ; tag closure 110b
 	    
 	    ))))))
+
+
+
+
 
 
 	

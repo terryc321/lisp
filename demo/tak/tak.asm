@@ -1,3 +1,7 @@
+extern allocate
+extern last_alloc_esi
+extern scheme_cons
+extern scheme_closure
 global scheme_entry
 global scheme_car
 global scheme_cdr
@@ -105,10 +109,12 @@ MOV DWORD  EAX  , [ ESP  - 16]
 if162: nop
 ret
 after160: nop
-MOV DWORD  EBX  ,  ESI 
-MOV DWORD [ ESI ] , lambda159
-ADD DWORD  ESI  , 8
-MOV DWORD  EAX  ,  EBX 
+ADD DWORD  ESP  , -4
+push dword lambda159
+push dword 1
+call scheme_closure
+add dword esp , 8
+SUB DWORD  ESP  , -4
 OR DWORD  EAX  , 6
 mov dword [toplevel + 4] , eax
 MOV DWORD  EAX  , 72
