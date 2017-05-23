@@ -3,7 +3,11 @@
 #include <stdio.h>
 #include <stdarg.h>
 
+void scheme_pretty_print(unsigned int val);
+void scheme_pretty_print_nl(unsigned int val);
 
+
+char *scheme_make_vector(int num);
 
 char *scheme_cons(int b, int a);
 char *scheme_closure(int n, ...);
@@ -43,6 +47,8 @@ extern unsigned int scheme_cdr(unsigned int ptr);
 #define CLOSURE_MASK 7
 #define CLOSURE_TAG  6
 
+#define FALSE_VALUE   31
+#define TRUE_VALUE    159
 
 /* heap size should be a multiple of 8 bytes  */
 #define HEAP_SIZE  100000000
@@ -75,9 +81,8 @@ on 32 bit machine , int takes 4 bytes
 */
 
 
-char *last_alloc_esi;
-
 static char *allocptr;
+
 static char *heap_to;
 static char *heap_from;
 
@@ -89,10 +94,16 @@ char *scheme_cons(int b, int a){
   int *res = (int *)allocptr;
   res[0] = a;
   res[1] = b;
-  //last_alloc_esi = res;
+
   allocptr = allocptr + 8;
-  //printf("Cons check %d : %d \n", res[0] , res[1]);  
-  return (char *)res;
+  //printf("Cons check %d : %d \n", res[0] , res[1]);
+  if ( (((int)allocptr) % 8) != 0 ){
+    allocptr = allocptr + 4;
+  }  
+  
+  int ptr = (int)res;
+  ptr = ptr | PAIR_TAG ;
+  return (char *)ptr;
 }
 
 
@@ -110,8 +121,43 @@ char *scheme_closure(int num, ...){
   if ( (((int)allocptr) % 8) != 0 ){
     allocptr = allocptr + 4;
   }  
-  return (char *)res;  
+  int ptr =(int)res;
+  ptr = ptr | CLOSURE_TAG ; 
+  return (char *)ptr;
 }
+
+
+
+
+
+char *scheme_make_vector(int num){
+  // not really sure these warnings are valid since not using any registers directly anymore.
+  // e.g old version ESI register was the HEAP allocator bump pointer.
+  
+  // important - we do NOT make a C library system call in this routine  
+  // no registers are preserved 
+  printf("making a vector of size [%d]\n",num);
+  
+  int *res = (int *)allocptr;
+  res[0] = num;
+  allocptr = allocptr + 4;
+    
+  int i = 0;
+  for (i = 0 ; i < num ; i ++){
+    // the false value
+    res[1 + i] = FALSE_VALUE;
+    allocptr = allocptr + 4;
+  }
+  
+  if ( (((int)allocptr) % 8) != 0 ){
+    allocptr = allocptr + 4;
+  }
+
+  int ptr = (int)res;
+  ptr = ptr | VECTOR_TAG ;  
+  return (char *)ptr;
+}
+
 
 
 
@@ -176,9 +222,14 @@ void debug_stack(unsigned int *ptr){
 }
 
 
+void scheme_pretty_print_nl(unsigned int val){
+  scheme_pretty_print(val);
+  printf("\n");
+}
 
 
-void pretty_print(unsigned int val){
+
+void scheme_pretty_print(unsigned int val){
 
   //int val = (int)(valptr);
   /*
@@ -267,7 +318,7 @@ void pretty_print(unsigned int val){
 
     while(1){
           unsigned int the_car = scheme_car(val);
-	  pretty_print(the_car);
+	  scheme_pretty_print(the_car);
 
 	  val = scheme_cdr(val);
 
@@ -281,7 +332,7 @@ void pretty_print(unsigned int val){
 	  }
 	  else {
 	    printf(" . ");
-	    pretty_print(val);
+	    scheme_pretty_print(val);
 	    break;
 	  }
 
@@ -302,13 +353,13 @@ void pretty_print(unsigned int val){
 
     int *ptr = (int *)(val - VECTOR_TAG);
     int size = ptr[0];
-    size = size >> 2 ;
+    //size = size >> 2 ;
     printf("#[");
     //printf("%d " , size);    
     int n = 0 ;
     for (n = 1 ; n <= size ; n ++){
       //printf("_");
-      pretty_print(ptr[n]);
+      scheme_pretty_print(ptr[n]);
       if (n == size){
 	//
       }
@@ -321,7 +372,7 @@ void pretty_print(unsigned int val){
   }
   else if ((val & CLOSURE_MASK ) == CLOSURE_TAG ) {
     int *ptr = (int *)(val - CLOSURE_TAG);
-    printf("#<closure>"); //, (void *)ptr);    
+    printf("#<closure %p>" , (void *)ptr); //, (void *)ptr);    
   }
   
   else {
@@ -435,10 +486,12 @@ int main(int argc, char **argv){
 
   */
   
+
   
   // printf("\n--------------------------\n");
-  pretty_print(val);
+  //scheme_pretty_print(val);
   //printf("\n--------------------------\n");
+
   
   
   //}

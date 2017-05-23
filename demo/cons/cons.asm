@@ -1,7 +1,8 @@
-extern allocate
-extern last_alloc_esi
 extern scheme_cons
 extern scheme_closure
+extern scheme_make_vector
+extern scheme_pretty_print
+extern scheme_pretty_print_nl
 global scheme_entry
 global scheme_car
 global scheme_cdr
@@ -40,8 +41,9 @@ MOV DWORD [ ESP  - 8] ,  EAX
 ADD DWORD  ESP  , -8
 call scheme_cons
 SUB DWORD  ESP  , -8
-AND DWORD  EAX  , -8
-OR DWORD  EAX  , 1
+PUSH  EAX 
+call scheme_pretty_print_nl
+add dword esp, 4
 MOV DWORD  EAX  , 4
 MOV DWORD [ ESP  - 4] ,  EAX 
 MOV DWORD  EAX  , 8
@@ -49,8 +51,6 @@ MOV DWORD [ ESP  - 8] ,  EAX
 ADD DWORD  ESP  , -8
 call scheme_cons
 SUB DWORD  ESP  , -8
-AND DWORD  EAX  , -8
-OR DWORD  EAX  , 1
 MOV DWORD [ ESP  - 4] ,  EAX 
 MOV DWORD  EAX  , 12
 MOV DWORD [ ESP  - 8] ,  EAX 
@@ -59,14 +59,13 @@ MOV DWORD [ ESP  - 12] ,  EAX
 ADD DWORD  ESP  , -12
 call scheme_cons
 SUB DWORD  ESP  , -12
-AND DWORD  EAX  , -8
-OR DWORD  EAX  , 1
 MOV DWORD [ ESP  - 8] ,  EAX 
 ADD DWORD  ESP  , -8
 call scheme_cons
 SUB DWORD  ESP  , -8
-AND DWORD  EAX  , -8
-OR DWORD  EAX  , 1
+PUSH  EAX 
+call scheme_pretty_print_nl
+add dword esp, 4
 MOV DWORD  EAX  , 4
 MOV DWORD [ ESP  - 4] ,  EAX 
 MOV DWORD  EAX  , 8
@@ -92,62 +91,45 @@ MOV DWORD [ ESP  - 44] ,  EAX
 ADD DWORD  ESP  , -44
 call scheme_cons
 SUB DWORD  ESP  , -44
-AND DWORD  EAX  , -8
-OR DWORD  EAX  , 1
 MOV DWORD [ ESP  - 40] ,  EAX 
 ADD DWORD  ESP  , -40
 call scheme_cons
 SUB DWORD  ESP  , -40
-AND DWORD  EAX  , -8
-OR DWORD  EAX  , 1
 MOV DWORD [ ESP  - 36] ,  EAX 
 ADD DWORD  ESP  , -36
 call scheme_cons
 SUB DWORD  ESP  , -36
-AND DWORD  EAX  , -8
-OR DWORD  EAX  , 1
 MOV DWORD [ ESP  - 32] ,  EAX 
 ADD DWORD  ESP  , -32
 call scheme_cons
 SUB DWORD  ESP  , -32
-AND DWORD  EAX  , -8
-OR DWORD  EAX  , 1
 MOV DWORD [ ESP  - 28] ,  EAX 
 ADD DWORD  ESP  , -28
 call scheme_cons
 SUB DWORD  ESP  , -28
-AND DWORD  EAX  , -8
-OR DWORD  EAX  , 1
 MOV DWORD [ ESP  - 24] ,  EAX 
 ADD DWORD  ESP  , -24
 call scheme_cons
 SUB DWORD  ESP  , -24
-AND DWORD  EAX  , -8
-OR DWORD  EAX  , 1
 MOV DWORD [ ESP  - 20] ,  EAX 
 ADD DWORD  ESP  , -20
 call scheme_cons
 SUB DWORD  ESP  , -20
-AND DWORD  EAX  , -8
-OR DWORD  EAX  , 1
 MOV DWORD [ ESP  - 16] ,  EAX 
 ADD DWORD  ESP  , -16
 call scheme_cons
 SUB DWORD  ESP  , -16
-AND DWORD  EAX  , -8
-OR DWORD  EAX  , 1
 MOV DWORD [ ESP  - 12] ,  EAX 
 ADD DWORD  ESP  , -12
 call scheme_cons
 SUB DWORD  ESP  , -12
-AND DWORD  EAX  , -8
-OR DWORD  EAX  , 1
 MOV DWORD [ ESP  - 8] ,  EAX 
 ADD DWORD  ESP  , -8
 call scheme_cons
 SUB DWORD  ESP  , -8
-AND DWORD  EAX  , -8
-OR DWORD  EAX  , 1
+PUSH  EAX 
+call scheme_pretty_print_nl
+add dword esp, 4
 MOV DWORD  EAX  , 4
 MOV DWORD [ ESP  - 4] ,  EAX 
 MOV DWORD  EAX  , 8
@@ -157,14 +139,10 @@ MOV DWORD [ ESP  - 12] ,  EAX
 ADD DWORD  ESP  , -12
 call scheme_cons
 SUB DWORD  ESP  , -12
-AND DWORD  EAX  , -8
-OR DWORD  EAX  , 1
 MOV DWORD [ ESP  - 8] ,  EAX 
 ADD DWORD  ESP  , -8
 call scheme_cons
 SUB DWORD  ESP  , -8
-AND DWORD  EAX  , -8
-OR DWORD  EAX  , 1
 MOV DWORD [ ESP  - 4] ,  EAX 
 MOV DWORD  EAX  , 16
 MOV DWORD [ ESP  - 8] ,  EAX 
@@ -175,14 +153,10 @@ MOV DWORD [ ESP  - 16] ,  EAX
 ADD DWORD  ESP  , -16
 call scheme_cons
 SUB DWORD  ESP  , -16
-AND DWORD  EAX  , -8
-OR DWORD  EAX  , 1
 MOV DWORD [ ESP  - 12] ,  EAX 
 ADD DWORD  ESP  , -12
 call scheme_cons
 SUB DWORD  ESP  , -12
-AND DWORD  EAX  , -8
-OR DWORD  EAX  , 1
 MOV DWORD [ ESP  - 8] ,  EAX 
 MOV DWORD  EAX  , 28
 MOV DWORD [ ESP  - 12] ,  EAX 
@@ -193,24 +167,19 @@ MOV DWORD [ ESP  - 20] ,  EAX
 ADD DWORD  ESP  , -20
 call scheme_cons
 SUB DWORD  ESP  , -20
-AND DWORD  EAX  , -8
-OR DWORD  EAX  , 1
 MOV DWORD [ ESP  - 16] ,  EAX 
 ADD DWORD  ESP  , -16
 call scheme_cons
 SUB DWORD  ESP  , -16
-AND DWORD  EAX  , -8
-OR DWORD  EAX  , 1
 MOV DWORD [ ESP  - 12] ,  EAX 
 ADD DWORD  ESP  , -12
 call scheme_cons
 SUB DWORD  ESP  , -12
-AND DWORD  EAX  , -8
-OR DWORD  EAX  , 1
 MOV DWORD [ ESP  - 8] ,  EAX 
 ADD DWORD  ESP  , -8
 call scheme_cons
 SUB DWORD  ESP  , -8
-AND DWORD  EAX  , -8
-OR DWORD  EAX  , 1
+PUSH  EAX 
+call scheme_pretty_print_nl
+add dword esp, 4
 ret

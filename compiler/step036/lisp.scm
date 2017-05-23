@@ -268,10 +268,11 @@
       (append
 
        `(
-	 (extern allocate)
-	 (extern last_alloc_esi)
 	 (extern scheme_cons)
 	 (extern scheme_closure)
+	 (extern scheme_make_vector)
+	 (extern scheme_pretty_print)
+	 (extern scheme_pretty_print_nl)
 	 
 	 (global scheme_entry)
 	 (global scheme_car)
@@ -336,6 +337,13 @@
     (f322 ndf ie))
    (else
     (append (comp (car df) -4 ie)
+
+	    `(
+	      (push eax)
+	      (literal "call scheme_pretty_print_nl")
+	      (literal "add dword esp, 4")
+	      )
+	    
 	    (f321 (cdr df) ndf ie)))))
 
 (define (f322 ndf ie)
@@ -343,6 +351,13 @@
    ((null? ndf) '())
    (else
     (append (comp (car ndf) -4 ie)
+
+	    `(
+	      (push eax)
+	      (literal "call scheme_pretty_print_nl")
+	      (literal "add dword esp, 4")
+	      )
+	    
 	    (f322 (cdr ndf) ie)))))
 
 

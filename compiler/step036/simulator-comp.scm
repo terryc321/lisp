@@ -261,8 +261,9 @@
 
       ;; scheme_cons leaves a result in EAX register
       ;; tag result
-      (and eax -8)
-      (or eax 1)
+      ;;(and eax -8)
+      ;;(or eax 1)
+      
       )))
 
 
@@ -1014,50 +1015,27 @@
 
 
 
-;; default to false value
+
+;; use a nice default value = #f 
 ;; (make-vector 3) => #[#f #f #f]
 (define (comp-make-vector x si env)
-  ;; (make-vector size)
   
-  ;; E[size]
-  (comp (car (cdr x)) si env)
-    
-  ;; size
-  (emit "mov dword [ esi ] , eax ")
-  (emit "mov dword [ esi + 4 ] , " the-false-value)
+  `(
+    ,@(comp (car (cdr x)) si env)
   
-  ;; size in EBX tagged
-  (emit "mov dword ebx , eax ")
+    (literal "shr dword eax , 2") ; untag fixnum in EAX by shift right 2 places
 
-  ;; size in EBX un tagged
-  (emit "shr dword ebx , 2")
+    (add esp ,si) ; setup stack for C subroutine call
+    (push eax)
+    (literal "call scheme_make_vector")
+    (literal "add dword esp , 4")  
+    (sub esp ,si) ; restore stack -- note si is a negative
 
-  ;; margin just add 2 , so if greater than 2 then keep going
-  (emit "add dword ebx , 4")
+    ;; scheme_make_vector correctly TAGs as a VECTOR 
     
-  ;; the result in EAX
-  (emit "mov dword eax , esi ")
-  (emit "or dword eax , 2 ") ;; add dword eax , 2  --- was add
-  (emit "mov dword ecx , eax")
   
-  ;; bump 
-  (emit "add dword esi , " (* 2 word))
-  
-  ;; bump
-  (let ((bump-label (gensym "bump")))
-    (emit bump-label ": mov dword [ esi ] , " the-false-value)
-    ;;(emit "mov dword [ esi + 4 ] , " the-false-value)
-    ;;(emit "add dword esi , " (* 2 word))
-    (emit "add dword esi , " word)
-    ;;(emit "dec dword ebx ")    
-    (emit "dec dword ebx ")    
-    (emit "cmp dword ebx , 0 ") 
-    (emit "ja " bump-label))
-  ;; align heap ptr on 8 byte boundary
-  ;; ie ESI is multiple of 8
-  (emit-align-heap-pointer)
-  
-  (emit "mov dword eax, ecx"))
+  ))
+	
 
 
 
@@ -2026,10 +2004,10 @@
 	    
 	    ;; important HEAP pointer esi is a multiple of 8
 	    ;;,@(emit-align-heap-pointer)
-	      
-	    ;;(mov eax ebx)
-	    
-	    (or eax 6) ; tag closure 110b
+
+	    ;; scheme_closure correctly TAGs as a CLOSURE -- neat .
+	    ;;(mov eax ebx)	    
+	    ;;(or eax 6) ; 
 	    
 	    ))))))
 

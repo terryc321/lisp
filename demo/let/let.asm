@@ -1,7 +1,8 @@
-extern allocate
-extern last_alloc_esi
 extern scheme_cons
 extern scheme_closure
+extern scheme_make_vector
+extern scheme_pretty_print
+extern scheme_pretty_print_nl
 global scheme_entry
 global scheme_car
 global scheme_cdr
@@ -66,8 +67,6 @@ MOV DWORD [ ESP  - 16] ,  EAX
 ADD DWORD  ESP  , -16
 call scheme_cons
 SUB DWORD  ESP  , -16
-AND DWORD  EAX  , -8
-OR DWORD  EAX  , 1
 if162: nop
 ret
 after160: nop
@@ -77,8 +76,10 @@ push dword 1
 call scheme_closure
 add dword esp , 8
 SUB DWORD  ESP  , -4
-OR DWORD  EAX  , 6
 mov dword [toplevel + 4] , eax
+PUSH  EAX 
+call scheme_pretty_print_nl
+add dword esp, 4
 MOV DWORD  EAX  , 400
 MOV DWORD [ ESP  - 12] ,  EAX 
 mov eax , [toplevel + 4]
@@ -88,4 +89,7 @@ MOV DWORD  EAX  , [ EAX ]
 ADD DWORD  ESP  , 0
 CALL  EAX 
 SUB DWORD  ESP  , 0
+PUSH  EAX 
+call scheme_pretty_print_nl
+add dword esp, 4
 ret
