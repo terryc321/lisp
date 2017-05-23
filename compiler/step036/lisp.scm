@@ -271,6 +271,9 @@
 	 (extern scheme_cons)
 	 (extern scheme_closure)
 	 (extern scheme_make_vector)
+	 (extern scheme_vector_set)
+	 (extern scheme_vector_ref)
+	 
 	 (extern scheme_pretty_print)
 	 (extern scheme_pretty_print_nl)
 	 

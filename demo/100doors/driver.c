@@ -188,6 +188,7 @@ char *scheme_make_vector(int num){
 
 
 
+
 void debug_stack(unsigned int *ptr){
   printf("\nSTACK : ");
   int i = 0 ;

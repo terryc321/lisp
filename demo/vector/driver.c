@@ -6,8 +6,9 @@
 void scheme_pretty_print(unsigned int val);
 void scheme_pretty_print_nl(unsigned int val);
 
-
 char *scheme_make_vector(int num);
+int scheme_vector_set(int val, int offset, int vec);
+int scheme_vector_ref(int offset, int vec);
 
 char *scheme_cons(int b, int a);
 char *scheme_closure(int n, ...);
@@ -87,16 +88,15 @@ static char *heap_to;
 static char *heap_from;
 
 
+
 char *scheme_cons(int b, int a){
-  // important - we do NOT make a C library system call in this routine  
-  // no registers are preserved 
-  //printf("allocatin CONS cell : a = %d , b = %d \n" , a , b);
+  // 
   int *res = (int *)allocptr;
   res[0] = a;
   res[1] = b;
 
   allocptr = allocptr + 8;
-  //printf("Cons check %d : %d \n", res[0] , res[1]);
+  
   if ( (((int)allocptr) % 8) != 0 ){
     allocptr = allocptr + 4;
   }  
@@ -108,8 +108,12 @@ char *scheme_cons(int b, int a){
 
 
 
+
 char *scheme_closure(int num, ...){
+  // fancy pants variable argument procedure that builds the closure data structure
+  // really just like code to build a vector
   int *res = (int *)allocptr;
+  
   va_list arguments;
   va_start(arguments , num);
   int i = 0;
@@ -118,6 +122,7 @@ char *scheme_closure(int num, ...){
     allocptr = allocptr + 4;
   }
   va_end(arguments);
+  
   if ( (((int)allocptr) % 8) != 0 ){
     allocptr = allocptr + 4;
   }  
@@ -130,6 +135,7 @@ char *scheme_closure(int num, ...){
 
 
 
+
 char *scheme_make_vector(int num){
   // not really sure these warnings are valid since not using any registers directly anymore.
   // e.g old version ESI register was the HEAP allocator bump pointer.
@@ -137,7 +143,8 @@ char *scheme_make_vector(int num){
   // important - we do NOT make a C library system call in this routine  
   // no registers are preserved 
   printf("making a vector of size [%d]\n",num);
-  
+
+  // vector format = [ SIZE-of-Vector-untagged ELEM-1 ELEM-2 ELEM-3 ... ]
   int *res = (int *)allocptr;
   res[0] = num;
   allocptr = allocptr + 4;
@@ -148,6 +155,7 @@ char *scheme_make_vector(int num){
     res[1 + i] = FALSE_VALUE;
     allocptr = allocptr + 4;
   }
+
   
   if ( (((int)allocptr) % 8) != 0 ){
     allocptr = allocptr + 4;
@@ -159,47 +167,50 @@ char *scheme_make_vector(int num){
 }
 
 
+int scheme_vector_set(int val, int offset, int vec){
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-char *allocate(int n);
-char *allocate(int n){
-  printf("allocating %d cells : %p : %p \n",n, allocptr ,allocptr + 4);
+  // untag vector
+  int vecptr = (int) vec;
+  vecptr = vecptr & ( -8 );
   
-  while ((((int)allocptr) % 8) != 0){
-    allocptr ++;
-  }
-  char *res = allocptr;
-  
-  int *ptr = (int *)allocptr;
-  int i =0 ;
-  for (i = 0 ; i < n ; i++){
-    //ptr[i] = 4 ;
-  }
+  // untag offset (assuming its a fixnum)
+  int index = offset >> 2 ;
 
-  allocptr = allocptr + 4 * n ;
-  while ((((int)allocptr) % 8) != 0){
-    allocptr ++;
-  }
-
-  //last_alloc_esi = allocptr;
+  printf("vector_set : index = [%d] : value \n",index);
   
-  // machine code never sees res , because popad immediately follows
-  return res;
+  int *vptr = (int *)vecptr;
+  vptr[index + 1] = val;
+  
+  // store value in the vector  
+  return FALSE_VALUE;
 }
-*/
+
+
+
+int scheme_vector_ref(int offset, int vec){
+
+  // untag vector
+  int vecptr = (int) vec;
+  vecptr = vecptr & ( -8 );
+  
+  // untag offset (assuming its a fixnum)
+  int index = offset >> 2 ;
+
+  printf("vector_ref : index = [%d] : value \n",index);
+  
+  int *vptr = (int *)vecptr;
+  return vptr[index + 1];  
+}
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -372,7 +383,7 @@ void scheme_pretty_print(unsigned int val){
   }
   else if ((val & CLOSURE_MASK ) == CLOSURE_TAG ) {
     int *ptr = (int *)(val - CLOSURE_TAG);
-    printf("#<closure>"); //, (void *)ptr);    
+    printf("#<closure %p>" , (void *)ptr); //, (void *)ptr);    
   }
   
   else {

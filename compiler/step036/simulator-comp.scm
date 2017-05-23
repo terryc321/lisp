@@ -7,8 +7,6 @@
 ;;(load  "/home/terry/lisp/free-variables/freevar.scm")
 
 
-
-
 ;; assume input is a closed source file
 ;; read in definitions
 ;; last expression is one that fires it off ??
@@ -1018,23 +1016,71 @@
 
 ;; use a nice default value = #f 
 ;; (make-vector 3) => #[#f #f #f]
-(define (comp-make-vector x si env)
-  
+(define (comp-make-vector x si env)  
   `(
-    ,@(comp (car (cdr x)) si env)
-  
+    ,@(comp (car (cdr x)) si env) ; evaluate how many vector entries we need
     (literal "shr dword eax , 2") ; untag fixnum in EAX by shift right 2 places
-
     (add esp ,si) ; setup stack for C subroutine call
     (push eax)
     (literal "call scheme_make_vector")
     (literal "add dword esp , 4")  
     (sub esp ,si) ; restore stack -- note si is a negative
+    ;; scheme_make_vector correctly TAGs as a VECTOR    
+    ))
 
-    ;; scheme_make_vector correctly TAGs as a VECTOR 
+
+
+;; (vector-set! the-vec the-n-offset some-value)
+;; required to implement assignment conversion
+(define (comp-vector-set! x si env)
+  (let ((the-vec (car (cdr x)))
+	(the-offset (car (cdr (cdr x))))
+	(the-value (car (cdr (cdr (cdr x))))))
+  `(
+    ,@(comp the-vec si env) ; evaluate the-vec
+    (mov (ref (+ esp ,si)) eax) ; save it
     
-  
-  ))
+    ,@(comp the-offset (- si word) env) ; evaluate the-offset
+    (mov (ref (+ esp ,(- si word))) eax) ; save it
+    
+    ,@(comp the-value (- si (* 2 word)) env) ; evaluate the-value
+    (mov (ref (+ esp ,(- si (* 2 word)))) eax) ; save it
+
+    ;; adjust stack for C call
+    (add esp ,(- si (* 2 word)))
+    (literal "call scheme_vector_set")
+    (sub esp ,(- si (* 2 word)))
+
+    ;; we dont have an unspecifed return value , so return value given in.
+    (mov eax ,the-false-value)
+    )))
+
+
+
+
+;; (vector-ref the-vec the-n-offset)
+;; bounds check ?
+;;
+(define (comp-vector-ref x si env)
+  (let ((the-vec (car (cdr x)))
+	(the-offset (car (cdr (cdr x)))))
+  `(
+    ,@(comp the-vec si env) ; evaluate the-vec
+    (mov (ref (+ esp ,si)) eax) ; save it
+    
+    ,@(comp the-offset (- si word) env) ; evaluate the-offset
+    (mov (ref (+ esp ,(- si word))) eax) ; save it
+    
+    ;; adjust stack for C call
+    (add esp ,(- si (* 1 word)))
+    (literal "call scheme_vector_ref")
+    (sub esp ,(- si (* 1 word)))
+
+    )))
+
+
+
+
 
 
 
@@ -2064,8 +2110,8 @@
    ((and (pair? x) (eq? (car x) 'cdr)) (comp-cdr x si env))   
    ;;((and (pair? x) (eq? (car x) 'make-string)) (comp-make-string x si env))
    ((and (pair? x) (eq? (car x) 'make-vector)) (comp-make-vector x si env))
-   ;;((and (pair? x) (eq? (car x) 'vector-ref)) (comp-vector-ref x si env))
-   ;;((and (pair? x) (eq? (car x) 'vector-set!)) (comp-vector-set! x si env))
+   ((and (pair? x) (eq? (car x) 'vector-ref)) (comp-vector-ref x si env))
+   ((and (pair? x) (eq? (car x) 'vector-set!)) (comp-vector-set! x si env))
    ((and (pair? x) (eq? (car x) '/2)) (comp-div2 x si env))  
    ((and (pair? x) (eq? (car x) 'mul3+1)) (comp-mul3+1 x si env))
    ;;    

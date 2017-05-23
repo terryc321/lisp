@@ -6,8 +6,9 @@
 void scheme_pretty_print(unsigned int val);
 void scheme_pretty_print_nl(unsigned int val);
 
-
 char *scheme_make_vector(int num);
+int scheme_vector_set(int val, int offset, int vec);
+int scheme_vector_ref(int offset, int vec);
 
 char *scheme_cons(int b, int a);
 char *scheme_closure(int n, ...);
@@ -166,6 +167,40 @@ char *scheme_make_vector(int num){
 }
 
 
+int scheme_vector_set(int val, int offset, int vec){
+
+  // untag vector
+  int vecptr = (int) vec;
+  vecptr = vecptr & ( -8 );
+  
+  // untag offset (assuming its a fixnum)
+  int index = offset >> 2 ;
+
+  printf("vector_set : index = [%d] : value \n",index);
+  
+  int *vptr = (int *)vecptr;
+  vptr[index + 1] = val;
+  
+  // store value in the vector  
+  return FALSE_VALUE;
+}
+
+
+
+int scheme_vector_ref(int offset, int vec){
+
+  // untag vector
+  int vecptr = (int) vec;
+  vecptr = vecptr & ( -8 );
+  
+  // untag offset (assuming its a fixnum)
+  int index = offset >> 2 ;
+
+  printf("vector_ref : index = [%d] : value \n",index);
+  
+  int *vptr = (int *)vecptr;
+  return vptr[index + 1];  
+}
 
 
 
