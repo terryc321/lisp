@@ -27,6 +27,7 @@
 (define *wordsize*  4)
 
 
+;; this is terribly weak solution - breaks if one symbol is missing from this list ??
 (define *primitives*
   '(1+
     1-
@@ -235,40 +236,49 @@
 
 
 
+
 (define (comp-cons x si env)
   (let ((arg1 (car (cdr x)))
-	(arg2 (car (cdr (cdr x)))))
-    
+	(arg2 (car (cdr (cdr x)))))    
     `(
-      ;; compile arg1
-      ,@(comp arg1 si env)
       
-      ;; save onto stack
-      (mov (ref (+ esp ,si)) eax)
-      ;;(push eax)
+      ,@(comp arg1 si env) ; compile arg1
+      (mov (ref (+ esp ,si)) eax) ; save onto stack
+      
+      ,@(comp arg2 (- si word) env) ; compile arg2
+      (mov (ref (+ esp ,(- si word))) eax) ; save arg2 onto stack
+     
+      ;; adjust ESP so we are able to call
+      ;; add negative value to ESP ie push stack
+      ;;(add esp ,(- si (* 1 word)))
+      (add esp ,(- si word))
 
-    ;;(emit "mov dword [ esp " si "] , eax ")
-    ;(emit "push dword eax")
-    
-    ;;(emit "push dword eax")
-    ;; compile arg2
-      ,@(comp arg2 (- si word) env) ;;(- si word) env)
+      (literal "call scheme_cons")
 
-      ;;(push eax)
-      ;;(literal "call scheme_cons")
-      ;;(add esp ,(* 2 word))
+      ;; restore ESP
+      ;; subtract negative value to ESP , ie make ESP larger ie pop stack
+      (sub esp ,(- si word))
 
-      ;; store CDR
-      (mov (ref (+ esi 4)) eax)      
-      (mov eax (ref (+ esp ,si)))
-      ;; store CAR
-      (mov (ref esi) eax)
-
-      (mov eax esi)
+      ;; scheme_cons leaves a result in EAX register
       ;; tag result
       (and eax -8)
       (or eax 1)
-      (add esi 8))))
+      )))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

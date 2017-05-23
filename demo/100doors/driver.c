@@ -2,7 +2,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-extern unsigned int scheme_entry(char *heap);
+int *scheme_cons(int a, int b);
+
+extern unsigned int scheme_entry();
 extern unsigned int scheme_car(unsigned int ptr);
 extern unsigned int scheme_cdr(unsigned int ptr);
 
@@ -40,6 +42,99 @@ extern unsigned int scheme_cdr(unsigned int ptr);
 
 /* heap size should be a multiple of 8 bytes  */
 #define HEAP_SIZE  100000000
+
+
+
+/*
+ garbage collector for scheme lisp
+ cons called expects memory region it write to be in the ESI register
+ c returns values in EAX register
+ after allocate call
+
+
+ allocate N cells of memory , ideally a multiple of 8 bytes or 2 * N cells 
+ e.g 2 , 4 , 6 , 8 etc...
+ allocate ( 2 ) 
+
+ mov dword esi , eax
+
+two heaps from heap , to heap 
+
+a number of bitmaps also to indicate if pointer is to an object in the heap
+bitmap if object starts at the address.
+bitmap if object has been forwarded yet.
+
+
+char * ptr so we can access every individual byte
+on 32 bit machine , int takes 4 bytes 
+
+*/
+
+
+char *last_alloc_esi;
+
+static char *allocptr;
+static char *heap_to;
+static char *heap_from;
+
+
+int *scheme_cons(int b, int a){
+  // important - we do NOT make a C library system call in this routine  
+  // no registers are preserved 
+  //printf("allocatin CONS cell : a = %d , b = %d \n" , a , b);
+  int *res = (int *)allocptr;
+  res[0] = a;
+  res[1] = b;
+  //last_alloc_esi = res;
+  allocptr = allocptr + 8;
+  //printf("Cons check %d : %d \n", res[0] , res[1]);  
+  return res;
+}
+
+
+
+
+
+
+
+
+
+char *allocate(int n);
+char *allocate(int n){
+  printf("allocating %d cells : %p : %p \n",n, allocptr ,allocptr + 4);
+  
+  while ((((int)allocptr) % 8) != 0){
+    allocptr ++;
+  }
+  char *res = allocptr;
+  
+  int *ptr = (int *)allocptr;
+  int i =0 ;
+  for (i = 0 ; i < n ; i++){
+    //ptr[i] = 4 ;
+  }
+
+  allocptr = allocptr + 4 * n ;
+  while ((((int)allocptr) % 8) != 0){
+    allocptr ++;
+  }
+
+  //last_alloc_esi = allocptr;
+  
+  // machine code never sees res , because popad immediately follows
+  return res;
+}
+
+
+
+
+
+
+
+
+
+
+
 
 
 void debug_stack(unsigned int *ptr){
@@ -217,20 +312,43 @@ void pretty_print(unsigned int val){
 
 
 
+
 int main(int argc, char **argv){
-  
-  char *ptr = (char *)malloc(sizeof(int) * HEAP_SIZE);  
-  if (!ptr){   
+
+  // allocate from heap
+  heap_from = (char *)malloc(sizeof(int) * HEAP_SIZE * 2);  
+  if (!heap_from){   
     return 1;
   }
 
-  if (((int)ptr) % 8 == 0){
+  if (((int)heap_from) % 8 == 0){
     // heap aligned ok.
   }
   else {
-    printf("heap ptr is misaligned .");
+    printf("heap_from is misaligned .");
     return 2;
   }
+
+  // allocate to heap
+  heap_to = (char *)malloc(sizeof(int) * HEAP_SIZE * 2);  
+  if (!heap_to){   
+    return 1;
+  }
+
+  if (((int)heap_to) % 8 == 0){
+    // heap aligned ok.
+  }
+  else {
+    printf("heap_to is misaligned .");
+    return 2;
+  }
+
+  // setup allocptr
+  allocptr = heap_from;
+
+  
+  
+  
   int i = 0 ;
   
 
@@ -253,11 +371,12 @@ int main(int argc, char **argv){
 
 
 
+  // calling scheme_entry 
   
   // run the program a number of times
   unsigned int val = 0;
   //for (i = 0 ; i < 10000 ; i ++){
-    val = scheme_entry(ptr);
+  val = scheme_entry();
     //}
   /*
   //char *val = ptr;
@@ -299,9 +418,14 @@ int main(int argc, char **argv){
   fflush(stdout);
   
   
-  if (ptr){
-    free((void *)ptr);
-    ptr = 0;
+  if (heap_from){
+    free((void *)heap_from);
+    heap_from = 0;
+  }
+  
+  if (heap_to){
+    free((void *)heap_to);
+    heap_to = 0;
   }
   
   return 0;

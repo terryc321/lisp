@@ -268,6 +268,9 @@
       (append
 
        `(
+	 (extern allocate)
+	 (extern last_alloc_esi)
+	 (extern scheme_cons)
 	 (global scheme_entry)
 	 (global scheme_car)
 	 (global scheme_cdr)

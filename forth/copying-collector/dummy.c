@@ -18,6 +18,11 @@ extern int *bitmap1_addr();
 extern int *bitmap2_addr();
 extern int heap_size();
 
+extern int *alloc(int n);
+
+// only for side effect
+void cons();
+
 void show_bitmap(int *bitmap, int size);
 void show_bitmap_byte(int byte);
 
@@ -43,9 +48,24 @@ void show_bitmap(int *bitmap, int size){
 
 
 
+// cons may cause a cascade garbage collection
+// only for side effect
+// every routine has this 
+void cons(){
+  
+}
+
+
+
+
+
+
 int main(int argc, char **argv){
   printf("hello world\n");
 
+  
+  cons(1,2);
+  
   int *b1 = bitmap1_addr();   
   int *b2 = bitmap2_addr();
   int *b3 = (int *)malloc(sizeof(int) * 5);

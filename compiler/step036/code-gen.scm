@@ -12,6 +12,7 @@
 ;; just do MAP TRANSLATE code-list
 (define (gen-dispatch x port)
   (cond
+   ((and (pair? x) (eq? (car x) 'extern))  (gen-extern x port))
    ((and (pair? x) (eq? (car x) 'global))  (gen-global x port))
    ((and (pair? x) (eq? (car x) 'section))  (gen-section x port))
    ((and (pair? x) (eq? (car x) 'align))  (gen-align x port))
@@ -65,6 +66,11 @@
 	 (display message port)
 	 (display " " port))
        (cdr x)))
+
+
+(define (gen-extern x port)
+  (display "extern " port)
+  (display (car (cdr x)) port))
 
 
 
