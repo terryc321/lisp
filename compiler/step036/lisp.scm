@@ -277,6 +277,7 @@
 	 (extern scheme_pretty_print)
 	 (extern scheme_pretty_print_nl)
 	 
+	 (global scheme_stack_esp)
 	 (global scheme_entry)
 	 (global scheme_car)
 	 (global scheme_cdr)
@@ -286,6 +287,10 @@
 
 	 (section text)
 	 (align 32)
+
+	 (label scheme_stack_esp)
+	 (literal "mov dword eax, esp")
+	 (ret)
 
 	 (comment " ---------- scheme_car ----------------")
 	 (label scheme_car)

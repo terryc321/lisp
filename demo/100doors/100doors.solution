@@ -1,24 +1,34 @@
 --- before cleaning ---
-heap_from = 0xb56c7008
-heap_to = 0xb3842008
-bitmap_size = 1000004
-bitmap_forwarded_from = 0xb30a0008
-bitmap_forwarded_to = 0xb3471008
-bitmap_isobject_from = 0xb28fe008
-bitmap_isobject_to = 0xb2ccf008
+heap_from = 0xb4eed008
+heap_to = 0xb28c7008
+bitmap_size = 1250004
+bitmap_forwarded_from = 0xb1f3d008
+bitmap_forwarded_to = 0xb2402008
+bitmap_isobject_from = 0xb15b3008
+bitmap_isobject_to = 0xb1a78008
 --- after cleaning ---
-bitmap_size = 1000004 
-heap_from = 0xb56c7008
-heap_to = 0xb3842008
-bitmap_forwarded_from = 0xb30a0008
-bitmap_forwarded_to = 0xb3471008
-bitmap_isobject_from = 0xb28fe008
-bitmap_isobject_to = 0xb2ccf008
-100
-#<closure 0xb56c7008>
-#<closure 0xb56c7010>
-#<closure 0xb56c7018>
-#<closure 0xb56c7020>
-#<closure 0xb56c7028>
-#<closure 0xb56c7030>
-((1 4 9 16 25 36 49 64 81 100) #t #f #f #t #f #f #f #f #t #f #f #f #f #f #f #t #f #f #f #f #f #f #f #f #t #f #f #f #f #f #f #f #f #f #f #t #f #f #f #f #f #f #f #f #f #f #f #f #t #f #f #f #f #f #f #f #f #f #f #f #f #f #f #t #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #t #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #f #t)
+bitmap_size = 1250004 
+heap_from = 0xb4eed008
+heap_to = 0xb28c7008
+bitmap_forwarded_from = 0xb1f3d008
+bitmap_forwarded_to = 0xb2402008
+bitmap_isobject_from = 0xb15b3008
+bitmap_isobject_to = 0xb1a78008
+
+bitmap 0xb2402008 elem 0 verified
+bitmap 0xb2402008 elem 1 verified
+bitmap 0xb2402008 elem 2 verified
+bitmap 0xb2402008 elem 3 verified
+bitmap 0xb2402008 elem 4 verified
+bitmap 0xb2402008 elem 5 verified
+bitmap 0xb2402008 elem 6 verified
+bitmap 0xb2402008 elem 7 verified
+bitmap 0xb2402008 elem 8 verified
+bitmap 0xb2402008 elem 9 verified
+bitmap 0xb2402008 elem 10 verified
+bitmap 0xb2402008 elem 11 verified
+bitmap 0xb2402008 elem 12 verified
+bitmap 0xb2402008 elem 13 verified
+bitmap 0xb2402008 elem 14 verified
+bitmap 0xb2402008 elem 15 verified
+bitmap 0xb2402008 elem 16 verified

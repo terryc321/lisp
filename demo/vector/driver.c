@@ -51,8 +51,9 @@ extern unsigned int scheme_cdr(unsigned int ptr);
 #define TRUE_VALUE    159
 
 /* heap size should be a multiple of 8 bytes  */
-#define HEAP_SIZE  (32 * 1000000)
-
+#define NCELLS   10000000
+#define BITMAP_SIZE (sizeof(int) * ((NCELLS / 32) + 1)  ) 
+#define HEAP_SIZE  (sizeof(int) * NCELLS)
 
 
 /*
@@ -500,7 +501,7 @@ int main(int argc, char **argv){
   for (i = 0 ; i < (HEAP_SIZE ) ; i ++){
     heap_from[i] = 0;
   }
-  for (i = 0 ; i < (HEAP_SIZE / 4) ; i ++){
+  for (i = 0 ; i < (HEAP_SIZE) ; i ++){
     heap_to[i] = 0;
   }
   

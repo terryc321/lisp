@@ -2,7 +2,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <assert.h>
 
+extern int* scheme_stack_esp();
 void scheme_pretty_print(unsigned int val);
 void scheme_pretty_print_nl(unsigned int val);
 
@@ -17,6 +19,7 @@ extern unsigned int scheme_entry();
 extern unsigned int scheme_car(unsigned int ptr);
 extern unsigned int scheme_cdr(unsigned int ptr);
 
+// -00 fixnum
 #define FIXNUM_MASK   3
 #define FIXNUM_TAG    0
 #define FIXNUM_SHIFT  2
@@ -30,29 +33,54 @@ extern unsigned int scheme_cdr(unsigned int ptr);
 #define BOOL_SHIFT 8
 #define BOOL_BIT  128
 
+// 000  fixnum1_tag  0
+
+// 001
 #define PAIR_MASK    7
 #define PAIR_TAG     1
 
+// 010
 #define VECTOR_MASK  7
 #define VECTOR_TAG   2
 
+// 011
 #define STRING_MASK  7
 #define STRING_TAG   3
 
+// 100  fixnum2_tag   4
 
+// 101
 #define SYMBOL_MASK  7
 #define SYMBOL_TAG   5
 
-
+// 110
 #define CLOSURE_MASK 7
 #define CLOSURE_TAG  6
+
+// 111 immediate_tag  7
 
 #define FALSE_VALUE   31
 #define TRUE_VALUE    159
 
-/* heap size should be a multiple of 8 bytes  */
-#define BITMAP_SIZE (sizeof(int) * 32  ) 
-#define HEAP_SIZE  (sizeof(int) * 123)
+/* 
+heap size should be a multiple of 8 bytes 
+ideally this should be as BIG as it can be on STARTUP.
+*/
+
+
+// N cells multiple of 32 
+#define NCELLS    32000000
+//#define NCELLS     9497229
+
+#define BITMAP_SIZE (sizeof(int) * ((NCELLS / 32) + 1))
+
+#define HEAP_SIZE  (sizeof(int) * (NCELLS))
+
+// lower number of total cells allocated because it forgets
+// allocations must be on 8 byte boundary - even number for int *ptr
+// or multiple of 8 for a char *ptr
+
+
 
 
 
@@ -82,13 +110,21 @@ on 32 bit machine , int takes 4 bytes
 
 */
 
+static unsigned long total_cells_allocated;
+
 // allocptr is used by the allocator
 // it is a byte pointer , why ? , maybe a
 // 
 static char *allocptr;
+static char *allocptr_end;
+
+static int *stack_at_scheme_entry;
+
 
 static char *heap_to;
+static char *heap_to_end;
 static char *heap_from;
+static char *heap_from_end;
 
 
 // might only need one forwarded bitmap
@@ -110,11 +146,179 @@ static int *bitmap_isobject_from;
 // string-ref
 
 
+void verify_bitmaps(int *ptr);
+int bitmap_get_bit(int *ptr , unsigned long i);
+void bitmap_set_bit(int *ptr , unsigned long i);
+void bitmap_zero_bit(int *ptr , unsigned long i);
+
+int bitmap_get_bit(int *ptr , unsigned long i){
+  unsigned long index = i / 32;
+  unsigned long offset = i % 32;
+  int bit = ((ptr[index]) >> offset) & 1;
+  return bit;
+}
+
+void bitmap_set_bit(int *ptr , unsigned long i){
+  unsigned long index = i / 32;
+  unsigned long offset = i % 32;
+  ptr[index] = ptr[index] | (1 << offset) ;  
+}
+
+void bitmap_zero_bit(int *ptr , unsigned long i){
+  unsigned long index = i / 32;
+  unsigned long offset = i % 32; // 0 to 31
+  ptr[index] = ptr[index] & (!(1 << offset)) ;  
+}
+
+
+
+
+
+void verify_bitmaps(int *ptr){
+  // basic sanity check that bitmap behaves as expected
+  // isobject bitmaps
+  // forwarded bitmaps
+
+  int i = 0 ;
+  int k = 0 ;
+  for (i = 0 ; i < bitmap_size * 32; i ++){
+    bitmap_set_bit(ptr , i);    
+    /*
+    for (k = 0 ; k < bitmap_size * 32; k ++){
+      if ( k == i){
+	assert(bitmap_get_bit(ptr,k) == 1);
+      }
+      else {
+	assert(bitmap_get_bit(ptr,k) == 0);
+      }      
+    }
+    */
+    bitmap_zero_bit(ptr , i);
+    //printf("\nbitmap %p elem %d verified",ptr ,i);
+    //fflush(stdout);
+  }
+
+  printf("bitmap %p verified\n",ptr);
+  
+}
+
+
+
+
+void scheme_allocate_cells(int ncells);
+void scheme_full_gc();
+void scheme_gc_root(char *ptr);
+
+void scheme_gc_root(char *ptr){
+  unsigned int n = (unsigned int) ptr;
+  if ((n & 7) == 
+  // determine if the ptr 
+  // determine if the ptr is into the heap
+
+  
+}
+
+void scheme_full_gc(){
+  // scheme full on garbage collection
+
+  // follow the gc roots
+  
+  // roots may be in registers
+  // not sure how to handle this
+  
+  // roots are in the stack
+  // cant take ESP register because its not actually adjusted down all the
+  // way until a routine in closure called.
+  // assume its 4 kb and close our eyes
+  // there is no scheme data on stack above stack_entry in current version
+  int *stack_lim = stack_at_scheme_entry - 4096;
+
+  int *stackptr = stack_lim;
+  int i = 0;
+  for ( i = 0; i < 4096 ; i ++){
+    scheme_gc_root((char *) (stackptr[i]));
+  }
+  
+
+  // after garbage collection is done , swap heaps around
+
+  // *** what about these 2 pointers now ? ***
+  // allocptr
+  // allocptr_end
+  
+  // from heap
+  char *old_heap_from = heap_from;
+  char *old_heap_from_end = heap_from_end;
+  int *old_bitmap_isobject_from = bitmap_isobject_from;
+  int *old_bitmap_forwarded_from = bitmap_forwarded_from;
+
+  // to heap
+  char *old_heap_to = heap_to;
+  char *old_heap_to_end = heap_to_end;
+  int *old_bitmap_isobject_to = bitmap_isobject_to;
+  int *old_bitmap_forwarded_to = bitmap_forwarded_to;
+
+  // Now swap them
+  
+  // from <- to
+  heap_from = old_heap_to;
+  heap_from_end = old_heap_to_end;
+  bitmap_isobject_from = old_bitmap_isobject_to;
+  bitmap_forwarded_from = old_bitmap_forwarded_to;
+
+  heap_to = old_heap_from;
+  heap_to_end = old_heap_from_end;
+  bitmap_isobject_to = old_bitmap_isobject_from;
+  bitmap_forwarded_to = old_bitmap_forwarded_from;
+
+  // hopefully this has freed up some memory  
+}
+
+
+
+void scheme_allocate_cells(int ncells){
+  // determine if we have N cells available to allocate
+  char *endptr = allocptr + sizeof(int) * ncells;
+
+  total_cells_allocated = total_cells_allocated + ncells;  
+  //scheme_full_gc();    
+    
+  if (endptr >= allocptr_end){
+    // nah - insufficient space    
+    //scheme_full_gc();
+
+    fprintf(stderr,"\nInsufficient Memory Resources\n");
+    fflush(stderr);
+    exit(1);
+  }
+  else {
+    // yes this is fine.
+
+    // set bit to indicate this is start of an object
+    unsigned long k = ((unsigned long)(allocptr - heap_from));
+    //printf("setting bit %d on heap_from\n" , k);
+    //printf("total cells allocated %lu\n",total_cells_allocated);
+    bitmap_set_bit(bitmap_isobject_from , k);
+    return ;
+  }   
+}
+
+
+
+
+
+
+
+
+
+
 
 
 
 char *scheme_cons(int b, int a){
-  // 
+  //
+  scheme_allocate_cells(2);
+  
   int *res = (int *)allocptr;
   res[0] = a;
   res[1] = b;
@@ -137,7 +341,10 @@ char *scheme_closure(int num, ...){
   // fancy pants variable argument procedure in C , o-o .
   // that builds the closure data structure
   // really just like code to build a vector
+  scheme_allocate_cells(num);
+
   int *res = (int *)allocptr;
+
   
   va_list arguments;
   va_start(arguments , num);
@@ -166,6 +373,9 @@ char *scheme_make_vector(int num){
   // not using any registers directly anymore.
   // e.g old version ESI register was the HEAP allocator bump pointer.
   
+  // ncells for vector and + 1 hold size of vector
+  scheme_allocate_cells(num + 1);
+  
   // ??important - we do NOT make a C library system call in this routine  
   // ??no registers are preserved 
   printf("making a vector of size [%d]\n",num);
@@ -191,6 +401,7 @@ char *scheme_make_vector(int num){
   ptr = ptr | VECTOR_TAG ;  
   return (char *)ptr;
 }
+
 
 
 
@@ -235,7 +446,7 @@ int scheme_vector_ref(int offset, int vec){
 
 
 
-
+// *********************************************************
 
 void debug_stack(unsigned int *ptr){
   printf("\nSTACK : ");
@@ -417,14 +628,17 @@ void scheme_pretty_print(unsigned int val){
 
 
 
-
 int main(int argc, char **argv){
 
+  // statistics
+  total_cells_allocated = 0;
+  
   // ------------------ allocate heaps --- FROM HEAP ----------
   heap_from = (char *)malloc(HEAP_SIZE);  
   if (!heap_from){   
     return 1;
   }
+  heap_from_end = heap_from + HEAP_SIZE;
 
   if (((int)heap_from) % 8 == 0){
     // heap aligned ok.
@@ -439,6 +653,7 @@ int main(int argc, char **argv){
   if (!heap_to){   
     return 1;
   }
+  heap_to_end = heap_to + HEAP_SIZE;
 
   if (((int)heap_to) % 8 == 0){
     // heap aligned ok.
@@ -450,9 +665,10 @@ int main(int argc, char **argv){
 
   // setup allocptr
   allocptr = heap_from;
+  allocptr_end = heap_from_end;
 
   // setup bitmaps
-  bitmap_size = (HEAP_SIZE / 32) + 4;
+  bitmap_size = (HEAP_SIZE / 32) + 1;
   bitmap_forwarded_to = (int *)malloc(sizeof(int) * bitmap_size);
   bitmap_forwarded_from = (int *)malloc(sizeof(int) *bitmap_size);
   bitmap_isobject_to = (int *)malloc(sizeof(int) *bitmap_size);
@@ -496,7 +712,6 @@ int main(int argc, char **argv){
   for (i = 0 ; i < bitmap_size ; i ++){
     bitmap_isobject_from[i] = 0;
   }
-
     
   // we may choose to clear the heaps at startup 
   for (i = 0 ; i < (HEAP_SIZE ) ; i ++){
@@ -515,6 +730,14 @@ int main(int argc, char **argv){
   printf("bitmap_isobject_from = %p\n",bitmap_isobject_from);
   printf("bitmap_isobject_to = %p\n",bitmap_isobject_to);
 
+  /*
+  verify_bitmaps(bitmap_forwarded_to);
+  verify_bitmaps(bitmap_forwarded_from);
+  verify_bitmaps(bitmap_isobject_from);
+  verify_bitmaps(bitmap_isobject_to);  
+  */
+  
+  
   
   
   /*
@@ -536,8 +759,30 @@ int main(int argc, char **argv){
   // run the program a number of times
   unsigned int val = 0;
   //for (i = 0 ; i < 10000 ; i ++){
+  printf("\n********* scheme_entry *********\n");
+
+  stack_at_scheme_entry = scheme_stack_esp();
+  printf("stack at scheme entry = %p\n",stack_at_scheme_entry);
+  
   val = scheme_entry();
     //}
+
+  printf("\n********* scheme statistics *********\n");
+  printf("\ntotal cells allocated %lu \n",total_cells_allocated);
+  printf("start alloc address = %p\n",heap_from);
+  printf("end alloc address = %p\n",allocptr);
+  printf("difference alloc address = %p\n",(void *)(allocptr - heap_from));
+  printf("difference alloc address (decimal) = %llu\n",(long long unsigned)(allocptr - heap_from));
+  printf("cell count = %llu\n",((long long unsigned)(allocptr - heap_from))/ 4);
+  
+  
+  
+
+  
+
+  
+  
+  
   /*
   //char *val = ptr;
    

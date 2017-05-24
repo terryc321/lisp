@@ -28,11 +28,13 @@ all:
 
 	#gcc -g3 -o 10000doors driver.o cons.o 10000doors.o
 	#gcc -g3 -o 100000doors driver.o cons.o 100000doors.o
-	./100doors | tee 100doors.solution
+	#./100doors | tee 100doors.solution
+	./100doors
 	#./1000doors | tee 1000doors.solution
 	#./5000doors | tee 5000doors.solution
 	#./10000doors | tee 10000doors.solution
 	#./100000doors | tee 100000doors.solution
+
 
 
 

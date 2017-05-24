@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <assert.h>
 
 void scheme_pretty_print(unsigned int val);
 void scheme_pretty_print_nl(unsigned int val);
@@ -50,8 +51,13 @@ extern unsigned int scheme_cdr(unsigned int ptr);
 #define FALSE_VALUE   31
 #define TRUE_VALUE    159
 
-/* heap size should be a multiple of 8 bytes  */
-#define HEAP_SIZE  (32 * 1000000)
+/* 
+heap size should be a multiple of 8 bytes 
+ideally this should be as BIG as it can be on STARTUP.
+*/
+#define NCELLS   (4096 * 4096)
+#define BITMAP_SIZE (sizeof(int) * ((NCELLS / 32) + 1)  ) 
+#define HEAP_SIZE  (sizeof(int) * NCELLS)
 
 
 
@@ -107,6 +113,62 @@ static int *bitmap_isobject_from;
 // vector-ref
 // string-ref
 
+void verify_bitmaps(int *ptr);
+int bitmap_get_bit(int *ptr , int i);
+void bitmap_set_bit(int *ptr , int i);
+void bitmap_zero_bit(int *ptr , int i);
+
+int bitmap_get_bit(int *ptr , int i){
+  int index = i / 32;
+  int offset = i % 32;
+  int bit = ((ptr[index]) >> offset) & 1;
+  return bit;
+}
+
+void bitmap_set_bit(int *ptr , int i){
+  int index = i / 32;
+  int offset = i % 32;
+  ptr[index] = ptr[index] | (1 << offset) ;  
+}
+
+void bitmap_zero_bit(int *ptr , int i){
+  int index = i / 32;
+  int offset = i % 32; // 0 to 31
+  ptr[index] = ptr[index] & (!(1 << offset)) ;  
+}
+
+
+
+
+
+
+void verify_bitmaps(int *ptr){
+  // basic sanity check that bitmap behaves as expected
+  // isobject bitmaps
+  // forwarded bitmaps
+
+  int i = 0 ;
+  int k = 0 ;
+  for (i = 0 ; i < bitmap_size * 32; i ++){
+    bitmap_set_bit(ptr , i);
+    /*
+    for (k = 0 ; k < bitmap_size * 32; k ++){
+      if ( k == i){
+	assert(bitmap_get_bit(ptr,k) == 1);
+      }
+      else {
+	assert(bitmap_get_bit(ptr,k) == 0);
+      }      
+    }
+    */
+    bitmap_zero_bit(ptr , i);
+    //printf("\nbitmap %p elem %d verified",ptr ,i);
+    //fflush(stdout);
+  }
+
+  printf("bitmap %p verified\n",ptr);
+  
+}
 
 
 
@@ -233,7 +295,7 @@ int scheme_vector_ref(int offset, int vec){
 
 
 
-
+// *********************************************************
 
 void debug_stack(unsigned int *ptr){
   printf("\nSTACK : ");
@@ -450,7 +512,7 @@ int main(int argc, char **argv){
   allocptr = heap_from;
 
   // setup bitmaps
-  bitmap_size = (HEAP_SIZE / 32) + 4;
+  bitmap_size = (HEAP_SIZE / 32) + 1;
   bitmap_forwarded_to = (int *)malloc(sizeof(int) * bitmap_size);
   bitmap_forwarded_from = (int *)malloc(sizeof(int) *bitmap_size);
   bitmap_isobject_to = (int *)malloc(sizeof(int) *bitmap_size);
@@ -500,7 +562,7 @@ int main(int argc, char **argv){
   for (i = 0 ; i < (HEAP_SIZE ) ; i ++){
     heap_from[i] = 0;
   }
-  for (i = 0 ; i < (HEAP_SIZE / 4) ; i ++){
+  for (i = 0 ; i < (HEAP_SIZE) ; i ++){
     heap_to[i] = 0;
   }
   
@@ -513,6 +575,12 @@ int main(int argc, char **argv){
   printf("bitmap_isobject_from = %p\n",bitmap_isobject_from);
   printf("bitmap_isobject_to = %p\n",bitmap_isobject_to);
 
+  verify_bitmaps(bitmap_forwarded_to);
+  verify_bitmaps(bitmap_forwarded_from);
+  verify_bitmaps(bitmap_isobject_from);
+  verify_bitmaps(bitmap_isobject_to);  
+
+  
   
   
   /*

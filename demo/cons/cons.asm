@@ -1,8 +1,11 @@
 extern scheme_cons
 extern scheme_closure
 extern scheme_make_vector
+extern scheme_vector_set
+extern scheme_vector_ref
 extern scheme_pretty_print
 extern scheme_pretty_print_nl
+global scheme_stack_esp
 global scheme_entry
 global scheme_car
 global scheme_cdr
@@ -11,6 +14,9 @@ align 32
 toplevel:  times 2 dd 0 
 section .text
 align 32
+scheme_stack_esp: nop
+mov dword eax, esp
+ret
 ;;  ---------- scheme_car ---------------- 
 scheme_car: nop
 nop
